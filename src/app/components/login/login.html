@@ -1,0 +1,114 @@
+<div class="content-body">
+  <div class="welcome-area">
+    <div class="welcome-inner flex-column">
+      <div class="logo-area">
+        <img class="logo" src="../assets/images/logo.png" alt="Logo de OnGo">
+        <h2 class="login-title">Bienvenido(a) de nuevo</h2>
+        <p class="login-subtitle">Ingresa para seguir conectando con OnGo</p>
+        <!--         <p class="para-title">Ve, Sal y Conecta!</p>
+ -->
+      </div>
+
+      <!-- Formulario de inicio de sesión -->
+      <form class="login-form" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label for="email">Correo electrónico</label>
+          <input type="email" id="email" formControlName="email" autocomplete="email"
+            placeholder="Ingresa tu correo electrónico"
+            [class.is-invalid]="loginForm.get('email')?.touched && loginForm.get('email')?.invalid">
+
+          <div *ngIf="loginForm.get('email')?.touched && loginForm.get('email')?.invalid" class="invalid-feedback">
+            <span *ngIf="loginForm.get('email')?.errors?.['required']">El correo es requerido</span>
+            <span *ngIf="loginForm.get('email')?.errors?.['email']">Ingresa un correo válido</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+  <label for="password">Contraseña</label>
+
+  <div class="password-field">
+     <input
+      [type]="showPassword ? 'text' : 'password'"
+      id="password"
+      formControlName="password"
+      autocomplete="current-password"
+      placeholder="Ingresa tu contraseña"
+      [class.is-invalid]="loginForm.get('password')?.touched && loginForm.get('password')?.invalid"
+    />
+
+    <button
+      type="button"
+      class="toggle-password"
+      (click)="togglePassword()"
+      [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+      [attr.title]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+    > 
+      <i class="fa" [ngClass]="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+    </button>
+  </div>
+
+  <div
+    *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.invalid"
+    class="invalid-feedback"
+  >
+    La contraseña es requerida
+  </div>
+</div>
+
+        <div class="form-group remember-forgot">
+
+          <a class="forgot-password" (click)="goToForgotPassword()">¿Olvidaste tu contraseña?</a>
+        </div>
+
+        <button type="submit" class="btn btn-lg btn-gradient-purple w-100" [disabled]="loginForm.invalid  ">
+
+          Iniciar sesión
+        </button>
+
+        <div class="position-relative continue-with">
+          <!-- <img src="assets/img/line.png" class="line-left position-absolute" alt="" />
+          <img src="assets/img/line.png" class="line-right position-absolute" alt="" /> -->
+          <span class="text-center continue-with">O continúa con</span>
+        </div>
+
+        <div class="pt-3 flex-center gap-4 third-party-authentication">
+          <button type="button" class="item" (click)="handleGoogleLogin()">
+            <img src="assets/images/google.svg" alt="Google" />
+          </button>
+        </div>
+        <div class="terms-section">
+          <p>Al iniciar sesión, aceptas nuestros
+            <a href="#" (click)="$event.preventDefault(); openTermsModal('terms')" style="cursor: pointer;">Términos de
+              servicio</a> y
+            <a href="#" (click)="$event.preventDefault(); openTermsModal('privacy')" style="cursor: pointer;">Política
+              de privacidad</a>
+          </p>
+        </div>
+      </form>
+
+      <div class="register-link">
+        <p>¿No tienes una cuenta? <a (click)="global.setRoute('register')"
+            style="color: #f70192; cursor: pointer;">Regístrate</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ modalTitle }}</h2>
+      <button class="close-button" (click)="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <ng-container *ngIf="modalContent === 'terms'">
+        <app-terms></app-terms>
+      </ng-container>
+      <ng-container *ngIf="modalContent === 'privacy'">
+        <app-privacy></app-privacy>
+      </ng-container>
+
+    </div>
+  </div>
+</div>

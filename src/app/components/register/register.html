@@ -1,0 +1,588 @@
+<!-- Paso 1: Selección de tipo de usuario -->
+<!-- <div class="content-body" *ngIf="currentStep === 1 && !userType">
+  <div class="welcome-area bg-image" style="padding: 8px 28px;">
+    <div class="map-background"></div>
+
+    <div class="welcome-inner">
+      <div class="dz-media floating-avatars-container">
+        <div class="logo-area">
+          <img class="logo" src="../assets/images/logo.png" alt="" style="max-width: 40%;">
+          <p class="para-title">Ve, Sal y Conecta!</p>
+        </div>
+        <div class="floating-avatar-1 ">
+          <img src="../assets/images/edificio.png" alt="Avatar">
+        </div>
+        <div class="floating-avatar-1 avatar-2">
+          <img src="../assets/images/parque.png" alt="Avatar">
+        </div>
+        <div class="floating-avatar avatar-3">
+          <img src="https://images.pexels.com/photos/59497/pexels-photo-59497.jpeg" alt="Avatar">
+        </div>
+        <div class="floating-avatar avatar-4">
+          <img
+            src="https://images.pexels.com/photos/23876/pexels-photo.jpg?_gl=1*1o25mjz*_ga*OTg4Mjk5NjU4LjE3NTE3NTUyOTg.*_ga_8JE65Q40S6*czE3NTE3NTUyOTgkbzEkZzAkdDE3NTE3NTUyOTgkajYwJGwwJGgw"
+            alt="Avatar">
+        </div>
+        <div class="floating-avatar avatar-5">
+          <img src="https://images.pexels.com/photos/30743458/pexels-photo-30743458.jpeg" alt="Avatar">
+        </div>
+        <div class="location-pin pin-1"><i class="icon feather icon-map-pin"></i></div>
+        <div class="location-pin pin-2"><i class="icon feather icon-map-pin"></i></div>
+        <div class="location-pin pin-3"><i class="icon feather icon-map-pin"></i></div>
+        <div class="location-pin pin-4"><i class="icon feather icon-map-pin"></i></div>
+        <div class="location-pin pin-5"><i class="icon feather icon-map-pin"></i></div>
+      </div>
+
+    </div>
+    <div class="bottom-btn container">
+      <div class="row g-3">
+        <div class="col-12">
+          <button (click)="selectUserType('partner')" class="btn btn-lg btn-gradient-pink w-100">
+            Soy un Local Nocturno
+          </button>
+        </div>
+        <div class="col-12">
+          <button (click)="selectUserType('client')" class="btn btn-lg btn-gradient-purple w-100">
+            Soy un Cliente
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="register-link">
+      <p style="padding-top: 0px; text-align: center; font-size: 1.1rem;
+  font-weight: 600; cursor: pointer;">¿Tienes una cuenta? <a (click)="global.setRoute('login')"
+          style="color: #f70192;">Inicia sesión</a></p>
+    </div>
+  </div>
+</div> -->
+<div class="content-body onboarding-screen" *ngIf="currentStep === 1 && !userType">
+  <div class="welcome-hero">
+
+    <!-- Fondo general -->
+    <div class="hero-bg"></div>
+    <div class="hero-overlay"></div>
+
+    <!-- Imagen decorativa principal ahora como fondo -->
+    <div class="hero-figure" aria-hidden="true"></div>
+
+    <div class="welcome-inner hero-content">
+
+      <div class="hero-top">
+        <p class="hero-kicker">Esta noche algo puede pasar...</p>
+
+        <div class="logo-area hero-logo">
+          <img class="logo" src="../assets/images/logo.png" alt="OnGo logo">
+        </div>
+
+        <h1 class="hero-title">Las mejores noches empiezan aquí</h1>
+      </div>
+
+      <div class="hero-actions">
+        <button (click)="selectUserType('client')" class="hero-btn hero-btn-client">
+          <span class="hero-btn-icon">
+            <i class="feather icon-user"></i>
+          </span>
+          <span>Entrar como Cliente</span>
+        </button>
+
+        <button (click)="selectUserType('partner')" class="hero-btn hero-btn-partner">
+          <span class="hero-btn-icon">
+            <i class="feather icon-map-pin"></i>
+          </span>
+          <span>Registrar mi Local</span>
+        </button>
+      </div>
+
+      <div class="hero-stats">
+        <div class="stat-card stat-profile">
+          <div class="stat-avatar">
+            <img src="https://images.pexels.com/photos/30743458/pexels-photo-30743458.jpeg" alt="Persona cerca">
+          </div>
+          <div class="stat-text">
+            <strong>Laura está en</strong>
+            <span>Sky Club</span>
+          </div>
+        </div>
+
+        <div class="stat-card stat-center">
+          <strong class="stat-number">27</strong>
+          <span>personas cerca de ti</span>
+        </div>
+
+        <div class="stat-card stat-profile">
+          <div class="stat-avatar">
+            <img src="https://images.pexels.com/photos/23876/pexels-photo.jpg" alt="Match posible">
+          </div>
+          <div class="stat-text">
+            <strong>3 matches</strong>
+            <span>posibles</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="register-link register-link-inline">
+        <p>
+          ¿Tienes una cuenta?
+          <a routerLink="/login">Inicia sesión</a>
+        </p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Formulario para Partners (Locales Nocturnos) -->
+<ng-container *ngIf="userType === 'partner'">
+  <!-- Paso 1: Credenciales -->
+  <div class="page-content" *ngIf="currentStep === 1">
+    <div class="container">
+      <div class="account-area">
+        <a (click)="userType = null; currentStep = 1" class="back-btn dz-flex-box">
+          <i class="icon feather icon-chevron-left"></i>
+        </a>
+        <div class="section-head ps-0">
+          <h3>Registro de Local Nocturno</h3>
+          <p>Crea una cuenta para administrar tu local</p>
+        </div>
+
+        <form [formGroup]="partnerForm">
+          <div class="mb-3">
+            <label class="form-label">Email *</label>
+            <input type="email" class="form-control" formControlName="email"
+              [class.is-invalid]="pf['email'].touched && pf['email'].invalid">
+            <div *ngIf="pf['email'].touched && pf['email'].invalid" class="invalid-feedback">
+              <span *ngIf="pf['email'].errors?.['required']">El correo es requerido</span>
+              <span *ngIf="pf['email'].errors?.['email']">Ingresa un correo válido</span>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Contraseña *</label>
+
+            <div class="password-field">
+              <input [type]="showPassword ? 'text' : 'password'" class="form-control" formControlName="password"
+                [class.is-invalid]="pf['password'].touched && pf['password'].invalid" />
+
+              <button type="button" class="toggle-password" (click)="togglePassword()">
+                <i class="fa" [ngClass]="showPassword ? 'fa-eye' : 'fa-eye-slash'"></i>
+              </button>
+            </div>
+
+            <div *ngIf="pf['password'].touched && pf['password'].invalid" class="invalid-feedback">
+              <span *ngIf="pf['password'].errors?.['required']">La contraseña es requerida</span>
+              <span *ngIf="pf['password'].errors?.['minlength']">Mínimo 8 caracteres</span>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Confirmar Contraseña *</label>
+
+            <div class="password-field">
+              <input [type]="showConfirmPassword ? 'text' : 'password'" class="form-control"
+                formControlName="confirmPassword" [class.is-invalid]="partnerForm.errors?.['mismatch']" />
+
+              <button type="button" class="toggle-password" (click)="toggleConfirmPassword()">
+                <i class="fa" [ngClass]="showConfirmPassword ? 'fa-eye' : 'fa-eye-slash'"></i>
+              </button>
+            </div>
+
+            <div *ngIf="partnerForm.errors?.['mismatch']" class="invalid-feedback">
+              Las contraseñas no coinciden
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Paso 2: Información del Local -->
+  <div class="page-content" *ngIf="currentStep === 2">
+    <div class="container">
+      <div class="account-area">
+        <a (click)="prevStep()" class="back-btn dz-flex-box">
+          <i class="icon feather icon-chevron-left"></i>
+        </a>
+        <div class="section-head ps-0">
+          <h3>Información del Local</h3>
+          <p>Datos básicos de tu establecimiento</p>
+        </div>
+
+        <form [formGroup]="partnerForm">
+          <div class="mb-3">
+            <label class="form-label">Nombre del Local *</label>
+            <input type="text" class="form-control" formControlName="venueName"
+              [class.is-invalid]="pf['venueName'].touched && pf['venueName'].invalid">
+            <div *ngIf="pf['venueName'].touched && pf['venueName'].invalid" class="invalid-feedback">
+              Por favor ingresa el nombre de tu local
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Dirección *</label>
+            <input type="text" class="form-control" formControlName="address"
+              [class.is-invalid]="pf['address'].touched && pf['address'].invalid">
+            <div *ngIf="pf['address'].touched && pf['address'].invalid" class="invalid-feedback">
+              Por favor ingresa la dirección
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Teléfono *</label>
+            <input type="tel" class="form-control" formControlName="phone"
+              [class.is-invalid]="pf['phone'].touched && pf['phone'].invalid">
+            <div *ngIf="pf['phone'].touched && pf['phone'].invalid" class="invalid-feedback">
+              Por favor ingresa un número de teléfono válido
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Paso 3: Detalles Adicionales -->
+  <div class="page-content" *ngIf="currentStep === 3">
+    <div class="container">
+      <div class="account-area">
+        <a (click)="prevStep()" class="back-btn dz-flex-box">
+          <i class="icon feather icon-chevron-left"></i>
+        </a>
+        <div class="section-head ps-0">
+          <h3>Detalles Adicionales</h3>
+          <p>Información adicional sobre tu local</p>
+        </div>
+
+        <form [formGroup]="partnerForm">
+          <div class="mb-3">
+            <label class="form-label">Descripción</label>
+            <textarea class="form-control" formControlName="description" rows="3"></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Capacidad</label>
+            <input type="number" class="form-control" formControlName="capacity">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Horario de Apertura</label>
+            <input type="text" class="form-control" formControlName="openingHours" placeholder="Ej: 20:00 - 05:00">
+          </div>
+
+          <div class="form-check mt-4">
+            <input class="form-check-input" type="checkbox" id="partnerTerms" formControlName="terms">
+            <label class="form-check-label" for="partnerTerms">
+              Acepto los términos y condiciones
+            </label>
+            <div *ngIf="pf['terms'].touched && pf['terms'].invalid" class="invalid-feedback">
+              Debes aceptar los términos y condiciones
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- Formulario para Clientes -->
+<ng-container *ngIf="userType === 'client'">
+  <!-- Paso 1: Correo y Contraseña -->
+  <div class="page-content" *ngIf="currentStep === 1">
+    <div class="container">
+      <div class="account-area">
+        <a (click)="userType = null; currentStep = 1" class="back-btn dz-flex-box">
+          <i class="icon feather icon-chevron-left"></i>
+        </a>
+        <div class="section-head ps-0">
+          <h3>Por favor ingresa tu correo electrónico</h3>
+        </div>
+
+        <form [formGroup]="clientForm">
+
+          <div class="mb-3">
+            <label class="form-label">Correo Electrónico *</label>
+            <input type="email" class="form-control" formControlName="email"
+              [class.is-invalid]="f['email'].touched && f['email'].invalid">
+            <div *ngIf="f['email'].touched && f['email'].invalid" class="invalid-feedback">
+              <span *ngIf="f['email'].errors?.['required']">El correo es requerido</span>
+              <span *ngIf="f['email'].errors?.['email']">Ingresa un correo válido</span>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Contraseña *</label>
+
+            <div class="password-field">
+              <input [type]="showPassword ? 'text' : 'password'" class="form-control" formControlName="password"
+                [class.is-invalid]="f['password'].touched && f['password'].invalid" />
+
+              <button type="button" class="toggle-password" (click)="togglePassword()">
+                <i class="fa" [ngClass]="showPassword ? 'fa-eye' : 'fa-eye-slash'"></i>
+              </button>
+            </div>
+
+            <div *ngIf="f['password'].touched && f['password'].invalid" class="invalid-feedback">
+              <span *ngIf="f['password'].errors?.['required']">La contraseña es requerida</span>
+              <span *ngIf="f['password'].errors?.['minlength']">Mínimo 8 caracteres</span>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Confirmar Contraseña *</label>
+
+            <div class="password-field">
+              <input [type]="showConfirmPassword ? 'text' : 'password'" class="form-control"
+                formControlName="confirmPassword" [class.is-invalid]="clientForm.errors?.['mismatch']" />
+
+              <button type="button" class="toggle-password" (click)="toggleConfirmPassword()">
+                <i class="fa" [ngClass]="showConfirmPassword ? 'fa-eye' : 'fa-eye-slash'"></i>
+              </button>
+            </div>
+
+            <div *ngIf="clientForm.errors?.['mismatch']" class="invalid-feedback">
+              Las contraseñas no coinciden
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Paso 2: Información Personal -->
+  <div class="page-content" *ngIf="currentStep === 2">
+    <div class="container">
+      <div class="account-area">
+        <a (click)="prevStep()" class="back-btn dz-flex-box">
+          <i class="icon feather icon-chevron-left"></i>
+        </a>
+        <div class="section-head ps-0">
+          <h3>Información Personal</h3>
+        </div>
+
+        <form [formGroup]="clientForm">
+          <div class="mb-3">
+            <label class="form-label">Nombre *</label>
+            <input type="text" class="form-control" formControlName="name"
+              [class.is-invalid]="f['name'].touched && f['name'].invalid">
+            <div *ngIf="f['name'].touched && f['name'].invalid" class="invalid-feedback">
+              Por favor ingresa tu nombre
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Fecha de Nacimiento *</label>
+            <input type="date" class="form-control" formControlName="birthday"
+              [class.is-invalid]="f['birthday'].touched && f['birthday'].invalid">
+            <div *ngIf="f['birthday'].touched && f['birthday'].invalid" class="invalid-feedback">
+              Por favor ingresa tu fecha de nacimiento
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Género *</label>
+            <select class="form-control" formControlName="gender"
+              [class.is-invalid]="f['gender'].touched && f['gender'].invalid">
+              <option value="Mujer">Mujer</option>
+              <option value="Hombre">Hombre</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Paso 3: Preferencias -->
+  <div class="page-content" *ngIf="currentStep === 3">
+    <div class="container">
+      <div class="account-area">
+        <a (click)="prevStep()" class="back-btn dz-flex-box">
+          <i class="icon feather icon-chevron-left"></i>
+        </a>
+        <div class="section-head ps-0">
+          <h3>Tus Preferencias</h3>
+        </div>
+
+        <form [formGroup]="clientForm">
+          <div class="mb-4">
+            <label class="form-label">Orientación Sexual</label>
+
+            <!-- Usar formGroupName para agrupar los checkboxes -->
+            <div formGroupName="orientation">
+
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" formControlName="heterosexual" id="heterosexual">
+                <label class="form-check-label" for="heterosexual">Heterosexual</label>
+              </div>
+
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" formControlName="gay" id="gay">
+                <label class="form-check-label" for="gay">Gay</label>
+              </div>
+
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" formControlName="lesbiana" id="lesbiana">
+                <label class="form-check-label" for="lesbiana">Lesbiana</label>
+              </div>
+
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" formControlName="bisexual" id="bisexual">
+                <label class="form-check-label" for="bisexual">Bisexual</label>
+              </div>
+
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" formControlName="asexual" id="asexual">
+                <label class="form-check-label" for="asexual">Asexual</label>
+              </div>
+
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" formControlName="queer" id="queer">
+                <label class="form-check-label" for="queer">Queer</label>
+              </div>
+
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" formControlName="demisexual" id="demisexual">
+                <label class="form-check-label" for="demisexual">Demisexual</label>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label">Interesado en *</label>
+            <select class="form-control" formControlName="interestedIn">
+              <option value="Mujeres">Mujeres</option>
+              <option value="Hombres">Hombres</option>
+              <option value="Otros">Otros</option>
+            </select>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label">Qué buscas *</label>
+            <select class="form-control" formControlName="lookingFor">
+              <option value="Relación seria">Relación seria</option>
+              <option value="Diversión a corto plazo">Diversión a corto plazo</option>
+              <option value="Nuevas amistades">Nuevas amistades</option>
+              <option value="Citas casuales">Citas casuales</option>
+              <option value="Abiert@ a opciones">Abiert&#64; a opciones</option>
+              <option value="Averiguarlo">Averiguarlo</option>
+            </select>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Paso 4: Fotos -->
+  <!-- Paso 4: Fotos -->
+  <div class="page-content p-b60" *ngIf="currentStep === 4">
+    <div class="container">
+      <!-- Tag visual de éxito -->
+      <div *ngIf="successTag.show" class="alert alert-success alert-dismissible fade show mt-3" role="alert"
+        style="font-size:1.1rem;">
+        <span>{{ successTag.message }}</span>
+        <button type="button" class="btn-close" aria-label="Cerrar" (click)="closeSuccessTag()"></button>
+      </div>
+      <div class="account-area">
+        <a (click)="prevStep()" class="back-btn dz-flex-box">
+          <i class="icon feather icon-chevron-left"></i>
+        </a>
+        <div class="section-head ps-0">
+          <h3>Agrega tus fotos</h3>
+          <p>Sube al menos 1 foto para tu perfil</p>
+
+          <!-- Cargador de imágenes -->
+          <div class="mb-4">
+            <label class="form-label">Selecciona una imagen de perfil *</label>
+            <input type="file" accept="image/*" (change)="onImageSelected($event)" class="form-control">
+          </div>
+          <div class="mb-4" *ngIf="selectedImage">
+            <label class="form-label">Previsualización:</label>
+            <div style="margin-bottom: 10px;">
+              <img [src]="selectedImage" alt="Previsualización"
+                style="max-width: 50px; max-height: 50px; border-radius: 8px; border: 1px solid #ccc;" />
+            </div>
+            <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeImage()">Eliminar imagen</button>
+          </div>
+        </div>
+
+        <!-- Envuelve todo en el formulario -->
+        <form [formGroup]="clientForm">
+
+
+          <div class="form-check mt-4 terms-check">
+            <input class="form-check-input" type="checkbox" id="terms" formControlName="terms">
+            <label class="form-check-label" for="terms">
+              Acepto los
+              <a (click)="$event.preventDefault(); openTermsModal('terms')"
+                style="cursor: pointer; color: #430d7f;">Términos</a> y
+              <a (click)="$event.preventDefault(); openTermsModal('privacy')"
+                style="cursor: pointer; color: #430d7f;">Política de privacidad</a>
+            </label>
+            <div *ngIf="f['terms'].touched && f['terms'].invalid" class="invalid-feedback">
+              Debes aceptar los términos y políticas de privacidad
+            </div>
+          </div>
+
+
+        </form> <!-- Cierre del formulario -->
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- Footer de navegación -->
+<div class="footer fixed bg-transparent" *ngIf="userType && currentStep < (userType === 'partner' ? 3 : 4)">
+  <div class="container">
+    <div class="row g-2">
+      <div class="col-6" *ngIf="currentStep > 1">
+        <button (click)="prevStep()" class="btn btn-outline-secondary w-100">
+          Anterior
+        </button>
+      </div>
+      <div class="col-6" [class.offset-6]="currentStep === 1">
+        <button (click)="nextStep()" class="btn btn-gradient-pink w-100">
+          Siguiente
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer para enviar -->
+<div class="footer fixed bg-white" *ngIf="userType && currentStep === (userType === 'partner' ? 3 : 4)">
+  <div class="container">
+    <ng-container *ngIf="userType === 'partner'" style="padding-bottom: 20px;">
+      <button type="button" (click)="onSubmit()" class="btn btn-success w-100"
+        [disabled]="isSubmitting || !partnerForm.get('terms')?.value || partnerForm.invalid">
+        {{ !partnerForm.get('terms')?.value ? 'Acepta los términos' :
+        partnerForm.invalid ? 'Completa todos los campos requeridos' :
+        'Completar Registro' }}
+      </button>
+
+    </ng-container>
+
+    <ng-container *ngIf="userType === 'client'" style="padding-bottom: 20px;">
+      <button type="button" (click)="onSubmit()" class="btn btn-success w-100"
+        [disabled]="isSubmitting || !clientForm.get('terms')?.value || clientForm.invalid">
+        Completar Registro
+      </button>
+    </ng-container>
+  </div>
+</div>
+
+<!-- Modal -->
+<div *ngIf="showModal" class="modal-overlay" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ modalTitle }}</h2>
+      <button type="button" class="close-button" (click)="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <ng-container *ngIf="modalContent === 'terms'">
+        <app-terms #termsModal></app-terms>
+      </ng-container>
+      <ng-container *ngIf="modalContent === 'privacy'">
+        <app-privacy #privacyModal></app-privacy>
+      </ng-container>
+    </div>
+  </div>
+</div>

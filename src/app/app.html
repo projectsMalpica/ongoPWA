@@ -1,0 +1,8 @@
+<div class="page-wrapper">
+  <app-header *ngIf="showLayout"></app-header>
+  <app-sidebar *ngIf="showLayout"></app-sidebar>
+
+  <router-outlet></router-outlet>
+
+  <app-menubar *ngIf="showLayout"></app-menubar>
+</div>
