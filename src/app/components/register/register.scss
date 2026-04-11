@@ -1,7 +1,7 @@
 /* styles.css */
-@import 'swiper/css';
+/* @import 'swiper/css';
 @import 'swiper/css/pagination';
-@import 'swiper/css/navigation';
+@import 'swiper/css/navigation'; */
 
 html,
 body {
@@ -48,55 +48,7 @@ app-root {
   }
 }
 
-/* .floating-avatars-container {
-  position: relative;
-  width: 100%;
-  height: 540px;
-  overflow: hidden;
-  border-radius: 0px 0px 0px 85px;
-  margin-bottom: 160px;
-} */
 
-/* Map Background */
-/* .map-background {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url('/assets/images/maps.jpg');
-  background-size: cover;
-  background-position: center;
-  opacity: 0.2;
-  z-index: 0;
-  pointer-events: none;
-} */
-
-
-
-/* Floating Avatars */
-/* .floating-avatar {
-  position: absolute;
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  z-index: 2;
-}
-
-.floating-avatar-1 {
-  position: absolute;
-  width: 80px;
-  height: 80px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2;
-} */
 
 .floating-avatar img {
   width: 100%;
@@ -107,49 +59,7 @@ app-root {
 }
 
 
-/* Avatar Positions and Animations */
-/* .avatar-1 {
-  top: 20%;
-  left: 15%;
-  animation: float 8s ease-in-out infinite;
-}
 
-.avatar-2 {
-  top: 53%;
-  left: 80%;
-}
-
-.avatar-3 {
-  top: 36%;
-  left: 57%;
-  animation: float 9s ease-in-out 0.5s infinite;
-  border: 2px solid #7b2ff7;
-}
-
-.avatar-4 {
-  top: 70%;
-  left: 53%;
-  animation: float 7.5s ease-in-out 1.5s infinite;
-  border: 2px solid #f70192;
-}
-
-.avatar-5 {
-  top: 60%;
-  left: 12%;
-  animation: float 8.5s ease-in-out 0.8s infinite;
-  border: 2px solid #f70192;
-
-} */
-
-/* Location Pins */
-/* .location-pin {
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  background: #f70192;
-  border-radius: 50%;
-  z-index: 1;
-} */
 
 .location-pin::after {
   content: '';
@@ -161,62 +71,7 @@ app-root {
   animation: pulse 2s infinite;
 }
 
-  /* .pin-1 {
-    top: 39%;
-    left: 17%;
-  }
-
-  .pin-2 {
-    top: 53%;
-    left: 67%;
-  }
-
-  .pin-3 {
-    top: 87%;
-    left: 64%;
-  }
-
-  .pin-4 {
-    top: 76%;
-    left: 21%;
-  }
-
-  .pin-5 {
-    top: 69%;
-    left: 86%;
-  } */
-
-/* Animations */
-/* @keyframes float {
-  0% {
-    transform: translateY(0) rotate(0deg);
-  }
-
-  50% {
-    transform: translateY(-20px) rotate(5deg);
-  }
-
-  100% {
-    transform: translateY(0) rotate(0deg);
-  }
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-    opacity: 0.7;
-  }
-
-  70% {
-    transform: scale(3);
-    opacity: 0;
-  }
-
-  100% {
-    transform: scale(1);
-    opacity: 0;
-  }
-} */
+ 
 
 /* Modal Styles */
 .modal-overlay {
