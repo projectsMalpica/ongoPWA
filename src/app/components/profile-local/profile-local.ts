@@ -10,7 +10,6 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs'; // para convertir Observable en Promise
 import { environment } from '../../environments/environment';
-import { localEnv } from '../../environments/environment.local';
 import { GlobalService } from '../../services/global.service';
 import { AuthPocketbaseService } from '../../services/authPocketbase.service';
 import { ModalService } from '../../services/modal.service';
@@ -24,7 +23,6 @@ imports: [CommonModule, FormsModule, ReactiveFormsModule],
   styleUrl: './profile-local.scss',
 })
 export class ProfileLocal implements OnInit, AfterViewInit {
-  MAPBOX_TOKEN = localEnv.MAPBOX_PUBLIC_TOKEN || environment.MAPBOX_PUBLIC_TOKEN;
 
   openSubscriptionsModal() {
     const modalEl = document.getElementById('subscriptionsModal');
