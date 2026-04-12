@@ -1,4 +1,76 @@
 
+:host {
+  display: block;
+  min-height: 100dvh;
+}
+
+/* deja espacio suficiente para el menú inferior fijo */
+.page-content,
+.edit-profile-container {
+  padding-bottom: 180px !important;
+}
+
+/* contenedor principal en edición */
+.edit-profile-container {
+  position: relative;
+}
+
+/* barra de acciones siempre visible por encima del menú inferior */
+.action-buttons {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, calc(100% - 24px));
+  bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+  z-index: 1030; /* antes 1100 */
+  background: rgba(4, 10, 45, 0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 12px;
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+
+.offcanvas.services {
+  z-index: 1200 !important;
+}
+
+.offcanvas-backdrop.show {
+  z-index: 1190 !important;
+}
+
+.action-buttons .btn {
+  min-height: 52px;
+  border-radius: 14px;
+  font-weight: 600;
+}
+
+/* para que el contenido no quede por debajo del action bar */
+.gallery-section,
+.profile-area,
+.row,
+.card {
+  overflow: visible;
+}
+
+/* opcional: mejora visual móvil */
+@media (max-width: 576px) {
+  .page-content,
+  .edit-profile-container {
+    padding-bottom: 190px !important;
+  }
+
+  .action-buttons {
+    width: calc(100% - 16px);
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    padding: 10px;
+  }
+
+  .action-buttons .btn {
+    min-height: 50px;
+    font-size: 15px;
+  }
+}
 .mapboxgl-ctrl-geocoder {
   position: absolute;
   top: 10px;

@@ -4,6 +4,52 @@
 
   <main class="page-body">
     <router-outlet></router-outlet>
+
+    <div
+      class="offcanvas offcanvas-bottom pwa-offcanvas show"
+      *ngIf="showPwaPrompt"
+      tabindex="-1"
+      aria-modal="true"
+      role="dialog"
+    >
+      <div class="container">
+        <div class="offcanvas-body small text-center">
+          <img class="logo" src="assets/images/logo.png" alt="OnGo logo">
+
+          <h5 class="title">OnGo, siempre contigo</h5>
+
+          <p class="pwa-text" *ngIf="!isIos">
+  Agrégala a tu pantalla de inicio y entra más rápido para explorar, conectar y gestionar tu actividad desde cualquier momento.
+          </p>
+
+          <p class="pwa-text" *ngIf="isIos">
+  Agrégala a tu pantalla de inicio y entra más rápido para explorar, conectar y gestionar tu actividad desde cualquier momento.
+          </p>
+
+          <button
+            type="button"
+            class="btn btn-sm btn-primary pwa-btn"
+            (click)="installPwa()"
+          >
+            {{ isIos ? 'Agregar a pantalla de inicio' : 'Instalar OnGo' }}
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-sm pwa-close btn-info ms-2 text-white"
+            (click)="closePwaPrompt()"
+          >
+            Ahora no
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="offcanvas-backdrop fade show pwa-backdrop"
+      *ngIf="showPwaPrompt"
+      (click)="closePwaPrompt()"
+    ></div>
   </main>
 
   <app-menubar *ngIf="showLayout"></app-menubar>
