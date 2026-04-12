@@ -1,12 +1,15 @@
-import { Component } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GlobalService } from '../../services/global.service';
 import { HttpClient } from '@angular/common/http';
 import { WompiService } from '../../services/wompi.service';
 import { environment } from '../../environments/environment';
-import { lastValueFrom } from 'rxjs';
+import { Subscription, lastValueFrom } from 'rxjs';
 import { AuthPocketbaseService } from '../../services/authPocketbase.service';
-
+import Swiper from 'swiper';
+import { Pagination } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/pagination';
 
 @Component({
   selector: 'app-home-local',
@@ -15,8 +18,16 @@ import { AuthPocketbaseService } from '../../services/authPocketbase.service';
   templateUrl: './home-local.html',
   styleUrl: './home-local.scss',
 })
-export class HomeLocal {
-  paymentModalOpen = false;
+export class HomeLocal implements AfterViewInit, OnDestroy {
+  @ViewChild('partnerPlansSwiper', { static: false })
+partnerPlansSwiperRef?: ElementRef<HTMLDivElement>;
+
+@ViewChild('partnerPlansPagination', { static: false })
+partnerPlansPaginationRef?: ElementRef<HTMLDivElement>;
+
+private partnerPlansSwiper?: Swiper;
+private partnerPlansSwiperSub?: Subscription;
+paymentModalOpen = false;
 loadingTx = false;
 tx?: any;
 txError?: string;
@@ -80,6 +91,59 @@ txError?: string;
       });
     }
   }
+  ngAfterViewInit(): void {
+  this.bindPartnerPlansSwiper();
+}
+private bindPartnerPlansSwiper(): void {
+  this.partnerPlansSwiperSub?.unsubscribe();
+
+  this.partnerPlansSwiperSub = this.global.planningPartners$.subscribe((plans) => {
+    if (!plans || !plans.length) return;
+
+    setTimeout(() => {
+      this.initPartnerPlansSwiper();
+    }, 0);
+  });
+}
+
+private initPartnerPlansSwiper(): void {
+  if (!this.partnerPlansSwiperRef?.nativeElement || !this.partnerPlansPaginationRef?.nativeElement) {
+    return;
+  }
+
+  if (this.partnerPlansSwiper) {
+    this.partnerPlansSwiper.destroy(true, true);
+  }
+
+  this.partnerPlansSwiper = new Swiper(this.partnerPlansSwiperRef.nativeElement, {
+    modules: [Pagination],
+    slidesPerView: 1.08,
+    spaceBetween: 12,
+    grabCursor: true,
+    observer: true,
+    observeParents: true,
+    watchOverflow: true,
+    pagination: {
+      el: this.partnerPlansPaginationRef.nativeElement,
+      clickable: true
+    },
+    breakpoints: {
+      576: {
+        slidesPerView: 1.15,
+        spaceBetween: 14
+      },
+      768: {
+        slidesPerView: 1.35,
+        spaceBetween: 16
+      }
+    }
+  });
+}
+
+ngOnDestroy(): void {
+  this.partnerPlansSwiper?.destroy(true, true);
+  this.partnerPlansSwiperSub?.unsubscribe();
+}
   
   closePaymentModal() {
     this.paymentModalOpen = false;

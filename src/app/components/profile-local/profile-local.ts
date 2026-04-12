@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import PocketBase from 'pocketbase';
 import * as bootstrap from 'bootstrap';
@@ -8,13 +8,17 @@ import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs'; // para convertir Observable en Promise
+import { firstValueFrom, Subscription } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { GlobalService } from '../../services/global.service';
 import { AuthPocketbaseService } from '../../services/authPocketbase.service';
 import { ModalService } from '../../services/modal.service';
 import { WompiService } from '../../services/wompi.service';
 import Swal from 'sweetalert2';
+import Swiper from 'swiper';
+import { Pagination, Autoplay } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/pagination';
 @Component({
   selector: 'app-profile-local',
   standalone: true,
@@ -22,8 +26,12 @@ import Swal from 'sweetalert2';
   templateUrl: './profile-local.html',
   styleUrl: './profile-local.scss',
 })
-export class ProfileLocal implements OnInit, AfterViewInit {
+export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
+@ViewChild('plansSwiper', { static: false }) plansSwiperRef?: ElementRef<HTMLDivElement>;
+@ViewChild('plansPagination', { static: false }) plansPaginationRef?: ElementRef<HTMLDivElement>;
 
+private plansSwiper?: Swiper;
+private plansSwiperSub?: Subscription;
   openSubscriptionsModal() {
     const modalEl = document.getElementById('subscriptionsModal');
     if (modalEl) {
@@ -104,7 +112,7 @@ export class ProfileLocal implements OnInit, AfterViewInit {
 
   }
 
-  ngAfterViewInit() {
+  /* ngAfterViewInit() {
   ['promoModal', 'promoListModal', 'promoOptionsModal'].forEach(id => {
     const modalEl = document.getElementById(id);
     if (modalEl) {
@@ -127,8 +135,81 @@ export class ProfileLocal implements OnInit, AfterViewInit {
       this.isServicesOffcanvasOpen = false;
     });
   }
+} */
+ngAfterViewInit() {
+  ['promoModal', 'promoListModal', 'promoOptionsModal'].forEach(id => {
+    const modalEl = document.getElementById(id);
+    if (modalEl) {
+      modalEl.addEventListener('hidden.bs.modal', () => {
+        const backdrop = document.querySelector('.modal-backdrop');
+        if (backdrop) backdrop.remove();
+        document.body.classList.remove('modal-open');
+      });
+    }
+  });
+
+  const servicesOffcanvas = document.getElementById('offcanvasBottom1Local');
+  if (servicesOffcanvas) {
+    servicesOffcanvas.addEventListener('show.bs.offcanvas', () => {
+      this.isServicesOffcanvasOpen = true;
+    });
+
+    servicesOffcanvas.addEventListener('hidden.bs.offcanvas', () => {
+      this.isServicesOffcanvasOpen = false;
+    });
+  }
+
+  this.bindPlansSwiper();
+}
+private bindPlansSwiper(): void {
+  this.plansSwiperSub?.unsubscribe();
+
+  this.plansSwiperSub = this.global.planningPartners$.subscribe((plans) => {
+    if (!plans || !plans.length) return;
+
+    setTimeout(() => {
+      this.initPlansSwiper();
+    }, 0);
+  });
 }
 
+private initPlansSwiper(): void {
+  if (!this.plansSwiperRef?.nativeElement || !this.plansPaginationRef?.nativeElement) {
+    return;
+  }
+
+  if (this.plansSwiper) {
+    this.plansSwiper.destroy(true, true);
+  }
+
+  this.plansSwiper = new Swiper(this.plansSwiperRef.nativeElement, {
+    modules: [Pagination, Autoplay],
+    slidesPerView: 1.08,
+    spaceBetween: 12,
+    grabCursor: true,
+    observer: true,
+    observeParents: true,
+    watchOverflow: true,
+    pagination: {
+      el: this.plansPaginationRef.nativeElement,
+      clickable: true
+    },
+    breakpoints: {
+      576: {
+        slidesPerView: 1.15,
+        spaceBetween: 14
+      },
+      768: {
+        slidesPerView: 1.4,
+        spaceBetween: 16
+      }
+    }
+  });
+}
+ngOnDestroy(): void {
+  this.plansSwiper?.destroy(true, true);
+  this.plansSwiperSub?.unsubscribe();
+}
   private showAppToast(
     message: string,
     type: 'success' | 'error' | 'info' = 'info'

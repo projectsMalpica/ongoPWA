@@ -152,29 +152,38 @@
       </div>
 
       <div class="dz-subscribe-area">
-        <div class="subscribe-area-top">
-          <div class="swiper subscription-swiper2">
-            <div class="swiper-wrapper mb-3">
-              <div class="swiper-slide" data-card="premium-plus"
-                *ngFor="let planning of global.planningClients$ | async">
-                <div class="subscribe-box style-2 premium-plus">
-                  <h5 class="title"><img src="{{planning.subscription}}" alt="">{{planning.name}}</h5>
-                  <ul>
-                    <li *ngFor="let item of planning.items.split(',')" style="text-align: left;">
-                      <span class="star">★</span> {{ item.trim() }}
-                    </li>
-                  </ul>
-                  <div class="plan-price">{{planning.priceCOP}} <span>COP/mes</span></div>
-                  <div class="plan-price">{{planning.priceUSD}} <span>USD/mes</span></div>
-                </div>
-              </div>
-            </div>
-            <div class="swiper-btn">
-              <div class="swiper-pagination style-1 flex-1"></div>
-            </div>
+  <div class="subscribe-area-top">
+    <div class="swiper subscription-swiper2" #clientPlansSwiper>
+      <div class="swiper-wrapper">
+        <div
+          class="swiper-slide"
+          data-card="premium-plus"
+          *ngFor="let planning of global.planningClients$ | async"
+        >
+          <div class="subscribe-box style-2 premium-plus">
+            <h5 class="title">
+              <img [src]="planning.subscription" alt="">
+              {{ planning.name }}
+            </h5>
+
+            <ul>
+              <li *ngFor="let item of planning.items.split(',')" style="text-align: left;">
+                <span class="star">★</span> {{ item.trim() }}
+              </li>
+            </ul>
+
+            <div class="plan-price">{{ planning.priceCOP }} <span>COP/mes</span></div>
+            <div class="plan-price">{{ planning.priceUSD }} <span>USD/mes</span></div>
           </div>
         </div>
       </div>
+
+      <div class="swiper-btn">
+        <div class="swiper-pagination style-1 flex-1" #clientPlansPagination></div>
+      </div>
+    </div>
+  </div>
+</div>
     </div>
   </div>
 </div>

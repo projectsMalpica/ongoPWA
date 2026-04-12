@@ -4,11 +4,15 @@ import { CommonModule } from '@angular/common';
 import { AuthPocketbaseService } from '../../services/authPocketbase.service';
 import { RealtimeClientesService } from '../../services/realtime-clientes.service';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { OnInit } from '@angular/core';
+import { AfterViewInit, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import PocketBase from 'pocketbase';
 import * as bootstrap from 'bootstrap';
 import 'swiper/css';
 import Swal from 'sweetalert2';
+import { Subscription } from 'rxjs';
+import Swiper from 'swiper';
+import { Pagination } from 'swiper/modules';
+import 'swiper/css/pagination';
 @Component({
   selector: 'app-profile',
   standalone: true,
@@ -16,7 +20,15 @@ import Swal from 'sweetalert2';
   templateUrl: './profile.html',
   styleUrl: './profile.scss',
 })
-export class Profile implements OnInit {
+export class Profile implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('clientPlansSwiper', { static: false })
+clientPlansSwiperRef?: ElementRef<HTMLDivElement>;
+
+@ViewChild('clientPlansPagination', { static: false })
+clientPlansPaginationRef?: ElementRef<HTMLDivElement>;
+
+private clientPlansSwiper?: Swiper;
+private clientPlansSwiperSub?: Subscription;
   profileData: any = {
     name: '',
     gender: '',
@@ -242,7 +254,58 @@ async loadProfile() {
     this.photos = Array(6).fill({ url: '' });
   }
 }
+ngAfterViewInit(): void {
+  this.bindClientPlansSwiper();
+}
+private bindClientPlansSwiper(): void {
+  this.clientPlansSwiperSub?.unsubscribe();
 
+  this.clientPlansSwiperSub = this.global.planningClients$.subscribe((plans) => {
+    if (!plans || !plans.length) return;
+
+    setTimeout(() => {
+      this.initClientPlansSwiper();
+    }, 0);
+  });
+}
+ngOnDestroy(): void {
+  this.clientPlansSwiper?.destroy(true, true);
+  this.clientPlansSwiperSub?.unsubscribe();
+}
+
+private initClientPlansSwiper(): void {
+  if (!this.clientPlansSwiperRef?.nativeElement || !this.clientPlansPaginationRef?.nativeElement) {
+    return;
+  }
+
+  if (this.clientPlansSwiper) {
+    this.clientPlansSwiper.destroy(true, true);
+  }
+
+  this.clientPlansSwiper = new Swiper(this.clientPlansSwiperRef.nativeElement, {
+    modules: [Pagination],
+    slidesPerView: 1.08,
+    spaceBetween: 12,
+    grabCursor: true,
+    observer: true,
+    observeParents: true,
+    watchOverflow: true,
+    pagination: {
+      el: this.clientPlansPaginationRef.nativeElement,
+      clickable: true
+    },
+    breakpoints: {
+      576: {
+        slidesPerView: 1.15,
+        spaceBetween: 14
+      },
+      768: {
+        slidesPerView: 1.35,
+        spaceBetween: 16
+      }
+    }
+  });
+}
   parsePhotos(photosData: any): any[] {
     let photosArray: { url: string }[] = [];
 

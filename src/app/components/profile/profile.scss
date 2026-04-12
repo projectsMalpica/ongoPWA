@@ -380,3 +380,26 @@ ul.desc .star {
   margin-right: 8px;
   font-size: 1.1em;
 }
+
+.subscription-swiper2 {
+  width: 100%;
+  overflow: hidden;
+}
+
+.subscription-swiper2 .swiper-wrapper {
+  display: flex;
+  align-items: stretch;
+}
+
+.subscription-swiper2 .swiper-slide {
+  height: auto;
+}
+
+.subscription-swiper2 .subscribe-box {
+  height: 100%;
+}
+
+.subscription-swiper2 .swiper-pagination {
+  position: relative;
+  margin-top: 12px;
+}
