@@ -8,7 +8,8 @@
                   
                     
                     <div class="media-rect position-relative">
-                      <img [src]="global.profileDataPartner.avatar" alt="profile-image" class="profile-avatar-rect">
+                      <img [src]="global.profileDataPartner.avatar ||  'assets/images/avatar-local.png'" alt="profile-image" class="profile-avatar-rect">
+
                     </div>
                     
                     <a (click)="editProfile()" class="edit-profile dz-icon">

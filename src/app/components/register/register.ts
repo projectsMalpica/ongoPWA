@@ -9,7 +9,7 @@ import { GlobalService } from '../../services/global.service';
 import { Terms } from '../terms/terms';
 import { Privacy } from '../privacy/privacy';
 import { EmailService } from '../../services/email.service';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 @Component({
   selector: 'app-register',
     standalone: true,
@@ -52,7 +52,8 @@ showConfirmPassword = false;
     private fb: FormBuilder,
     public auth: AuthPocketbaseService,
     public global: GlobalService,
-    public emailService: EmailService
+    public emailService: EmailService,
+    public router: Router
   ) {
     // Formulario para partners (locales nocturnos)
     this.partnerForm = this.fb.group({
@@ -307,7 +308,7 @@ async uploadImage() {
 
       // 3. Autologin y redirección
       await this.auth.loginUser(formData.email, formData.password).toPromise();
-      this.global.setRoute('profile-local');
+      this.router.navigate(['profile-local']);
     
       Swal.fire({
         title: 'Registro Exitoso',
@@ -402,7 +403,7 @@ async uploadImage() {
   }).catch(err => console.warn('Welcome email failed:', err));
 
         // Autologin y redirección        await this.auth.loginUser(formData.email, formData.password).toPromise();
-        this.global.setRoute('profile');
+        this.router.navigate(['profile']);
       
         this.successTag = {
           show: true,
@@ -432,10 +433,10 @@ async uploadImage() {
     }).then(() => {
       this.auth.loginUser(email, password).subscribe({
         next: () => {
-          this.global.setRoute('home-partner');
+          this.router.navigate(['home-local']);
         },
         error: () => {
-          this.global.setRoute('login');
+          this.router.navigate(['login']);
         }
       });
     });
@@ -447,7 +448,7 @@ async uploadImage() {
       text: 'Por favor verifica tu teléfono con el código OTP enviado.',
       icon: 'success'
     }).then(() => {
-      this.global.setRoute('otp-verification');
+      this.router.navigate(['otp-verification']);
     });
   }
 

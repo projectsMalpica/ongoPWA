@@ -122,10 +122,10 @@
   }
   .media-rect {
     width: 100%;
-    max-width: 220px;
-    aspect-ratio: 4/3; /* o el ratio que prefieras */
+   max-width: 200px;
+    aspect-ratio: 3 / 3;
     overflow: hidden;
-    border-radius: 12px; /* esquinas suaves, no círculo */
+    border-radius: 50%;
     box-shadow: 0 2px 10px rgba(0,0,0,0.08);
     margin: auto;
     background: #fff;
