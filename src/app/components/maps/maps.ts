@@ -5,7 +5,6 @@ import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import { CommonModule } from '@angular/common';
 import { GlobalService } from '../../services/global.service';
 import { environment } from '../../environments/environment';
-
 @Component({
   selector: 'app-maps',
   standalone: true,
@@ -24,13 +23,12 @@ constructor(public global: GlobalService){}
   async ngOnInit() {
     window.addEventListener('resize', () => {
       this.map.resize();
-    }); 
+    });   
   }
 
   async ngAfterViewInit() {
     this.map = new mapboxgl.Map({
       container: this.mapContainer.nativeElement,
-      /* style: 'mapbox://styles/mapbox/dark-v11', */
       style: 'mapbox://styles/mapbox/streets-v11',
 
       center: [-75.576, 6.244],
