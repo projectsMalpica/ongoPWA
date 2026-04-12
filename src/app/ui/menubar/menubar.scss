@@ -1,0 +1,23 @@
+.menubar-nav .nav-link i {
+    background: linear-gradient(90deg, #ff4e8e, #f70192);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+    font-size: 1.6em;
+    transition: filter 0.2s;
+}
+
+/* Todos los iconos activos en blanco sólido */
+.menubar-nav .nav-link.active i {
+    background: none !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: #fff !important;
+    background-clip: initial !important;
+    color: #fff !important;
+}
+.menubar-area .menubar-nav .nav-link.active {
+    color: white;
+}
+
+

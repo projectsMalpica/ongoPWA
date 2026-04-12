@@ -1,0 +1,125 @@
+<div class="page-content space-top p-b60">
+    <div class="container pt-0"> 
+        <div class="profile-area style-2">
+            <div class="main-profile">
+                <div class="about-profile">
+                    <div class="media-rect position-relative">
+                        <img [src]="global.profileDataPartner.avatar" alt="profile-image" class="profile-avatar-rect">
+                      </div>
+                </div>
+                <div class="profile-detail">
+                    <h4 class="name">{{global.profileDataPartner.venueName}}</h4>
+                    <p>{{global.profileDataPartner.description}}</p>
+                    <a  class="chat-bubble" (click)="global.setRoute('profile-local')" style="cursor: pointer;"> <i class="fa-solid fa-comment"></i>Configurar perfil</a>
+                </div>
+            </div>
+            <div class="row g-2 mb-2">
+                <div class="col-6">
+                    <div class="card card-bx">
+                        <div class="card-body">
+                            <div class="media">
+                                <div class="media-35 m-r10">
+                                    <img src="../assets/images/w3badoo/icon/meter.png" alt="">
+                                </div>
+                                <div>
+                                    <span class="heading font-15">Actividad</span>
+                                    <h6 class="mb-0 title font-15">{{global.profileDataPartner.activity}}</h6>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card card-bx">
+                        <div class="card-body">
+                            <div class="media">
+                                <div class="media-35 m-r10">
+                                    <img src="../assets/images/w3badoo/icon/coin.png" alt="">
+                                </div>
+                                <div>
+                                    <span class="heading font-15">Creditos</span>
+                                    <h6 class="mb-0 title font-15">{{global.profileDataPartner.credits}}</h6>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card card-bx">
+                        <div class="card-body">
+                            <div class="media">
+                                <div class="media-35 m-r10">
+                                    <img src="{{global.profileDataPartner.avatar}}" alt="">
+                                </div>
+                                <div>
+                                    <span class="heading font-15">Visitas</span>
+                                    <h6 class="mb-0 title font-15">{{global.profileDataPartner.visits}}</h6>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="dz-subscribe-area">
+                <div class="subscribe-area-top">
+                    <div class="swiper subscription-swiper2">
+                        <div class="swiper-wrapper mb-3">
+                            <div class="swiper-slide" data-card="premium-plus" *ngFor="let planning of global.planningPartners$ | async">
+                                <div class="subscribe-box style-2 premium-plus">
+                                    <h5 class="title"><img src="{{planning.subscription}}" alt="">{{planning.name}}</h5>
+                                    <ul>
+                                      <li *ngFor="let item of planning.items.split(',')" style="text-align: left;">
+                                        <span class="star">★</span> {{ item.trim() }}
+                                      </li>
+                                    </ul>
+                                    <div class="plan-price">{{planning.priceCOP}} <span>COP/mes</span></div>
+                                    <div class="plan-price">{{planning.PriceUSD}} <span>USD/mes</span></div>
+                                    <button class="btn btn-primary mt-2"
+                                            (click)="selectPlan({ id: planning.id, name: planning.name, priceCOP: planning.priceCOP, role: 'partner' })">
+                                    Suscribirme
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="swiper-btn">
+                            <div class="swiper-pagination style-1 flex-1"></div>
+                        </div>
+                    </div>
+                </div>
+              </div>
+        </div>
+    </div> 
+</div>
+<!-- MODAL DE RESULTADO -->
+<div class="modal-backdrop" *ngIf="paymentModalOpen" (click)="closePaymentModal()"></div>
+<div class="modal" *ngIf="paymentModalOpen" role="dialog" aria-modal="true">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h5 class="modal-title">Resultado del pago</h5>
+      <button class="close" (click)="closePaymentModal()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <div *ngIf="loadingTx">Consultando transacción…</div>
+      <div *ngIf="txError" class="text-danger">{{ txError }}</div>
+
+      <div *ngIf="!loadingTx && tx">
+        <h4 class="mb-2">Transacción {{ tx.id }}</h4>
+        <p><b>Estado:</b> {{ tx.status }}</p>
+        <p><b>Referencia:</b> {{ tx.reference }}</p>
+        <p><b>Monto:</b> {{ tx.amount_in_cents/100 | currency:'COP' }}</p>
+
+        <div *ngIf="tx.status === 'APPROVED'" class="alert alert-success mt-2">
+          ¡Pago aprobado! Tu suscripción será activada en minutos.
+        </div>
+        <div *ngIf="tx.status !== 'APPROVED'" class="alert alert-warning mt-2">
+          Estado: {{ tx.status }}. Si es <i>PENDING</i>, te avisaremos al confirmarse.
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closePaymentModal()">Cerrar</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,382 @@
+/* Add any custom styles for the edit profile component here */
+.imagePreview {
+    width: 100%;
+    height: 150px;
+    background-position: center center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+.add-btn, .remove-btn {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.add-btn {
+    top: 10px;
+    right: 10px;
+}
+
+.remove-btn {
+    top: 10px;
+    right: 10px;
+    display: none;
+}
+
+.imagePreview:hover .remove-btn {
+    display: flex;
+}
+
+.form-select, .form-control {
+    border-radius: 10px;
+    padding: 10px 15px;
+    border: 1px solid #e0e0e0;
+    width: 100%;
+}
+
+.btn-primary {
+    background-color: #FF4B8D;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 20px;
+    color: white;
+    font-weight: 600;
+}
+
+.btn-primary:hover {
+    background-color: #e0437c;
+}
+
+/* Contenedor principal con espacio para los botones */
+/* === Variables locales del componente === */
+:host{
+  --header-h: 60px;          /* alto del header */
+  --bottom-nav-h: 64px;      /* alto del menú inferior (ajústalo a tu caso) */
+  --cta-h: 64px;             /* alto aprox. de la barra de acciones */
+}
+
+/* === Contenido a pantalla completa y con colchón inferior === */
+.page-content{
+  /* En móviles modernos usar 100dvh */
+  min-height: calc(100dvh - var(--header-h));
+  /* Colchón para que nada quede tapado por menú + CTA + área segura */
+  padding-bottom: calc(
+    var(--bottom-nav-h) + var(--cta-h) + max(env(safe-area-inset-bottom), 0px)
+  );
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+@supports not (height: 100dvh){
+  .page-content{ min-height: calc(100vh - var(--header-h)); }
+}
+
+/* === Reset: evita el conflicto sticky === */
+.action-buttons{
+  position: static;   
+  bottom: auto;
+  box-shadow: none;
+  padding: 0;
+  z-index: auto;
+}
+
+/* === Barra de acciones fija por encima del menú inferior === */
+.action-buttons.fixed-bottom-action{
+  position: fixed !important;
+  left: 0;
+  right: 0;
+  bottom: calc(
+    var(--bottom-nav-h) + max(env(safe-area-inset-bottom), 0px)
+  );
+  width: 100%;
+  padding: 12px 16px;
+  background: #242a34;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+  border-radius: 10px 10px 0 0;
+  z-index: 1100; /* mayor que el menú inferior */
+}
+
+/* Botones full-width en móvil */
+.action-buttons.fixed-bottom-action .d-flex{ width: 100%; }
+.action-buttons.fixed-bottom-action .btn{ min-height: 48px; }
+
+
+/* Contenido scrollable */
+.edit-profile-container {
+  flex-grow: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 1rem;
+}
+
+/* Botones fijos abajo */
+.fixed-bottom-action {
+  padding: 12px 16px;
+  background: #242a34;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+  display: flex;
+  justify-content: center;
+  border-radius: 10px 10px 0 0;
+  z-index: 1000;
+}
+
+
+
+/* Asegurar que el contenedor del perfil tenga un alto máximo */
+.profile-area {
+  padding-bottom: 2rem;
+}
+
+
+
+/* Ajustes para los offcanvas */
+.offcanvas {
+  max-height: 90vh;
+  border-radius: 20px 20px 0 0;
+  overflow-y: auto;
+}
+
+.offcanvas-body {
+  padding-bottom: 2rem;
+}
+
+/* Asegurar que los botones de acción estén siempre visibles */
+/* .action-buttons {
+  position: sticky;
+  bottom: 0;
+  padding: 1rem 0;
+  box-shadow: 0 -5px 15px rgba(0,0,0,0.05);
+  z-index: 1000;
+} */
+
+/* Ajustes para móviles */
+@media (max-width: 767.98px) {
+  .page-content {
+    height: calc(100vh - 56px); /* Ajustar para móviles */
+  }
+  
+  /* .edit-profile-container {
+    max-height: calc(100vh - 100px);
+  } */
+}
+
+/* Estilos para los elementos de la galería */
+.dz-drop-box {
+  margin-bottom: 1rem;
+}
+
+/* Asegurar que las tarjetas no se desborden */
+.card.style-4 {
+  margin-bottom: 1rem;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* Estilos para los botones de acción */
+.btn-action-group {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem 0;
+  background: white;
+  position: sticky;
+  bottom: 0;
+  z-index: 1000;
+}
+
+.btn-action-group .btn {
+  flex: 1;
+  border-radius: 10px;
+  padding: 12px;
+  font-weight: 600;
+}
+
+/* Ajustes para la previsualización de imágenes */
+.imagePreview {
+  height: 100px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+}
+
+/* Estilos para la lista de intereses */
+.dz-tag-list.style-2 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.dz-tag {
+  background: #ff50a20a;
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dz-tag.active {
+  background: #FF4B8D;
+  color: white;
+}
+
+/* Asegurar que los inputs de búsqueda sean visibles */
+.search-input {
+  margin-bottom: 1rem;
+  position: sticky;
+    z-index: 10;
+}
+
+
+.subscription-card {
+    
+    background: #e0437c;
+    border-radius: 20px;
+    padding: 10px;
+    margin-right: 10px;
+}
+
+.btn-pink {
+  background-color: #FF4B8D;
+  color: white;
+  font-weight: bold;
+  border: none;
+  transition: background-color 0.3s ease;
+}
+
+.btn-pink:hover {
+  background-color: #FF4B8D;
+}
+
+.profile-avatar-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.avatar-img {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #FF4B8D;
+}
+
+
+.photo-container {
+  position: relative;
+  padding-top: 100%; /* 1:1 Aspect Ratio */
+}
+
+.photo-preview {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-size: cover;
+  background-position: center;
+  border-radius: 10px;
+  background-color: #f0f0f033;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.add-photo-btn {
+  font-size: 24px;
+  color: #FF50A2;
+  cursor: pointer;
+}
+
+.remove-photo-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0,0,0,0.4);
+  border-radius: 50%;
+  padding: 4px;
+  cursor: pointer;
+  color: white;
+}
+
+.subscription-card {
+  background-color: #ffffff1a;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.price {
+  font-weight: bold;
+  color: #FF50A2;
+}
+
+.btn-pink {
+  background-color: #FF50A2;
+  color: white;
+  font-weight: 500;
+  border: none;
+}
+
+.btn-pink:hover {
+  background-color: #e23350;
+}
+
+.profile-area .main-profile .about-profile .media {
+  max-width: 150px;
+  position: relative;
+  margin: 0 auto 15px;
+  width: 100px;
+  height: 100px;
+  top: 0;
+  left: 0;
+  padding: 10px;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+}
+.btn-gradient-pink {
+  background: linear-gradient(90deg, #ff4e8e, #f70192);
+  color: white;
+  border: none;
+}
+.btn-gradient-purple {
+  background: linear-gradient(90deg, #7b2ff7, #f70192);
+  color: white;
+  border: none;
+}
+
+.btn-gradient-pink:hover,
+.btn-gradient-purple:hover {
+  opacity: 0.85;
+}
+ul.desc {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+  text-align: left;
+}
+ul.desc li {
+  display: flex;
+  align-items: left;
+  margin-bottom: 4px;
+  font-size: 15px;
+}
+ul.desc .star {
+  color: #ffb300; /* dorado, cambia si prefieres otro color */
+  margin-right: 8px;
+  font-size: 1.1em;
+}

@@ -1,0 +1,8 @@
+/* Establecer altura fija para el contenedor principal */
+.page-content {
+    height: calc(100vh - 60px); /* Ajusta según el tamaño de tu header */
+    overflow-y: auto; /* Habilita el scroll vertical */
+    -webkit-overflow-scrolling: touch; /* Mejora el desplazamiento en dispositivos táctiles */
+    padding-bottom: 20px; /* Espacio adicional en la parte inferior */
+  }
+  

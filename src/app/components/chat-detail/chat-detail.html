@@ -1,1 +1,39 @@
-<p>chat-detail works!</p>
+<div class="page-content space-top p-b50">
+  <div class="container"> 
+    <div class="chat-box-area"> 
+      
+<div *ngFor="let msg of messages"
+     [ngClass]="{'chat-content': true, 'user': msg.sender === currentUserId}">
+  <div class="message-item">
+    <div class="bubble">
+      {{ msg.text }}
+    </div>    
+    <div class="message-time">
+      {{ msg.created | date:'HH:mm' }}
+    </div>    
+  </div>
+</div>
+
+
+      <div #scrollBottom></div>
+
+    </div>
+  </div> 
+</div>
+
+<footer class="footer border-top fixed bg-white">
+  <div class="container p-2">
+    <div class="chat-footer">
+      <form [formGroup]="form" (ngSubmit)="send()">
+        <div class="form-group">
+          <div class="input-wrapper message-area">
+            <input type="text" class="form-control" placeholder="Escribe un mensaje" formControlName="message">
+            <button type="submit" class="btn-chat">
+              <i class="icon feather icon-send"></i>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>    
+  </div>
+</footer>

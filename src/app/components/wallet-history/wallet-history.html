@@ -1,0 +1,71 @@
+<div class="wallet-history-page">
+  <header class="header header-fixed bg-white">
+    <div class="container">
+      <div class="header-content">
+        <div class="left-content me-3">
+          <a href="javascript:void(0);" class="back-btn" (click)="goBack()">
+            <i class="icon feather icon-chevron-left"></i>
+          </a>
+          <h6 class="title">Historial Wallet</h6>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-content">
+    <div class="container">
+      <div class="history-summary-card">
+        <span class="summary-label">Movimientos recientes</span>
+        <h2>{{ transactions.length }}</h2>
+        <p>Consulta recargas, bonos, regalos enviados y futuros débitos de tu wallet.</p>
+      </div>
+
+      <div class="history-list" *ngIf="transactions.length > 0; else emptyState">
+        <div
+          class="history-item"
+          *ngFor="let item of transactions"
+        >
+          <div class="history-icon" [ngClass]="item.direction">
+            <i class="icon feather" [ngClass]="{
+              'icon-arrow-down-left': item.direction === 'credit',
+              'icon-arrow-up-right': item.direction === 'debit'
+            }"></i>
+          </div>
+
+          <div class="history-info">
+            <div class="history-top">
+              <h4>{{ getTypeLabel(item.type) }}</h4>
+              <span
+                class="history-amount"
+                [ngClass]="item.direction"
+              >
+                {{ getAmountPrefix(item.direction) }} $ {{ item.amount | number:'1.0-0' }}
+              </span>
+            </div>
+
+            <p>{{ item.description }}</p>
+
+            <div class="history-meta">
+              <span class="status" [ngClass]="item.status">
+                {{ item.status === 'completed' ? 'Completado' : item.status === 'pending' ? 'Pendiente' : 'Fallido' }}
+              </span>
+              <span class="date">
+                {{ item.created | date:'short' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ng-template #emptyState>
+        <div class="empty-history">
+          <div class="empty-icon">
+            <i class="icon feather icon-clock"></i>
+          </div>
+          <h3>Aún no hay movimientos</h3>
+          <p>Cuando recargues saldo o envíes regalos, tus movimientos aparecerán aquí.</p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

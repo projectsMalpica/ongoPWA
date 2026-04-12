@@ -1,0 +1,59 @@
+<div class="page-content p-t50   0 p-b50">
+    <div class="container">
+        <!-- Nav tabs -->
+        <div class="default-tab style-2">
+          
+            <div class="tab-content">
+             
+                <div class="tab-pane fade active show" id="profile1" role="tabpanel">
+                    <div class="title-bar">
+                        <h6 class="title">Promociones y eventos</h6>
+                    </div>
+                    <div class="swiper-btn-center-lr" >
+                        <div class="swiper spot-swiper1 mb-3" >
+                            <div class="swiper-wrapper">
+                                <div class="swiper-slide" *ngFor="let promo of promos">
+                                    <div class="dz-media-card style-4">
+                                        <a>
+                                            <div class="dz-media">
+                                                <img src="{{promo.files[0]}}" alt="">
+                                            </div>
+                                            <div class="dz-content">
+                                                <div class="left-content">
+                                                    <h6 class="title">{{promo.name}}</h6>	
+                                                    <span class="active-status">{{promo.description}}</span>
+                                                </div>
+                                                <div class="dz-icon ms-auto me-0"><i class="flaticon flaticon-star-1"></i></div>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="title-bar">
+                        <h6 class="title">Bares & nightclubs</h6>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6" *ngFor="let partner of partners">
+                            <div class="dz-media-card style-4">
+                                <a (click)="global.previewPartner(partner)">
+                                    <div class="dz-media" *ngIf="partner.avatar">
+                                        <img src="{{partner.avatar}}" alt="">
+                                    </div>
+                                    <div class="dz-content">
+                                        <div class="left-content">
+                                            <h6 class="title">{{partner.venueName}}</h6>	
+                                            <span class="about">{{partner.address}}</span>
+                                        </div>
+                                        <div class="dz-icon ms-auto me-0"><i class="flaticon flaticon-star-1"></i></div>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>								
+</div>

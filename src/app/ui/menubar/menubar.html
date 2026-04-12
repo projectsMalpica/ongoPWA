@@ -1,1 +1,70 @@
-<p>menubar works!</p>
+<!-- Menubar Mejorado -->
+<div class="menubar-area footer-fixed">
+  <div class="toolbar-inner menubar-nav">
+
+    <!-- Home / Home-local -->
+    <a
+      class="nav-link"
+      [routerLink]="auth.isPartner() ? '/home-local' : '/home'"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      title="Inicio">
+      <i class="flaticon flaticon-dog-house"></i>
+    </a>
+
+    <!-- Maps -->
+    <a
+      class="nav-link"
+      routerLink="/maps"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      title="Mapas">
+      <i class="fas fa-map-marker-alt"></i>
+    </a>
+
+    <!-- Explorer -->
+    <a
+      class="nav-link"
+      routerLink="/explorer"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      title="Explorar">
+      <i class="flaticon flaticon-search"></i>
+    </a>
+
+    <!-- Chat solo para client -->
+    <a
+      *ngIf="auth.isClient()"
+      class="nav-link"
+      routerLink="/chat"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      title="Chat">
+      <i class="flaticon flaticon-chat-1"></i>
+    </a>
+
+    <!-- Perfil partner -->
+    <a
+      *ngIf="auth.isPartner()"
+      class="nav-link"
+      routerLink="/profile-local"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      title="Perfil">
+      <i class="flaticon flaticon-user"></i>
+    </a>
+
+    <!-- Perfil client -->
+    <a
+      *ngIf="auth.isClient()"
+      class="nav-link"
+      routerLink="/profile"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      title="Perfil">
+      <i class="flaticon flaticon-user"></i>
+    </a>
+
+  </div>
+</div>
+<!-- Menubar Mejorado -->

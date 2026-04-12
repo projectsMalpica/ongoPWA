@@ -1,0 +1,88 @@
+<!-- Page Content Start -->
+<div class="page-content space-top p-b40">
+    <div class="container">
+        <div class="detail-area" style="margin-bottom: 36px;">
+            <div class="dz-media-card style-2">
+                <div class="dz-media">
+                    <img [src]="global.selectedClient?.avatar || 'assets/images/w3tinder/liked/pic4.png'" alt="">                </div>
+                <div class="dz-content">
+                    <div class="left-content">
+                        <h4 class="title">{{global.selectedClient?.name}}, {{global.selectedClient?.age}} </h4>
+                        <p class="mb-0"><i class="icon feather icon-map-pin"></i> {{global.selectedClient?.address}}</p>
+                    </div>
+                    <a href="javascript:void(0);" class="dz-icon"><i class="flaticon flaticon-star-1"></i></a>
+                </div>
+            </div>
+            <div class="detail-bottom-area" >
+                <div class="about" style="margin-bottom: 1rem;">
+                    <h6 class="title">Soy {{global.selectedClient?.name}}</h6>
+                    <p class="para-text">{{global.selectedClient?.about}}</p>					
+                </div>
+                <div class="about" style="margin-bottom: 1rem;">
+                    <h6 class="title">Mi orientación sexual es</h6>
+                    <ul class="dz-tag-list">
+                        <li> 
+                            <div class="dz-tag">
+                                <i class="icon feather icon-user"></i>
+                                <span style="color: #FF50A2;">{{global.selectedClient?.orientation}}</span>
+                            </div>
+                        </li>
+                       
+                    </ul>                
+                </div>
+                <div class="about" style="margin-bottom: 1rem;">
+                    <h6 class="title">Estoy interesad&#64; en</h6>
+                    <ul class="dz-tag-list">
+                        <li> 
+                            <div class="dz-tag">
+                                <i class="icon feather icon-heart"></i>
+                                <span style="color: #FF50A2;">{{global.selectedClient?.interestedIn}}</span>
+                            </div>
+                        </li>
+                       
+                    </ul>
+                </div>
+                <div class="about" style="margin-bottom: 1rem;">
+                    <h6 class="title">En búsqueda de </h6>
+                    <ul class="dz-tag-list">
+                        <li> 
+                            <div class="dz-tag">
+                                <i class="icon feather icon-search"></i>
+                                <span style="color: #FF50A2;">{{global.selectedClient?.lookingFor}}</span>
+                            </div>
+                        </li>                       
+                    </ul>
+                </div>
+                <div class="about" style="margin-bottom: 1rem;">
+                    <h6 class="title">Hablo </h6>
+                    <ul class="dz-tag-list">
+                        <li> 
+                            <div class="dz-tag">
+                                <i class="icon feather icon-globe"></i>
+                                <span style="color: #FF50A2;">{{global.selectedClient?.language}}</span>
+                            </div>
+                        </li>                       
+                    </ul>
+                </div>
+                <div class="about" style="margin-bottom: 2rem;">
+                    <h6 class="title">Me gusta </h6>
+                    <ul class="dz-tag-list">
+                        <li> 
+                            <div class="dz-tag">
+                                <i class="icon feather icon-plus"></i>
+                                <span style="color: #FF50A2;">{{global.selectedClient?.interests}}</span>
+                            </div>
+                        </li>                       
+                    </ul>
+                </div>
+              
+                 <div class="about" style="margin-bottom: 2rem;">
+                    <button class="btn btn-gradient-pink" (click)="abrirChat(global.selectedClient)">
+                        <i class="icon feather icon-message-circle"></i> Chatear ahora
+                    </button>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>

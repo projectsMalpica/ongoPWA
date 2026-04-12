@@ -2,7 +2,9 @@
   <app-header *ngIf="showLayout"></app-header>
   <app-sidebar *ngIf="showLayout"></app-sidebar>
 
-  <router-outlet></router-outlet>
+  <main class="page-body">
+    <router-outlet></router-outlet>
+  </main>
 
   <app-menubar *ngIf="showLayout"></app-menubar>
 </div>

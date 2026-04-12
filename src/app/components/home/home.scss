@@ -1,0 +1,30 @@
+:host {
+  display: block;
+}
+
+.dzSwipe_card-cont {
+  position: relative;
+  min-height: 70vh;
+}
+
+.dzSwipe_card {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+}
+
+.dzSwipe_card--active {
+  z-index: 2;
+}
+
+.dzSwipe_card--next {
+  z-index: 1;
+  transform: scale(0.96) translateY(10px);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.empty-state {
+  padding: 2rem 1rem;
+  text-align: center;
+}

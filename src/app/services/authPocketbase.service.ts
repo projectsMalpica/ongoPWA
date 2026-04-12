@@ -6,6 +6,7 @@ import { Observable, from, tap, map, of, BehaviorSubject } from 'rxjs';
 import { UserInterface } from '../interface/user-interface ';
 import { RecordModel } from 'pocketbase';
 import { globalUser } from '../state/global-user.signal';
+import { Router } from '@angular/router';
 /* import { RealtimeOrdersService } from './realtime-orders.service';  
 */
 
@@ -35,9 +36,11 @@ export class AuthPocketbaseService {
   private readonly AUTH_ENDPOINT = `${this.PB_URL}/api/collections/users/auth-with-password`;
   private currentUserSubject = new BehaviorSubject<any>(null);
   currentUser$ = this.currentUserSubject.asObservable();
-
+  user: any;
   constructor(
-    public global: GlobalService) {
+    public global: GlobalService,
+    public router: Router
+  ) {
     this.pb = new PocketBase('https://db.ongomatch.com:8090');
     /*  const token = localStorage.getItem('accessToken');
      const userString = localStorage.getItem('user');
@@ -402,29 +405,29 @@ export class AuthPocketbaseService {
     });
 
     if (!this.isAuthenticated()) {
-      this.global.setRoute('home');
+      this.router.navigate(['home']);
       return;
     }
 
     const user = this.getCurrentUser();
 
     if (!user?.type) {
-      this.global.setRoute('home');
+      this.router.navigate(['home']);
       return;
     }
 
     switch (user.type) {
       case 'admin':
-        this.global.setRoute('dashboard'); // o la ruta real de admin
+        this.router.navigate(['dashboard']);
         break;
       case 'partner':
-        this.global.setRoute('home-local');
+        this.router.navigate(['home-local']);
         break;
       case 'client':
-        this.global.setRoute('explorer');
+        this.router.navigate(['explorer']);
         break;
       default:
-        this.global.setRoute('login');
+        this.router.navigate(['login']);
         break;
     }
   }

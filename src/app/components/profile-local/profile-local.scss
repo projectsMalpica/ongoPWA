@@ -1,0 +1,157 @@
+
+.mapboxgl-ctrl-geocoder {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+  min-width: 200px;
+}
+.mapboxgl-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.page-content {
+  min-height: calc(100dvh - 80px); /* soporta notch y barras dinámicas */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+
+@supports (height: 100dvh) {
+  .page-content {
+    height: calc(100dvh - 80px);
+  }
+}
+
+  .features-list {
+    list-style-type: disc; /* o 'none' si no deseas viñetas */
+    padding-left: 1.5rem; /* sangría a la izquierda */
+    margin: 0;
+  }
+  
+  .feature-item {
+    display: list-item; /* asegúrate de que se comporten como ítems de lista */
+    margin-bottom: 0.5rem; /* espaciado entre ítems */
+  }
+  .custom-toast {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1055;
+    border-radius: 1rem;
+    background-color: #28a745; /* o tu color primario */
+    color: white;
+    font-weight: 500;
+    transition: all 0.3s ease-in-out;
+  }
+  .profile-area .main-profile .about-profile .media {
+    max-width: 150px;
+    position: relative;
+    margin: 0 auto 15px;
+    width: 100px;
+    height: 100px;
+    top: 0;
+    left: 0;
+    padding: 10px;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+  }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+  
+  
+  .map-wrapper, .map-container {
+    width: 100%;
+    height: 100vh;
+    position: relative;
+  }
+  .map-container {
+    position: absolute;
+    top: 0; left: 0; bottom: 0; right: 0;
+  }
+  
+  .card {
+    background: #191f38;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px 0 rgba(0,0,0,.15);
+  }
+  
+  .card h6 { color: #fff; }
+  .photo-container {
+    position: relative;
+    padding-top: 100%; /* 1:1 Aspect Ratio */
+  }
+  
+  .photo-preview {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-size: cover;
+    background-position: center;
+    border-radius: 10px;
+    background-color: #f0f0f033;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .add-photo-btn {
+    font-size: 24px;
+    color: #FF50A2;
+    cursor: pointer;
+  }
+  
+  .remove-photo-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 50%;
+    padding: 4px;
+    cursor: pointer;
+    color: white;
+  }
+  .media-rect {
+    width: 100%;
+    max-width: 220px;
+    aspect-ratio: 4/3; /* o el ratio que prefieras */
+    overflow: hidden;
+    border-radius: 12px; /* esquinas suaves, no círculo */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    margin: auto;
+    background: #fff;
+    position: relative;
+  }
+  .profile-avatar-rect {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+    display: block;
+  }
+  ul.desc {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+    text-align: left;
+  }
+  ul.desc li {
+    display: flex;
+    align-items: left;
+    margin-bottom: 4px;
+    font-size: 15px;
+  }
+  ul.desc .star {
+    color: #ffb300; /* dorado, cambia si prefieres otro color */
+    margin-right: 8px;
+    font-size: 1.1em;
+  }

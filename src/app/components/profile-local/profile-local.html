@@ -1,1 +1,548 @@
-<p>profile-local works!</p>
+<!-- Page Content Start -->
+
+<div class="page-content space-top p-b60" *ngIf="!isEditProfile">
+  <div class="container pt-0"> 
+        <div class="profile-area">
+            <div class="main-profile">
+                <div class="about-profile">
+                  
+                    
+                    <div class="media-rect position-relative">
+                      <img [src]="global.profileDataPartner.avatar" alt="profile-image" class="profile-avatar-rect">
+                    </div>
+                    
+                    <a (click)="editProfile()" class="edit-profile dz-icon">
+                      <i class="flaticon flaticon-pencil-2"></i>
+                  </a>
+                </div>
+                
+                <div class="profile-detail">
+                    <div class="profile-header mb-4">
+                        <h2 class="profile-name">{{global.profileDataPartner.venueName}}</h2>
+                        <div class="d-flex align-items-center location text-muted">
+                            <i class="icon feather icon-map-pin me-2"></i> 
+                            <span>{{global.profileDataPartner.address || 'No especificada'}}</span>
+                        </div>
+                    </div>
+                  
+                </div>
+            </div>
+            <div class="detail-area">
+             
+              <div class="detail-bottom-area">
+                  <div class="about" style="margin-bottom: 1rem;">
+                      <h6 class="title">Somos  {{global.profileDataPartner.venueName}}</h6>
+                      <p class="para-text">{{global.profileDataPartner.description}}</p>	
+                      <p class="para-text"><i class="icon feather icon-map-pin me-2"></i><span style="color: #FF50A2;">{{global.profileDataPartner.address}}</span></p> 
+                      <h6 class="para-text"><i class="icon feather icon-phone me-2"></i><span style="color: #FF50A2;">{{global.profileDataPartner.phone}}</span></h6>				
+                      <h6 class="para-text"><i class="icon feather icon-mail me-2"></i><span style="color: #FF50A2;">{{global.profileDataPartner.email}}</span></h6>				
+                  </div>
+
+                  <div class="about" style="margin-bottom: 1rem;">
+                      <h6 class="title">Capacidad:</h6>
+                      <ul class="dz-tag-list">
+                          <li> 
+                              <div class="dz-tag">
+                                  <i class="icon feather icon-user"></i>
+                                  <span style="color: #FF50A2;">{{global.profileDataPartner.capacity}}</span>
+                              </div>
+                          </li>
+                         
+                      </ul>                
+                  </div>
+                  <div class="about" style="margin-bottom: 1rem;">
+                    <h6 class="title">Horario de apertura:</h6>
+                    <ul class="dz-tag-list">
+                        <li> 
+                            <div class="dz-tag">
+                                <i class="icon feather icon-clock"></i>
+                                <span style="color: #FF50A2;">{{global.profileDataPartner.openingHours}}</span>
+                            </div>
+                        </li>
+                       
+                    </ul>                
+                </div>
+                <div class="about" style="margin-bottom: 1rem;">
+                    <h6 class="title">Link para compra de entradas o productos:</h6>
+                    <ul class="dz-tag-list">
+                        <li> 
+                            <div class="dz-tag">
+                                <i class="icon feather icon-link"></i>
+                                <span style="color: #FF50A2;">{{global.profileDataPartner.purchaseLink}}</span>
+                            </div>
+                        </li>
+                       
+                    </ul>                
+                </div>
+                <div class="about" style="margin-bottom: 1rem;">
+                    <h6 class="title">Servicios:</h6>
+                    <ul class="dz-tag-list">
+                        <li> 
+                            <div class="dz-tag">
+                                <i class="icon feather icon-plus"></i>
+                                <span style="color: #FF50A2;">{{global.profileDataPartner.services}}</span>
+                            </div>
+                        </li>
+                       
+                    </ul>                
+                </div>
+                <div class="col-12">
+                  <div class="card">
+                      <div class="card-header">
+                          <h5 class="card-title">Galeria</h5>
+                      </div>
+                      <div class="card-body">
+                          <div class="dz-lightgallery row g-2" id="lightgallery-3">
+                            <ng-container *ngFor="let url of global.profileDataPartner.files">
+                              <!-- <a class="col-4" [href]="url" target="_blank"> -->
+                                <a class="col-4">
+                                  <img [src]="url" alt="Imagen del local">
+                                </a>
+                              </ng-container>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+              
+              </div>
+          </div>
+            <div class="stats-cards">
+                <div class="row g-2 mb-4">
+                  <div class="col-6">
+                    <div class="card style-2 stats-card">
+                      <div class="card-body">
+                        <a (click)="openPromoOptions()" style="cursor: pointer;">
+                          <div class="card-icon">
+                            <i class="flaticon flaticon-star-1"></i>
+                          </div>
+                          <div class="card-content">
+                            <p>Promociones</p>
+                            <div class="stat-value">{{ global.promosByPartner.length || 0 }}</div>
+                          </div>
+                        </a>
+                        
+                        
+                      </div>
+                    </div>
+                  </div>
+                  
+                    <div class="col-6">
+                        <div class="card style-2 stats-card">
+                            <div class="card-body">
+                                <a (click)="openSubscriptionsModal()" style="cursor: pointer;">
+                                    <div class="card-icon">
+                                        <i class="flaticon flaticon-bell"></i>
+                                    </div>
+                                    <div class="card-content">
+                                        <p>Subscripciones</p>
+                                        <div class="stat-value">0</div>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- <div class="dz-subscribe-area">
+              <div class="subscribe-area-top">
+                  <div class="swiper subscription-swiper2">
+                      <div class="swiper-wrapper mb-3">
+                          <div class="swiper-slide" data-card="premium-plus" *ngFor="let planning of global.planningPartners$ | async">
+                              <div class="subscribe-box style-2 premium-plus">
+                                  <h5 class="title"><img src="{{planning.subscription}}" alt="">{{planning.name}}</h5>
+                                  <ul>
+                                    <li *ngFor="let item of planning.items.split(',')" style="text-align: left;">
+                                      <span class="star">★</span> {{ item.trim() }}
+                                    </li>
+                                  </ul>
+                                  <div class="plan-price">{{planning.priceCOP}} <span>COP/mes</span></div>
+                                  <div class="plan-price">{{planning.PriceUSD}} <span>USD/mes</span></div>
+                              </div>
+                          </div>
+                      </div>
+                      <div class="swiper-btn">
+                          <div class="swiper-pagination style-1 flex-1"></div>
+                      </div>
+                  </div>
+              </div>
+            </div> -->
+
+            <div class="dz-subscribe-area">
+              <div class="subscribe-area-top">
+                <div class="swiper subscription-swiper2">
+                  <div class="swiper-wrapper mb-3">
+                    <div class="swiper-slide" data-card="premium-plus" *ngFor="let planning of global.planningPartners$ | async">
+                      <div class="subscribe-box style-2 premium-plus">
+                        <h5 class="title">
+                          <img [src]="planning.subscription" alt="">{{ planning.name }}
+                        </h5>
+                        <ul>
+                          <li *ngFor="let item of planning.items.split(',')" style="text-align: left;">
+                            <span class="star">★</span> {{ item.trim() }}
+                          </li>
+                        </ul>
+                        <div class="plan-price">{{ planning.priceCOP }} <span>COP/mes</span></div>
+                        <div class="plan-price">{{ planning.PriceUSD }} <span>USD/mes</span></div>
+            
+                        <button class="btn btn-primary mt-3 w-100" (click)="subscribeToPlan(planning)">
+                          Suscribirse
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="swiper-btn">
+                    <div class="swiper-pagination style-1 flex-1"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+           
+        </div>
+        <!-- Agrega el mapa aquí abajo, dentro de la card o la sección de perfil -->
+    <div class="card mt-4" style="background: #191f38; border-radius: 18px; overflow: hidden;">
+      <div class="card-body text-center pb-0">
+        <h6 class="mb-3" style="color: #fff;">Ubicación del local</h6>
+        <div #mapContainer style="width: 100%; height: 250px; border-radius: 12px; overflow: hidden;"></div>
+        <button class="btn btn-primary mt-3 mb-2" (click)="guardarUbicacion()">Guardar ubicación seleccionada</button>
+      </div>
+    </div>
+    </div> 
+</div>
+
+<div class="page-content space-top" *ngIf="isEditProfile">
+  <div class="container edit-profile-container"> 
+    <!-- Sección de avatar -->
+    <div class="profile-area">
+      <div class="main-profile">
+        <div class="about-profile">
+          <div class="media rounded-circle">
+            <img [src]="avatarPreview || global.profileDataPartner.avatar || auth.currentUser?.avatar" alt="profile-image">
+            <input type="file" accept="image/*" (change)="onAvatarSelected($event)" class="d-none" #avatarInput>
+            <button type="button" class="btn btn-sm btn-primary mt-2" (click)="avatarInput.click()">
+              Cambiar foto
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Galería de imágenes y campos editables -->
+    <div class="gallery-section">
+       <div class="row g-2 m-b30" data-masonry='{"percentPosition": true }'>
+        <div class="col-4" *ngFor="let photo of photosPartner; let i = index">
+          <div class="photo-container">
+            <div class="photo-preview"
+            [ngStyle]="{'background-image': 'url(' + photo.url + ')'}"
+>
+              <ng-container *ngIf="!photo.url">
+                <label [attr.for]="'imageUpload' + i" class="add-photo-btn">
+                  <i class="icon feather icon-plus"></i>
+                </label>
+              </ng-container>
+              <div class="remove-photo-btn" *ngIf="photo.url" (click)="removePhoto(i)">
+                <i class="icon feather icon-x"></i>
+              </div>
+              <input type="file" [id]="'imageUpload' + i" class="d-none" (change)="onPhotoSelected($event, i)" accept=".png, .jpg, .jpeg">
+            </div>
+          </div>
+        </div>
+      
+      <!-- Campos editables -->
+      <div class="card style-4">
+        <div class="card-header">
+          <label for="venueName">Nombre</label>
+        </div>
+        <div class="card-body">
+          <input type="text" class="form-control" name="venueName" id="venueName" [(ngModel)]="global.profileDataPartner.venueName" placeholder="Nombre del lugar" />
+        </div>
+      </div>
+      <div class="card style-4">
+        <div class="card-header">
+          <label for="address">Dirección</label>
+        </div>
+        <div class="card-body">
+          <input type="text" class="form-control" name="address" id="address" [(ngModel)]="global.profileDataPartner.address" placeholder="Medellín, Colombia" />
+        </div>
+      </div>
+      <div class="card style-4">
+        <div class="card-header">
+          <label for="description">Biografia</label>
+        </div>
+        <div class="card-body">
+          <input type="text" class="form-control" name="description" id="description" [(ngModel)]="global.profileDataPartner.description" placeholder="Hola, me encanta bailar" />
+        </div>
+      </div>
+      <div class="card style-4">
+        <div class="card-header">
+          <label for="phone">Télefono</label>
+        </div>
+        <div class="card-body">
+          <input type="number" class="form-control" name="phone" id="phone" [(ngModel)]="global.profileDataPartner.phone" placeholder="ingresa tu telefono" />
+        </div>
+      </div>
+      <div class="card style-4">
+        <div class="card-header">
+          <label for="email">Correo</label>
+        </div>
+        <div class="card-body">
+          <input type="email" class="form-control" name="email" id="email" [(ngModel)]="global.profileDataPartner.email" placeholder="ingresa tu correo" />
+        </div>
+      </div>
+      <div class="card style-4">
+        <div class="card-header">
+          <label for="capacity">Capacidad</label>
+        </div>
+        <div class="card-body">
+          <input type="number" class="form-control" name="capacity" id="capacity" [(ngModel)]="global.profileDataPartner.capacity" placeholder="ingresa tu telefono" />
+        </div>
+      </div>
+      <div class="card style-4">
+        <div class="card-header">
+          <label for="openingHours">Horario de apertura</label>
+        </div>
+        <div class="card-body">
+          <input type="text" class="form-control" name="openingHours" id="openingHours" [(ngModel)]="global.profileDataPartner.openingHours" placeholder="ingresa tu telefono" />
+        </div>
+      </div>
+      <div class="card style-4">
+        <div class="card-header">
+          <label for="purchaseLink">Link para compra de entradas o productos </label>
+        </div>
+        <div class="card-body">
+          <input type="text" class="form-control" name="purchaseLink" id="purchaseLink" [(ngModel)]="global.profileDataPartner.purchaseLink" placeholder="ingresa tu link" />
+        </div>
+      </div>
+     
+      <div class="card style-4">
+        <div class="card-header">
+          <h6 class="title mb-0">Servicios</h6>
+        </div>
+        <div class="card-body">
+          <a href="javascript:void(0);" class="setting-input" 
+             data-bs-toggle="offcanvas" data-bs-target="#offcanvasBottom1Local" aria-controls="offcanvasBottom1Local">
+            <span>{{global.profileDataPartner.services || 'Servicios'}}</span>
+            <i class="icon feather dz-flex-box icon-chevron-right ms-auto me-0"></i>
+          </a>
+        </div>
+      </div>
+      
+    </div>
+    
+    <!-- Botones de acción fijos en la parte inferior -->
+    <div class="action-buttons">
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-light flex-grow-1" (click)="cancelEdit()">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-primary flex-grow-1" (click)="saveProfile()">
+          Guardar
+        </button>
+      </div>
+    </div>
+  </div> 
+</div>
+<!-- Page Content End -->
+
+<!-- Service OffCanvas -->
+<div class="offcanvas offcanvas-bottom services" tabindex="-1" id="offcanvasBottom1Local">
+  <div class="offcanvas-header share-style">
+    <h6 class="title mb-0">Servicios</h6>
+    <button type="button" class="btn-close dz-flex-box" data-bs-dismiss="offcanvas" aria-label="Close">
+      <i class="icon feather icon-x font-22"></i>
+    </button>
+  </div>
+  <div class="offcanvas-body">
+    <div class="input-group input-group-icon search-input">
+  <input type="search" class="form-control ms-0" 
+         placeholder="Buscar..." 
+         [(ngModel)]="serviceSearch" 
+         (input)="filterServices()">
+  <div class="input-group-text">
+    <div class="input-icon">
+      <i class="icon feather icon-search"></i>
+    </div>
+  </div>
+</div>
+<!-- Agregar nuevo servicio -->
+<div class="input-group mt-2" *ngIf="showAddServiceOption()">
+  <input type="text" class="form-control" [value]="serviceSearch" readonly>
+  <button class="btn btn-outline-primary" type="button" (click)="addService(serviceSearch)">
+    Agregar "{{serviceSearch}}"
+  </button>
+</div>
+    <ul class="dz-tag-list style-2">
+      <li *ngFor="let service of filteredServices">
+        <div class="dz-tag" 
+             [class.active]="selectedServices.includes(service.value)"
+             (click)="toggleService(service)">
+          <span>{{service.value}}</span>
+        </div>
+      </li>
+    </ul>
+    <div class="mt-3">
+      <button class="btn btn-primary w-100" 
+              data-bs-dismiss="offcanvas"
+              (click)="saveServices()">
+        Guardar
+      </button>
+    </div>
+  </div>
+</div>
+<div 
+  class="custom-toast alert alert-success animate__animated animate__fadeInDown"
+  *ngIf="showSuccessToast"
+>
+  ✅ Perfil actualizado correctamente.
+</div>
+
+<div #promoModal class="modal fade" id="promoModal" tabindex="-1" aria-labelledby="promoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4">
+      <div class="modal-header border-0">
+        <h5 class="modal-title" id="promoModalLabel">Agregar Promoción o Evento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="savePromotion()">
+          <div class="mb-3">
+            <label for="promoName" class="form-label">Título</label>
+            <input type="text" class="form-control" id="promoName" [(ngModel)]="newPromo.name" name="name" required>
+          </div>
+          <div class="mb-3">
+            <label for="promoDesc" class="form-label">Descripción</label>
+            <textarea class="form-control" id="promoDesc" [(ngModel)]="newPromo.description" name="description" rows="3"></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="promoDate" class="form-label">Fecha</label>
+            <input type="date" class="form-control" id="promoDate" [(ngModel)]="newPromo.date" name="date">
+          </div>
+          <div class="mb-3">
+            <label for="promoImage" class="form-label">Imagen</label>
+            <input type="file" class="form-control" id="promoImage" (change)="onPromoImageSelected($event)">
+          </div>
+          
+          <div class="modal-footer border-0 pt-0">
+            <button type="submit" class="btn btn-primary w-100">
+  {{ isEditingPromo ? 'Guardar cambios' : 'Guardar promoción' }}
+</button>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" (click)="cancelPromo()">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<div 
+  class="custom-toast alert alert-info shadow-sm border-0 px-4 py-3 animate__animated animate__fadeInDown"
+  *ngIf="successPromoToast"
+>
+  🎉 Promoción guardada exitosamente.
+</div>
+
+
+
+<!-- Modal para ver promociones -->
+<div class="modal fade" id="promoListModal" tabindex="-1" aria-labelledby="promoListModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="promoListModalLabel">Promociones</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="container-fluid">
+          <div class="row g-2">
+            <div class="col-12 col-md-6" *ngFor="let promo of global.promosByPartner">
+              <div class="dz-media-card style-5 mb-3">
+                <a class="dz-media">
+                  <img [src]="promo.files && promo.files[0] ? promo.files[0] : 'https://via.placeholder.com/300x200?text=Sin+imagen'" alt="" style="width:100%;max-height:200px;object-fit:cover;">                </a>
+                <div class="dz-content">
+                  <div class="left-content">
+                    <h6 class="title">{{promo.name}}</h6>
+                    <span class="about">{{promo.description}}</span>
+                  </div>
+                  <div class="meta-btn">
+                    <a class="btn w-100 font-16 p-2 btn-sm btn-danger light border-danger" (click)="deletePromo(promo)">
+                      <i class="feather icon-x"></i>
+                      <span>Eliminar</span>
+                    </a>
+                    <a class="btn w-100 font-16 p-2 btn-sm btn-info light border-info" (click)="editPromo(promo)">
+  <i class="feather icon-heart-on"></i>
+  <span>Editar</span>
+</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="!global.promosByPartner.length" class="text-center text-muted py-4">
+              No hay promociones registradas.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div 
+  class="custom-toast alert shadow-sm border-0 px-4 py-3 animate__animated animate__fadeInDown"
+  [ngClass]="{
+    'alert-success': toastType === 'success',
+    'alert-danger': toastType === 'error',
+    'alert-info': toastType === 'info'
+  }"
+  *ngIf="showToast"
+>
+  {{ toastMessage }}
+</div>
+
+<div 
+  class="custom-toast alert alert-info shadow-sm border-0 px-4 py-3 animate__animated animate__fadeInDown"
+  *ngIf="successPromoToast"
+>
+  Promoción borrada exitosamente.
+</div>
+
+<!-- Modal de Subscripciones -->
+<div class="modal fade" id="subscriptionsModal" tabindex="-1" aria-labelledby="subscriptionsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="subscriptionsModalLabel">Subscripciones</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Aquí puedes poner contenido de subscripciones -->
+        <p>Aquí aparecerán las opciones de subscripción.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="promoOptionsModal" tabindex="-1" aria-labelledby="promoOptionsLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="promoOptionsLabel">Promociones</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body text-center">
+        <button class="btn btn-primary mb-2 w-100" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#promoModal">
+          ➕ Agregar nueva promoción
+        </button>
+        <button class="btn btn-outline-info w-100" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#promoListModal">
+          👁 Ver promociones
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

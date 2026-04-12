@@ -59,6 +59,15 @@
 	<link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
 </head>
 <body>
+	<script>
+    (function () {
+      const hasThemeCookie = document.cookie.includes('themeVersion_value=');
+      if (!hasThemeCookie) {
+        document.cookie = "themeVersion_value=theme-dark; path=/";
+      }
+      document.body.classList.add('theme-dark');
+    })();
+  </script>
   <app-root></app-root>
   <script src="assets/js/jquery.js"></script>
 	<script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>

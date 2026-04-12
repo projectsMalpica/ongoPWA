@@ -1,0 +1,24 @@
+.chat-content {
+    margin-bottom: 8px;
+    display: flex;
+  }
+  
+  .chat-content.user {
+    justify-content: flex-end;
+  }
+  
+  .message-item {
+    max-width: 70%;
+  }
+  
+  .bubble {
+    background-color: #f1f1f1;
+    padding: 8px 12px;
+    border-radius: 12px;
+  }
+  
+  .chat-content.user .bubble {
+    background-color: #ff50a2;
+    color: white;
+  }
+  

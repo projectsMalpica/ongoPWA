@@ -1,1 +1,37 @@
-<p>chat works!</p>
+<div class="page-content p-t100 p-b50">
+    <div class="container">
+        <div class="dz-chat-search input-group input-group-icon input-mini">
+            <div class="input-group-text">
+                <div class="input-icon">
+                    <i class="icon feather icon-search"></i>
+                </div>
+            </div>
+            <input type="text" class="form-control" placeholder="Buscar...">
+        </div>
+
+        <div class="title-bar">
+            <h6 class="title">Mensajes</h6>
+        </div>
+        <ul class="message-list">
+            <li *ngFor="let msg of messages">
+                <a (click)="global.activeRoute = 'chat-detail'">
+                    <div class="media media-60">
+                        <img src="../assets/images/user/pic1.jpg" alt="image">
+                    </div>
+                    <div class="media-content">
+                        <div>
+                            <h6 class="name">{{msg['sender']}}</h6>
+                            <p class="last-msg">{{msg['text']}}</p>
+                        </div>
+                        <div class="right-content">
+                            <span class="date">2m ago</span>
+                            <div class="seen-btn active dz-flex-box">
+                                <i class="icon feather icon-check"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>

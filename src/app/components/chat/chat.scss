@@ -1,0 +1,32 @@
+/* Chat list container */
+.message-list {
+    max-height: 60vh; /* Adjust this value as needed */
+    overflow-y: auto;
+    padding-right: 15px;
+    margin: 0;
+    list-style: none;
+  }
+  
+  /* Custom scrollbar for better UX */
+  .message-list::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .message-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+  
+  .message-list::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+  }
+  
+  .message-list::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+  
+  /* Ensure the page content doesn't get hidden behind fixed elements */
+  .page-content {
+    padding-bottom: 120px; /* Adjust this value based on your footer/navbar height */
+  }

@@ -1,1 +1,98 @@
-<p>sidebar works!</p>
+<!-- Sidebar -->
+<div class="dark-overlay"></div>
+<div class="sidebar">
+  <div class="inner-sidebar">
+    <a class="author-box">
+      <div class="dz-media">
+        <img *ngIf="auth.isPartner(); else clientAvatar"
+             [src]="global.profileDataPartner.avatar || 'assets/images/user/pic1.jpg'"
+             alt="author-image">
+        <ng-template #clientAvatar>
+          <img [src]="global.profileData.avatar || 'assets/images/user/pic1.jpg'"
+               alt="author-image">
+        </ng-template>
+      </div>
+
+      <div class="dz-info">
+        <h5 class="name">
+          <ng-container *ngIf="auth.isPartner(); else clientName">
+            {{ global.profileDataPartner.venueName || 'Usuario' }}
+          </ng-container>
+          <ng-template #clientName>
+            {{ global.profileData.name || 'Usuario' }}
+          </ng-template>
+        </h5>
+
+        <span>
+          <ng-container *ngIf="auth.isPartner(); else clientEmail">
+            {{ global.profileDataPartner.email || 'No disponible' }}
+          </ng-container>
+          <ng-template #clientEmail>
+            {{ global.profileData.email || 'No disponible' }}
+          </ng-template>
+        </span>
+      </div>
+    </a>
+
+    <ul class="nav navbar-nav">
+      <li>
+        <a class="nav-link active" (click)="goHome()">
+          <span class="dz-icon">
+            <i class="icon feather icon-home"></i>
+          </span>
+          <span>Inicio</span>
+        </a>
+      </li>
+
+      <li>
+        <a class="nav-link" (click)="goProfile()">
+          <span class="dz-icon">
+            <i class="icon feather icon-user"></i>
+          </span>
+          <span>Perfil</span>
+        </a>
+      </li>
+
+      <li>
+        <a class="nav-link" (click)="goWallet()">
+          <span class="dz-icon">
+            <i class="icon feather icon-credit-card"></i>
+          </span>
+          <span>Mi wallet</span>
+        </a>
+      </li>
+
+      <li>
+        <a class="nav-link" (click)="logout()">
+          <span class="dz-icon">
+            <i class="icon feather icon-log-out"></i>
+          </span>
+          <span>Cerrar sesión</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-bottom">
+     <!--  <ul class="app-setting">
+        <li>
+          <div class="mode">
+            <span class="dz-icon">
+              <i class="icon feather icon-moon"></i>
+            </span>
+            <span>Modo light</span>
+            <div class="custom-switch">
+              <input type="checkbox" class="switch-input theme-btn" id="toggle-dark-menu">
+              <label class="custom-switch-label" for="toggle-dark-menu"></label>
+            </div>
+          </div>
+        </li>
+      </ul> -->
+
+      <div class="app-info">
+        <h6 class="name">OngoApp - Dating App</h6>
+        <span class="ver-info">App Version 1.1</span>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Sidebar End -->

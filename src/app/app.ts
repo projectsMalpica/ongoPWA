@@ -35,4 +35,5 @@ export class App {
 
     this.showLayout = !this.hiddenLayoutRoutes.includes(this.router.url);
   }
+  
 }

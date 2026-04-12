@@ -1,0 +1,20 @@
+.page-content {
+  height: calc(100vh - 60px); /* Ajusta según tu header */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 90px; /* Aumenta el espacio inferior según el alto del botón */
+}
+
+.fixed-bottom-action {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  background: #242a34; /* O usa rgba(0,0,0,0.7) si quieres transparencia */
+  padding: 12px 16px 20px 16px;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+  display: flex;
+  justify-content: center;
+  border-radius: 10px 10px 0 0;
+}

@@ -1,0 +1,146 @@
+<!-- Header -->
+<header class="header header-fixed bg-white">
+  <div class="container">
+    <div class="header-content">
+      <div class="left-content me-3">
+        <a  class="back-btn" (click)="goBack()">
+          <i class="icon feather icon-chevron-left"></i>
+        </a>
+        <h6 class="title">Mi Wallet</h6>
+      </div>
+
+      <div class="mid-content"></div>
+
+      <div class="right-content">
+        <a  class="wallet-history-btn" (click)="goToHistory()">
+          Historial
+        </a>
+      </div>
+    </div>
+  </div>
+</header>
+<!-- Header -->
+
+<!-- Page Content Start -->
+<div class="page-content p-b60">
+  <div class="container">
+
+    <!-- Saldo actual -->
+    <div class="wallet-balance-card">
+      <div class="wallet-balance-top">
+        <span class="wallet-label">Saldo disponible</span>
+        <span class="wallet-status">Activa</span>
+      </div>
+
+      <h2 class="wallet-balance">{{ currencySymbol }} {{ currentBalance | number:'1.0-0' }}</h2>
+      <p class="wallet-balance-note">Usa tu saldo para enviar regalos o realizar compras dentro de la app.</p>
+    </div>
+
+    <div class="dz-subscribe-area">
+      <div class="subscribe-area-top">
+        <div class="wallet-packages-slider">
+          <div class="wallet-packages-wrapper mb-3">
+
+            <div class="wallet-slide" *ngFor="let pkg of packages" [class.active]="activePackageId === pkg.id"
+              (click)="selectPackage(pkg.id)">
+              <div class="subscribe-box" [ngClass]="pkg.theme">
+                <h3 class="title">{{ pkg.name }}</h3>
+                <div class="badge">
+                  {{ pkg.credits | number:'1.0-0' }} créditos
+                </div>
+
+                <p class="wallet-price">
+                  {{ currencySymbol }} {{ pkg.price | number:'1.0-0' }}
+                </p>
+
+                <small class="wallet-bonus" *ngIf="pkg.bonus && pkg.bonus > 0">
+                  + {{ pkg.bonus | number:'1.0-0' }} de bono
+                </small>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="subscribe-content" *ngIf="activePackage as selected" [ngClass]="selected.theme">
+        <ul class="pricing-data">
+          <li class="list-true" *ngFor="let benefit of activeBenefits">
+            <i class="icon feather icon-check"></i>
+            <span>{{ benefit }}</span>
+          </li>
+        </ul>
+
+        <div class="wallet-summary-box">
+          <div class="summary-row">
+            <span>Créditos</span>
+            <strong>{{ selected.credits | number:'1.0-0' }}</strong>
+          </div>
+
+          <div class="summary-row" *ngIf="selected.bonus && selected.bonus > 0">
+            <span>Bono</span>
+            <strong>+ {{ selected.bonus | number:'1.0-0' }}</strong>
+          </div>
+
+          <div class="summary-row total">
+            <span>Total a pagar</span>
+            <strong>{{ currencySymbol }} {{ selected.price | number:'1.0-0' }}</strong>
+          </div>
+        </div>
+
+        <div class="bottom-btn text-center">
+          <a href="javascript:void(0);" class="btn btn-gradient dz-flex-box btn-shadow rounded-xl"
+            (click)="rechargeWallet()">
+            Recargar con {{ currencySymbol }} {{ selected.price | number:'1.0-0' }}
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Page Content End -->
+
+<!-- Modal de recarga -->
+<div class="wallet-modal-backdrop" *ngIf="showRechargeModal" (click)="closeRechargeModal()">
+  <div class="wallet-modal" (click)="$event.stopPropagation()">
+    <div class="wallet-modal-header">
+      <h3>Confirmar recarga</h3>
+      <button type="button" class="wallet-modal-close" (click)="closeRechargeModal()">×</button>
+    </div>
+
+    <div class="wallet-modal-body" *ngIf="selectedRechargePackage as pkg">
+      <div class="wallet-modal-card" [ngClass]="pkg.theme">
+        <h4>{{ pkg.name }}</h4>
+        <p>{{ pkg.credits | number:'1.0-0' }} créditos</p>
+        <strong>{{ currencySymbol }} {{ pkg.price | number:'1.0-0' }}</strong>
+        <small *ngIf="pkg.bonus && pkg.bonus > 0">+ {{ pkg.bonus | number:'1.0-0' }} de bono</small>
+      </div>
+
+      <div class="wallet-modal-summary">
+        <div class="wallet-modal-row">
+          <span>Saldo actual</span>
+          <strong>{{ currencySymbol }} {{ currentBalance | number:'1.0-0' }}</strong>
+        </div>
+
+        <div class="wallet-modal-row">
+          <span>Recarga</span>
+          <strong>{{ currencySymbol }} {{ pkg.price | number:'1.0-0' }}</strong>
+        </div>
+
+        <div class="wallet-modal-row total">
+          <span>Total a pagar</span>
+          <strong>{{ currencySymbol }} {{ pkg.price | number:'1.0-0' }}</strong>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        class="wallet-modal-confirm"
+        [disabled]="isProcessingRecharge"
+        (click)="confirmRecharge()"
+      >
+        {{ isProcessingRecharge ? 'Procesando...' : ('Pagar con Wompi ' + currencySymbol + ' ' + (pkg.price | number:'1.0-0')) }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,1 +1,124 @@
-<p>home works!</p>
+<div class="page-content space-top p-b65">
+  <div class="container fixed-full-area">
+
+    <div *ngIf="loadingClients" class="empty-state">
+      Cargando perfiles...
+    </div>
+
+    <div class="dzSwipe_card-cont dz-gallery-slider" *ngIf="!loadingClients && clientes.length > 0">
+
+      <div
+        class="dzSwipe_card dzSwipe_card--next"
+        *ngIf="clientes.length > 1"
+      >
+        <div class="dz-media">
+          <img
+            [src]="clientes[(currentIndex + 1) % clientes.length]?.avatar || 'assets/images/hero-night.png'"
+            (error)="$any($event.target).src='assets/images/hero-night.png'"
+            alt=""
+          />
+        </div>
+
+        <div class="dz-content">
+          <div class="left-content">
+            <span class="badge badge-primary d-inline-flex gap-1 mb-2">
+              <i class="icon feather icon-map-pin"></i>
+              {{ clientes[(currentIndex + 1) % clientes.length]?.address || 'Cerca de ti' }}
+            </span>
+
+            <h4 class="title">
+              <a href="javascript:void(0)">
+                {{ clientes[(currentIndex + 1) % clientes.length]?.name || 'Usuario' }}
+              </a>
+            </h4>
+
+            <p class="mb-0">
+              <i class="icon feather icon-user"></i>
+              {{ clientes[(currentIndex + 1) % clientes.length]?.gender || 'Sin dato' }}
+            </p>
+          </div>
+
+          <a href="javascript:void(0);" class="dz-icon dz-sp-like">
+            <i class="flaticon flaticon-star-1"></i>
+          </a>
+        </div>
+
+        <div class="dzSwipe_card__option dzReject">
+          <i class="fa-solid fa-xmark"></i>
+        </div>
+        <div class="dzSwipe_card__option dzLike">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <div class="dzSwipe_card__option dzSuperlike">
+          <h5 class="title mb-0">Super Like</h5>
+        </div>
+        <div class="dzSwipe_card__drag"></div>
+      </div>
+
+      <div
+        class="dzSwipe_card dzSwipe_card--active"
+        [ngStyle]="{ transform: transform }"
+        (mousedown)="startDrag($event)"
+        (mousemove)="onDrag($event)"
+        (mouseup)="endDrag($event, clientes[currentIndex])"
+        (mouseleave)="endDrag($event, clientes[currentIndex])"
+        (touchstart)="startDrag($event)"
+        (touchmove)="onDrag($event)"
+        (touchend)="endDrag($event, clientes[currentIndex])"
+        (dblclick)="abrirChat(clientes[currentIndex])"
+      >
+        <div class="dz-media">
+          <img
+            [src]="clientes[currentIndex]?.avatar || 'assets/images/hero-night.png'"
+            (error)="$any($event.target).src='assets/images/hero-night.png'"
+            alt=""
+          />
+        </div>
+
+        <div class="dz-content">
+          <div class="left-content">
+            <span class="badge badge-primary d-inline-flex gap-1 mb-2">
+              <i class="icon feather icon-map-pin"></i>
+              {{ clientes[currentIndex]?.address || 'Cerca de ti' }}
+            </span>
+
+            <h4 class="title">
+              <a
+                href="javascript:void(0)"
+                (click)="global.previewClient(clientes[currentIndex])"
+              >
+                {{ clientes[currentIndex]?.name || 'Usuario' }}
+              </a>
+            </h4>
+
+            <p class="mb-0">
+              <i class="icon feather icon-user"></i>
+              {{ clientes[currentIndex]?.gender || 'Sin dato' }}
+            </p>
+          </div>
+
+          <a href="javascript:void(0);" class="dz-icon dz-sp-like">
+            <i class="flaticon flaticon-star-1"></i>
+          </a>
+        </div>
+
+        <div class="dzSwipe_card__option dzReject">
+          <i class="fa-solid fa-xmark"></i>
+        </div>
+        <div class="dzSwipe_card__option dzLike">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <div class="dzSwipe_card__option dzSuperlike">
+          <h5 class="title mb-0">Super Like</h5>
+        </div>
+        <div class="dzSwipe_card__drag"></div>
+      </div>
+
+    </div>
+
+    <div *ngIf="!loadingClients && clientes.length === 0" class="empty-state">
+      No hay clientes para mostrar
+    </div>
+
+  </div>
+</div>
