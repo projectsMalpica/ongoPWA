@@ -1,179 +1,182 @@
 <!-- Page Content Start -->
 <div class="page-content space-top p-b60" *ngIf="!isEditProfile">
-    <div class="container pt-0"> 
-        <div class="profile-area">
-            <div class="main-profile">
-                <div class="about-profile">
-                  
-                    <div class="media rounded-circle position-relative">
-                        <img [src]="profileData.avatar ||  'assets/images/avatar/1.jpg'" alt="profile-image" class="profile-avatar">
-                        <svg class="radial-progress m-b20" data-percentage="40" viewBox="0 0 80 80">
-                            <circle class="incomplete" cx="40" cy="40" r="35"></circle>
-                            <circle class="complete" cx="40" cy="40" r="35" style="stroke-dashoffset: 39.58406743523136;"></circle>
-                        </svg>
-                    </div>
-                    <div class="edit-profile-container">
-                      <button type="button" class="btn btn-gradient-purple rounded-pill px-4 py-2 d-flex align-items-center gap-2"
-                              (click)="isEditProfile = true">
-                        <i class="feather icon-edit"></i> Editar perfil
-                      </button>
-                    </div>
-                    
-                </div>
-                
-                <div class="profile-detail">
-                    <div class="profile-header mb-4">
-                        <h2 class="profile-name">{{profileData.name}}, {{profileData.age}}</h2>
-                        <div class="d-flex align-items-center location text-muted">
-                            <i class="icon feather icon-map-pin me-2"></i> 
-                            <span>{{profileData.address || 'No especificada'}}</span>
-                        </div>
-                    </div>
-                  
-                </div>
+  <div class="container pt-0">
+    <div class="profile-area">
+      <div class="main-profile">
+        <div class="about-profile">
+
+          <div class="media rounded-circle position-relative">
+            <img [src]="profileData.avatar ||  'assets/images/avatar/1.jpg'" alt="profile-image" class="profile-avatar">
+            <svg class="radial-progress m-b20" data-percentage="40" viewBox="0 0 80 80">
+              <circle class="incomplete" cx="40" cy="40" r="35"></circle>
+              <circle class="complete" cx="40" cy="40" r="35" style="stroke-dashoffset: 39.58406743523136;"></circle>
+            </svg>
+          </div>
+          <div class="edit-profile-container">
+            <button type="button" class="btn btn-gradient-purple rounded-pill px-4 py-2 d-flex align-items-center gap-2"
+              (click)="enableEditProfile()">
+              <i class="feather icon-edit"></i> Editar perfil
+            </button>
+          </div>
+
+        </div>
+
+        <div class="profile-detail">
+          <div class="profile-header mb-4">
+            <h2 class="profile-name">{{profileData.name}}, {{profileData.age}}</h2>
+            <div class="d-flex align-items-center location text-muted">
+              <i class="icon feather icon-map-pin me-2"></i>
+              <span>{{profileData.address || 'No especificada'}}</span>
             </div>
-            <div class="detail-area">
-             
-              <div class="detail-bottom-area">
-                  <div class="about" style="margin-bottom: 1rem;">
-                      <h6 class="title">Soy  {{profileData.name}}</h6>
-                      <p class="para-text">{{profileData.about}}</p>	
-                      <h6 class="para-text"><i class="icon feather icon-calendar me-2"></i><span style="color: #FF50A2;">{{profileData.birthday | date:'dd/MM/yyyy'}}</span></h6>				
-                      <h6 class="para-text"><i class="icon feather icon-user me-2"></i><span style="color: #FF50A2;">{{profileData.gender}}</span></h6>				
-                  </div>
-                  <div class="about" style="margin-bottom: 1rem;">
-                      <h6 class="title">Mi orientación sexual es</h6>
-                      <ul class="dz-tag-list">
-                          <li> 
-                              <div class="dz-tag">
-                                  <i class="icon feather icon-user"></i>
-                                  <span style="color: #FF50A2;">{{profileData.orientation}}</span>
-                              </div>
-                          </li>
-                         
-                      </ul>                
-                  </div>
-                  <div class="about" style="margin-bottom: 1rem;">
-                      <h6 class="title">Estoy interesad&#64; en</h6>
-                      <ul class="dz-tag-list">
-                          <li> 
-                              <div class="dz-tag">
-                                  <i class="icon feather icon-heart"></i>
-                                  <span style="color: #FF50A2;">{{profileData.interestedIn}}</span>
-                              </div>
-                          </li>
-                         
-                      </ul>
-                  </div>
-                  <div class="languages mb-3">
-                      <h6 class="title">En búsqueda de </h6>
-                      <ul class="dz-tag-list">
-                          <li> 
-                              <div class="dz-tag">
-                                  <i class="icon feather icon-check-circle"></i>
-                                  <span style="color: #FF50A2;">{{profileData.lookingFor}}</span>
-                              </div>
-                          </li>
-                          
-                      </ul>
-                  </div>
-                  <div class="languages mb-3">
-                    <h6 class="title">Mi idioma es </h6>
-                    <ul class="dz-tag-list">
-                        <li> 
-                            <div class="dz-tag">
-                                <i class="icon feather icon-globe"></i>
-                                <span style="color: #FF50A2;">{{profileData.language}}</span>
-                            </div>
-                        </li>
-                        
-                    </ul>
+          </div>
+
+        </div>
+      </div>
+      <div class="detail-area">
+
+        <div class="detail-bottom-area">
+          <div class="about" style="margin-bottom: 1rem;">
+            <h6 class="title">Soy {{profileData.name}}</h6>
+            <p class="para-text">{{profileData.about}}</p>
+            <h6 class="para-text"><i class="icon feather icon-calendar me-2"></i><span
+                style="color: #FF50A2;">{{profileData.birthday | date:'dd/MM/yyyy'}}</span></h6>
+            <h6 class="para-text"><i class="icon feather icon-user me-2"></i><span
+                style="color: #FF50A2;">{{profileData.gender}}</span></h6>
+          </div>
+          <div class="about" style="margin-bottom: 1rem;">
+            <h6 class="title">Mi orientación sexual es</h6>
+            <ul class="dz-tag-list">
+              <li>
+                <div class="dz-tag">
+                  <i class="icon feather icon-user"></i>
+                  <span style="color: #FF50A2;">{{profileData.orientation}}</span>
                 </div>
-                <div class="languages mb-3">
-                  <h6 class="title">Mis hobbies son </h6>
-                  <ul class="dz-tag-list">
-                      <li> 
-                          <div class="dz-tag">
-                              <i class="icon feather icon-heart"></i>
-                              <span style="color: #FF50A2;">{{profileData.interests}}</span>
-                          </div>
-                      </li>
-                      
-                  </ul>
-              </div>
-              <div class="gallery-section">
-                <div class="row g-2 m-b30" data-masonry='{"percentPosition": true }'>
-                  <div class="col-4" *ngFor="let photo of photos; let i = index">      
-                    <div class="photo-container">
-                      <div class="photo-preview" [ngStyle]="{'background-image': 'url(' + photo.url + ')'}"
-                      >
-                      </div>
-                    </div>
+              </li>
+
+            </ul>
+          </div>
+          <div class="about" style="margin-bottom: 1rem;">
+            <h6 class="title">Estoy interesad&#64; en</h6>
+            <ul class="dz-tag-list">
+              <li>
+                <div class="dz-tag">
+                  <i class="icon feather icon-heart"></i>
+                  <span style="color: #FF50A2;">{{profileData.interestedIn}}</span>
+                </div>
+              </li>
+
+            </ul>
+          </div>
+          <div class="languages mb-3">
+            <h6 class="title">En búsqueda de </h6>
+            <ul class="dz-tag-list">
+              <li>
+                <div class="dz-tag">
+                  <i class="icon feather icon-check-circle"></i>
+                  <span style="color: #FF50A2;">{{profileData.lookingFor}}</span>
+                </div>
+              </li>
+
+            </ul>
+          </div>
+          <div class="languages mb-3">
+            <h6 class="title">Mi idioma es </h6>
+            <ul class="dz-tag-list">
+              <li>
+                <div class="dz-tag">
+                  <i class="icon feather icon-globe"></i>
+                  <span style="color: #FF50A2;">{{profileData.language}}</span>
+                </div>
+              </li>
+
+            </ul>
+          </div>
+          <div class="languages mb-3">
+            <h6 class="title">Mis hobbies son </h6>
+            <ul class="dz-tag-list">
+              <li>
+                <div class="dz-tag">
+                  <i class="icon feather icon-heart"></i>
+                  <span style="color: #FF50A2;">{{profileData.interests}}</span>
+                </div>
+              </li>
+
+            </ul>
+          </div>
+          <div class="gallery-section">
+            <div class="row g-2 m-b30" data-masonry='{"percentPosition": true }'>
+              <div class="col-4" *ngFor="let photo of photos; let i = index">
+                <div class="photo-container">
+                  <div class="photo-preview" [ngStyle]="{'background-image': 'url(' + photo.url + ')'}">
                   </div>
                 </div>
               </div>
             </div>
           </div>
-            <div class="stats-cards">
-                <div class="row g-2 mb-4">
-                    <div class="col-6">
-                        <div class="card style-2 stats-card">
-                            <div class="card-body">
-                                <a href="javascript:void(0);" data-bs-toggle="offcanvas" data-bs-target="#offcanvasBottom" aria-controls="offcanvasBottom">	
-                                    <div class="card-icon">
-                                        <i class="flaticon flaticon-star-1"></i>
-                                    </div>
-                                    <div class="card-content">
-                                        <p>Super Likes</p>
-                                        <div class="stat-value">{{profileData.superLikes}}</div>
-                                    </div>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="card style-2 stats-card">
-                            <div class="card-body">
-                                <a>
-                                    <div class="card-icon">
-                                        <i class="flaticon flaticon-bell"></i>
-                                    </div>
-                                    <div class="card-content">
-                                        <p>Subscripciones</p>
-                                        <div class="stat-value">{{profileData.subscriptions}}</div>
-                                    </div>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="dz-subscribe-area">
-              <div class="subscribe-area-top">
-                  <div class="swiper subscription-swiper2">
-                      <div class="swiper-wrapper mb-3">
-                          <div class="swiper-slide" data-card="premium-plus" *ngFor="let planning of global.planningClients$ | async">
-                              <div class="subscribe-box style-2 premium-plus">
-                                  <h5 class="title"><img src="{{planning.subscription}}" alt="">{{planning.name}}</h5>
-                                  <ul>
-                                    <li *ngFor="let item of planning.items.split(',')" style="text-align: left;">
-                                      <span class="star">★</span> {{ item.trim() }}
-                                    </li>
-                                  </ul>
-                                  <div class="plan-price">{{planning.priceCOP}} <span>COP/mes</span></div>
-                                  <div class="plan-price">{{planning.priceUSD}} <span>USD/mes</span></div>
-                              </div>
-                          </div>
-                      </div>
-                      <div class="swiper-btn">
-                          <div class="swiper-pagination style-1 flex-1"></div>
-                      </div>
-                  </div>
-              </div>
-            </div>  
         </div>
-    </div> 
+      </div>
+      <div class="stats-cards">
+        <div class="row g-2 mb-4">
+          <div class="col-6">
+            <div class="card style-2 stats-card">
+              <div class="card-body">
+                <a href="javascript:void(0);" data-bs-toggle="offcanvas" data-bs-target="#offcanvasBottom"
+                  aria-controls="offcanvasBottom">
+                  <div class="card-icon">
+                    <i class="flaticon flaticon-star-1"></i>
+                  </div>
+                  <div class="card-content">
+                    <p>Super Likes</p>
+                    <div class="stat-value">{{profileData.superLikes}}</div>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="card style-2 stats-card">
+              <div class="card-body">
+                <a>
+                  <div class="card-icon">
+                    <i class="flaticon flaticon-bell"></i>
+                  </div>
+                  <div class="card-content">
+                    <p>Subscripciones</p>
+                    <div class="stat-value">{{profileData.subscriptions}}</div>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dz-subscribe-area">
+        <div class="subscribe-area-top">
+          <div class="swiper subscription-swiper2">
+            <div class="swiper-wrapper mb-3">
+              <div class="swiper-slide" data-card="premium-plus"
+                *ngFor="let planning of global.planningClients$ | async">
+                <div class="subscribe-box style-2 premium-plus">
+                  <h5 class="title"><img src="{{planning.subscription}}" alt="">{{planning.name}}</h5>
+                  <ul>
+                    <li *ngFor="let item of planning.items.split(',')" style="text-align: left;">
+                      <span class="star">★</span> {{ item.trim() }}
+                    </li>
+                  </ul>
+                  <div class="plan-price">{{planning.priceCOP}} <span>COP/mes</span></div>
+                  <div class="plan-price">{{planning.priceUSD}} <span>USD/mes</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="swiper-btn">
+              <div class="swiper-pagination style-1 flex-1"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 <!-- Page Content End -->
 
@@ -224,165 +227,168 @@
 
 
 <div class="page-content space-top" *ngIf="isEditProfile">
-    <div class="container edit-profile-container"> 
-      <!-- Sección de avatar -->
-      <div class="profile-area">
-        <div class="main-profile">
-          <div class="profile-avatar-wrapper">
-            <img [src]="avatarPreview || profileData.avatar || 'assets/images/default-avatar.png'" class="avatar-img" alt="Avatar">
-            <input type="file" #avatarInput accept="image/*" (change)="onAvatarSelected($event)" hidden>
-            <button type="button" class="btn btn-gradient-purple btn-sm mt-2" (click)="avatarInput.click()">
-              Cambiar foto
-            </button>
-          </div>
-          
+  <div class="container edit-profile-container">
+    <!-- Sección de avatar -->
+    <div class="profile-area">
+      <div class="main-profile">
+        <div class="profile-avatar-wrapper">
+          <img [src]="avatarPreview || profileData.avatar || 'assets/images/default-avatar.png'" class="avatar-img"
+            alt="Avatar">
+          <input type="file" #avatarInput accept="image/*" (change)="onAvatarSelected($event)" hidden>
+          <button type="button" class="btn btn-gradient-purple btn-sm mt-2" (click)="avatarInput.click()">
+            Cambiar foto
+          </button>
         </div>
-      </div>
-      
-      <!-- Galería de imágenes y campos editables -->
-      <div class="gallery-section">
-        <div class="row g-2 m-b30" data-masonry='{"percentPosition": true }'>
-          
-            <div class="col-4" *ngFor="let photo of photos; let i = index">
-              <div class="photo-container">
-                <div class="photo-preview"
-                [ngStyle]="{'background-image': 'url(' + photo.url + ')'}"
->
-                  <ng-container *ngIf="!photo.url">
-                    <label [attr.for]="'imageUpload' + i" class="add-photo-btn">
-                      <i class="icon feather icon-plus"></i>
-                    </label>
-                  </ng-container>
-                  <div class="remove-photo-btn" *ngIf="photo.url" (click)="removePhoto(i)">
-                    <i class="icon feather icon-x"></i>
-                  </div>
-                  <input type="file" [id]="'imageUpload' + i" class="d-none" (change)="onPhotoSelected($event, i)" accept=".png, .jpg, .jpeg">
-                </div>
-              </div>
-            </div>
-          
-        
-         <!--  <button class="btn btn-gradient-purple w-100 mt-3 rounded-xl" (click)="addPhoto()">
-            Añadir más fotos
-          </button> -->
-        
-        </div>
-        
-        <!-- Campos editables -->
-        <div class="card style-4">
-          <div class="card-header">
-            <h6 class="title mb-0">Intereses</h6>
-          </div>
-          <div class="card-body">
-            <a href="javascript:void(0);" class="setting-input" 
-               data-bs-toggle="offcanvas" data-bs-target="#offcanvasBottom1" aria-controls="offcanvasBottom1">
-              <span>{{profileData.interests || 'Bailar, Cocinar, Viajar'}}</span>
-              <i class="icon feather dz-flex-box icon-chevron-right ms-auto me-0"></i>
-            </a>
-          </div>
-        </div>
-        
-        <div class="card style-4">
-          <div class="card-header">
-            <h6 class="title mb-0">Objetivos de relación</h6>
-          </div>
-          <div class="card-body">
-            <a href="javascript:void(0);" class="setting-input" 
-               data-bs-toggle="offcanvas" data-bs-target="#offcanvasBottom2" aria-controls="offcanvasBottom2">
-              <span>{{profileData.lookingFor || 'Relacion corta plazo'}}</span>
-              <i class="icon feather dz-flex-box icon-chevron-right ms-auto me-0"></i>
-            </a>
-          </div>
-        </div>
-        
-        <div class="card style-4">
-          <div class="card-header">
-            <h6 class="title mb-0">Idiomas que hablo</h6>
-          </div>
-          <div class="card-body">
-            <a href="javascript:void(0);" class="setting-input" 
-               data-bs-toggle="offcanvas" data-bs-target="#offcanvasLang" aria-controls="offcanvasLang">
-              <span class="select-lang">{{profileData.language || 'Español'}}</span>
-              <i class="icon feather dz-flex-box icon-chevron-right ms-auto me-0"></i>
-            </a>
-          </div>
-        </div>
-        
-        <div class="card style-4">
-          <div class="card-header">
-            <h6 class="title mb-0">Orientación sexual</h6>
-          </div>
-          <div class="card-body">
-            <a href="javascript:void(0);" class="setting-input" 
-               data-bs-toggle="offcanvas" data-bs-target="#offcanvasBottom3" aria-controls="offcanvasBottom3">
-              <span>{{profileData.orientation || 'Heterosexual'}}</span>
-              <i class="icon feather dz-flex-box icon-chevron-right ms-auto me-0"></i>
-            </a>
-          </div>
-        </div>
-        <div class="card style-4">
-          <div class="card-header">
-            <label for="address">Dirección</label>
-          </div>
-          <div class="card-body">
-            <input type="text" class="form-control" name="address" id="address" [(ngModel)]="profileData.address" placeholder="Medellín, Colombia" />
-          </div>
-        </div>
-        <div class="card style-4">
-          <div class="card-header">
-            <h6 class="title mb-0">Género</h6>
-          </div>
-          <div class="card-body">
-            <a href="javascript:void(0);" class="setting-input" 
-               data-bs-toggle="offcanvas" data-bs-target="#offcanvasBottom4" aria-controls="offcanvasBottom4">
-              <span>{{profileData.gender || 'Masculino'}}</span>
-              <i class="icon feather dz-flex-box icon-chevron-right ms-auto me-0"></i>
-            </a>
-          </div>
-        </div>
-        <div class="card style-4">
-          <div class="card-header">
-            <h6 class="title mb-0">Interesado en</h6>
-          </div>
-          <div class="card-body">
-            <a href="javascript:void(0);" class="setting-input" 
-               data-bs-toggle="offcanvas" data-bs-target="#offcanvasBottom5" aria-controls="offcanvasBottom5">
-              <span>{{profileData.interestedIn || 'Mujeres'}}</span>
-              <i class="icon feather dz-flex-box icon-chevron-right ms-auto me-0"></i>
-            </a>
-          </div>
-        </div>
-        <div class="card style-4">
-          <div class="card-header">
-            <label for="about">Sobre mi</label>
-          </div>
-          <div class="card-body">
-            <input type="text" class="form-control" name="about" id="about" [(ngModel)]="profileData.about" placeholder="Hola, me encanta bailar" />
-          </div>
-        </div>
-        <div class="card style-4">
-          <div class="card-header">
-            <label for="age">Edad</label>
-          </div>
-          <div class="card-body">
-            <input type="number" class="form-control" name="age" id="age" [(ngModel)]="profileData.age" placeholder="25" />
-          </div>
-        </div>
-      </div>
-      
-      
-    </div> 
-    <!-- Botones de acción fijos en la parte inferior -->
-    <div class="action-buttons fixed-bottom-action">
-      <div class="d-flex gap-2">
-        <button type="button" class="btn btn-light flex-grow-1" (click)="cancelEdit()">
-          Cancelar
-        </button>
-        <button type="button" class="btn btn-gradient-purple flex-grow-1" (click)="saveProfile()">
-          Guardar
-        </button>
+
       </div>
     </div>
+
+    <!-- Galería de imágenes y campos editables -->
+    <div class="gallery-section">
+      <div class="row g-2 m-b30" data-masonry='{"percentPosition": true }'>
+
+        <div class="col-4" *ngFor="let photo of photos; let i = index">
+          <div class="photo-container">
+            <div class="photo-preview" [ngStyle]="{'background-image': 'url(' + photo.url + ')'}">
+              <ng-container *ngIf="!photo.url">
+                <label [attr.for]="'imageUpload' + i" class="add-photo-btn">
+                  <i class="icon feather icon-plus"></i>
+                </label>
+              </ng-container>
+              <div class="remove-photo-btn" *ngIf="photo.url" (click)="removePhoto(i)">
+                <i class="icon feather icon-x"></i>
+              </div>
+              <input type="file" [id]="'imageUpload' + i" class="d-none" (change)="onPhotoSelected($event, i)"
+                accept=".png, .jpg, .jpeg">
+            </div>
+          </div>
+        </div>
+
+
+        <!--  <button class="btn btn-gradient-purple w-100 mt-3 rounded-xl" (click)="addPhoto()">
+            Añadir más fotos
+          </button> -->
+
+      </div>
+
+      <!-- Campos editables -->
+      <div class="card style-4">
+        <div class="card-header">
+          <h6 class="title mb-0">Intereses</h6>
+        </div>
+        <div class="card-body">
+          <a href="javascript:void(0);" class="setting-input" data-bs-toggle="offcanvas"
+            data-bs-target="#offcanvasBottom1" aria-controls="offcanvasBottom1">
+            <span>{{profileData.interests || 'Bailar, Cocinar, Viajar'}}</span>
+            <i class="icon feather dz-flex-box icon-chevron-right ms-auto me-0"></i>
+          </a>
+        </div>
+      </div>
+
+      <div class="card style-4">
+        <div class="card-header">
+          <h6 class="title mb-0">Objetivos de relación</h6>
+        </div>
+        <div class="card-body">
+          <a href="javascript:void(0);" class="setting-input" data-bs-toggle="offcanvas"
+            data-bs-target="#offcanvasBottom2" aria-controls="offcanvasBottom2">
+            <span>{{profileData.lookingFor || 'Relacion corta plazo'}}</span>
+            <i class="icon feather dz-flex-box icon-chevron-right ms-auto me-0"></i>
+          </a>
+        </div>
+      </div>
+
+      <div class="card style-4">
+        <div class="card-header">
+          <h6 class="title mb-0">Idiomas que hablo</h6>
+        </div>
+        <div class="card-body">
+          <a href="javascript:void(0);" class="setting-input" data-bs-toggle="offcanvas" data-bs-target="#offcanvasLang"
+            aria-controls="offcanvasLang">
+            <span class="select-lang">{{profileData.language || 'Español'}}</span>
+            <i class="icon feather dz-flex-box icon-chevron-right ms-auto me-0"></i>
+          </a>
+        </div>
+      </div>
+
+      <div class="card style-4">
+        <div class="card-header">
+          <h6 class="title mb-0">Orientación sexual</h6>
+        </div>
+        <div class="card-body">
+          <a href="javascript:void(0);" class="setting-input" data-bs-toggle="offcanvas"
+            data-bs-target="#offcanvasBottom3" aria-controls="offcanvasBottom3">
+            <span>{{profileData.orientation || 'Heterosexual'}}</span>
+            <i class="icon feather dz-flex-box icon-chevron-right ms-auto me-0"></i>
+          </a>
+        </div>
+      </div>
+      <div class="card style-4">
+        <div class="card-header">
+          <label for="address">Dirección</label>
+        </div>
+        <div class="card-body">
+          <input type="text" class="form-control" name="address" id="address" [(ngModel)]="profileData.address"
+            placeholder="Medellín, Colombia" />
+        </div>
+      </div>
+      <div class="card style-4">
+        <div class="card-header">
+          <h6 class="title mb-0">Género</h6>
+        </div>
+        <div class="card-body">
+          <a href="javascript:void(0);" class="setting-input" data-bs-toggle="offcanvas"
+            data-bs-target="#offcanvasBottom4" aria-controls="offcanvasBottom4">
+            <span>{{profileData.gender || 'Masculino'}}</span>
+            <i class="icon feather dz-flex-box icon-chevron-right ms-auto me-0"></i>
+          </a>
+        </div>
+      </div>
+      <div class="card style-4">
+        <div class="card-header">
+          <h6 class="title mb-0">Interesado en</h6>
+        </div>
+        <div class="card-body">
+          <a href="javascript:void(0);" class="setting-input" data-bs-toggle="offcanvas"
+            data-bs-target="#offcanvasBottom5" aria-controls="offcanvasBottom5">
+            <span>{{profileData.interestedIn || 'Mujeres'}}</span>
+            <i class="icon feather dz-flex-box icon-chevron-right ms-auto me-0"></i>
+          </a>
+        </div>
+      </div>
+      <div class="card style-4">
+        <div class="card-header">
+          <label for="about">Sobre mi</label>
+        </div>
+        <div class="card-body">
+          <input type="text" class="form-control" name="about" id="about" [(ngModel)]="profileData.about"
+            placeholder="Hola, me encanta bailar" />
+        </div>
+      </div>
+      <div class="card style-4">
+        <div class="card-header">
+          <label for="age">Edad</label>
+        </div>
+        <div class="card-body">
+          <input type="number" class="form-control" name="age" id="age" [(ngModel)]="profileData.age"
+            placeholder="25" />
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+  <!-- Botones de acción fijos en la parte inferior -->
+  <div class="action-buttons fixed-bottom-action">
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-light flex-grow-1" (click)="cancelEdit()">
+        Cancelar
+      </button>
+      <button type="button" class="btn btn-gradient-purple flex-grow-1" [disabled]="isSaving" (click)="saveProfile()">
+        {{ isSaving ? 'Guardando...' : 'Guardar' }}
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- Interest OffCanvas -->
@@ -395,10 +401,8 @@
   </div>
   <div class="offcanvas-body">
     <div class="input-group input-group-icon search-input">
-      <input type="search" class="form-control ms-0" 
-             placeholder="Buscar..." 
-             [(ngModel)]="interestSearch" 
-             (input)="filterInterests()">
+      <input type="search" class="form-control ms-0" placeholder="Buscar..." [(ngModel)]="interestSearch"
+        (input)="filterInterests()">
       <div class="input-group-text">
         <div class="input-icon">
           <i class="icon feather icon-search"></i>
@@ -407,17 +411,13 @@
     </div>
     <ul class="dz-tag-list style-2">
       <li *ngFor="let interest of filteredInterests">
-        <div class="dz-tag" 
-             [class.active]="selectedInterests.includes(interest)"
-             (click)="toggleInterest(interest)">
+        <div class="dz-tag" [class.active]="selectedInterests.includes(interest)" (click)="toggleInterest(interest)">
           <span>{{interest}}</span>
         </div>
       </li>
     </ul>
     <div class="mt-3">
-      <button class="btn btn-gradient-purple w-100" 
-              data-bs-dismiss="offcanvas"
-              (click)="saveInterests()">
+      <button class="btn btn-gradient-pink w-100" data-bs-dismiss="offcanvas" (click)="saveInterests()">
         Guardar
       </button>
     </div>
@@ -434,20 +434,16 @@
     <div class="radio style-4 row g-2">
       <div class="col-4" *ngFor="let goal of lookingFor">
         <label class="radio-label">
-          <input type="radio" [name]="'relationshipGoal'" 
-                 [value]="goal.value" 
-                 [(ngModel)]="profileData.lookingFor">
+          <input type="radio" [name]="'relationshipGoal'" [value]="goal.value" [(ngModel)]="profileData.lookingFor">
           <span class="checkmark">
-            <img [src]="goal.icon" alt="">                            
-            <span class="text">{{goal.label}}</span>  
+            <img [src]="goal.icon" alt="">
+            <span class="text">{{goal.label}}</span>
           </span>
         </label>
       </div>
     </div>
     <div class="mt-3">
-      <button class="btn btn-gradient-purple w-100" 
-              data-bs-dismiss="offcanvas"
-              (click)="saveRelationshipGoal()">
+      <button class="btn btn-gradient-purple w-100" data-bs-dismiss="offcanvas" (click)="saveRelationshipGoal()">
         Guardar
       </button>
     </div>
@@ -465,10 +461,8 @@
   <div class="offcanvas-body">
     <div class="dz-list">
       <ul class="mb-2 confirm-lang">
-        <li *ngFor="let lang of languages" 
-            [class.border-0]="lang === languages[languages.length - 1]">
-          <a href="javascript:void(0);" class="item-content py-2 item-link"
-             (click)="selectLanguage(lang)">
+        <li *ngFor="let lang of languages" [class.border-0]="lang === languages[languages.length - 1]">
+          <a href="javascript:void(0);" class="item-content py-2 item-link" (click)="selectLanguage(lang)">
             <div class="media media-30 me-3">
               <img [src]="lang.flag" alt="/">
             </div>
@@ -491,20 +485,15 @@
   <div class="offcanvas-body">
     <div>
       <div class="form-check mb-3" *ngFor="let orientation of orientation">
-        <input class="form-check-input" type="radio" 
-               name="orientation" 
-               [id]="'orientation' + orientation.value"
-               [value]="orientation.value"
-               [(ngModel)]="profileData.orientation">
+        <input class="form-check-input" type="radio" name="orientation" [id]="'orientation' + orientation.value"
+          [value]="orientation.value" [(ngModel)]="profileData.orientation">
         <label class="form-check-label" [for]="'orientation' + orientation.value">
           {{orientation.label}}
         </label>
       </div>
     </div>
     <div class="mt-3">
-      <button class="btn btn-gradient-purple w-100" 
-              data-bs-dismiss="offcanvas"
-              (click)="saveSexualOrientation()">
+      <button class="btn btn-gradient-purple w-100" data-bs-dismiss="offcanvas" (click)="saveSexualOrientation()">
         Guardar
       </button>
     </div>
@@ -520,20 +509,15 @@
   <div class="offcanvas-body">
     <div>
       <div class="form-check mb-3" *ngFor="let gender of gender">
-        <input class="form-check-input" type="radio" 
-               name="gender" 
-               [id]="'gender' + gender.value"
-               [value]="gender.value"
-               [(ngModel)]="profileData.gender">
+        <input class="form-check-input" type="radio" name="gender" [id]="'gender' + gender.value" [value]="gender.value"
+          [(ngModel)]="profileData.gender">
         <label class="form-check-label" [for]="'gender' + gender.value">
           {{gender.label}}
         </label>
       </div>
     </div>
     <div class="mt-3">
-      <button class="btn btn-gradient-purple w-100" 
-              data-bs-dismiss="offcanvas"
-              (click)="saveGender()">
+      <button class="btn btn-gradient-purple w-100" data-bs-dismiss="offcanvas" (click)="saveGender()">
         Guardar
       </button>
     </div>
@@ -550,22 +534,17 @@
   <div class="offcanvas-body">
     <div>
       <div class="form-check mb-3" *ngFor="let interestedIn of interestedIn">
-        <input class="form-check-input" type="radio" 
-               name="interestedIn" 
-               [id]="'interestedIn' + interestedIn.value"
-               [value]="interestedIn.value"
-               [(ngModel)]="profileData.interestedIn">
+        <input class="form-check-input" type="radio" name="interestedIn" [id]="'interestedIn' + interestedIn.value"
+          [value]="interestedIn.value" [(ngModel)]="profileData.interestedIn">
         <label class="form-check-label" [for]="'interestedIn' + interestedIn.value">
           {{interestedIn.label}}
         </label>
       </div>
     </div>
     <div class="mt-3">
-      <button class="btn btn-gradient-pink w-100" 
-              data-bs-dismiss="offcanvas"
-              (click)="saveInterests()">
-        Guardar
-      </button>
+      <button class="btn btn-gradient-pink w-100" data-bs-dismiss="offcanvas" (click)="saveInterestedIn()">
+  Guardar
+</button>
     </div>
   </div>
 </div>
