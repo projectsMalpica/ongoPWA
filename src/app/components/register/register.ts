@@ -12,7 +12,7 @@ import { EmailService } from '../../services/email.service';
 import { Router, RouterLink } from '@angular/router';
 @Component({
   selector: 'app-register',
-    standalone: true,
+  standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, Terms, Privacy, RouterLink],
   templateUrl: './register.html',
   styleUrl: './register.scss',
@@ -24,7 +24,7 @@ export class RegisterComponent {
   isSubmitting = false;
   modalContent: 'terms' | 'privacy' | null = null;
   currentStep = 1;
-  userType: 'partner' | 'client' | null = null; 
+  userType: 'partner' | 'client' | null = null;
   // Formulario principal
   formType: 'partner' | 'client' = 'partner';
   // FormGroups separados
@@ -41,13 +41,13 @@ export class RegisterComponent {
   };
   profileImage: string | null = null;
   selectedProfileFile: File | null = null;
-  imageUrl: string = 'assets/images/avatar/1.jpg'; 
+  imageUrl: string = 'assets/images/avatar/1.jpg';
   selectedFile: File | null = null;
   private baseUrl: string = 'https://db.ongomatch.com:8090';
-  
+
   @ViewChild('profileFileInput') profileFileInput!: ElementRef;
-showPassword = false;
-showConfirmPassword = false;
+  showPassword = false;
+  showConfirmPassword = false;
   constructor(
     private fb: FormBuilder,
     public auth: AuthPocketbaseService,
@@ -76,21 +76,17 @@ showConfirmPassword = false;
     }, {
       validators: [this.passwordMatchValidator, this.validateOpeningHours]
     });
-    
+
     // Formulario para clientes
     this.clientForm = this.fb.group({
-      // Paso 1 - Credenciales
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', Validators.required],
-    
-      // Paso 2 - Información personal
-      name: ['', Validators.required], // Se mapeará a name
-      address: ['', Validators.required],   // Si no necesitas address, puedes quitarlo aquí y en el backend
+      address: ['', [Validators.required, Validators.maxLength(200)]],
+      name: ['', Validators.required],
       birthday: ['', [Validators.required, this.validateAge]],
-      gender: ['Mujer', Validators.required],
-    
-      // Paso 3 - Preferencias
+      gender: ['', Validators.required],
+
       orientation: this.fb.group({
         heterosexual: [false],
         gay: [false],
@@ -100,12 +96,9 @@ showConfirmPassword = false;
         queer: [false],
         demisexual: [false]
       }),
+
       interestedIn: ['', Validators.required],
       lookingFor: ['', Validators.required],
-      // Paso 4
-      /* photo: ['', Validators.required], */
-    
-      // Términos y condiciones
       terms: [false, Validators.requiredTrue]
     }, { validators: this.passwordMatchValidator });
   }
@@ -121,12 +114,12 @@ showConfirmPassword = false;
     return null;
   }
   togglePassword(): void {
-  this.showPassword = !this.showPassword;
-}
+    this.showPassword = !this.showPassword;
+  }
 
-toggleConfirmPassword(): void {
-  this.showConfirmPassword = !this.showConfirmPassword;
-}
+  toggleConfirmPassword(): void {
+    this.showConfirmPassword = !this.showConfirmPassword;
+  }
   openTermsModal(type: 'terms' | 'privacy') {
     console.log('Opening modal with type:', type);
     this.modalContent = type;
@@ -141,50 +134,33 @@ toggleConfirmPassword(): void {
     this.showModal = true;
     console.log('Modal state:', { showModal: this.showModal, modalTitle: this.modalTitle, modalContent: this.modalContent });
   }
- 
 
-async uploadImage() {
-  
-  if (this.selectedFile) {
-   /*  const formData = new FormData();
-    formData.append('image', this.selectedFile, this.selectedFile.name);
 
-    try {
-      const response = await this.auth.pb.collection('files').create(formData);
-      const collectionId = response.collectionId; 
-      const fileId = response.id; 
-      const fileName = this.selectedFile.name; 
-      const token = ''; 
-      const image = response['image'];
-      const constructedUrl = `${this.baseUrl}/api/file/${collectionId}/${fileId}/${image}?token=${token}`;
-      this.imageUrl = constructedUrl; 
-      console.log('Imagen cargada con éxito', response);
-      console.log('URL de la imagen:', constructedUrl);
-      await this.onSubmit();
-    } catch (error) {
-      console.error('Error al cargar la imagen', error);
-    } */
+  async uploadImage() {
+
+    if (this.selectedFile) {
+
       const formData = new FormData();
       formData.append('file', this.selectedFile!, this.selectedFile!.name);
-      
+
       const fileRecord = await this.auth.pb.collection('files').create(formData);
-      
+
       // Construir URL real
       const fileUrl = `${this.baseUrl}/api/files/${fileRecord.collectionId}/${fileRecord.id}/${fileRecord['file']}`;
-      
+
       // Guardar en this.imageUrl para luego usarlo al crear el usuario
       this.imageUrl = fileUrl;
-      
+
       console.log('✅ URL generada:', this.imageUrl);
-      
+
+    }
   }
-}
   goBackToTypeSelection(): void {
-  this.userType = null;
-  this.currentStep = 1;
-  this.showPassword = false;
-  this.showConfirmPassword = false;
-}
+    this.userType = null;
+    this.currentStep = 1;
+    this.showPassword = false;
+    this.showConfirmPassword = false;
+  }
   openProfileFileSelector() {
     this.profileFileInput.nativeElement.click();
   }
@@ -194,31 +170,31 @@ async uploadImage() {
   }
 
   currentUserId: string | null = null;
-  
+
   async onFileSelected(event: any) {
     const file: File = event.target.files[0];
     if (!file) return;
-  
+
     // Step 1: Upload file to PocketBase 'files' collection
     const formData = new FormData();
     formData.append('file', file);
     // Optionally add userId/type if needed
     formData.append('userId', this.currentUserId!); // set this accordingly
     formData.append('type', 'profile');
-  
+
     try {
       const fileRecord = await this.auth.pb.collection('files').create(formData);
       // Construct the file URL
       const fileUrl = `${this.baseUrl}/api/files/${fileRecord.collectionId}/${fileRecord.id}/${fileRecord['file']}`;
-  
+
       // Step 2: Save the file URL in usuariosClient.photos (as JSON)
       // If you want to allow multiple photos, you can push to an array
       const photos = [fileUrl]; // or merge with existing if needed
-  
+
       await this.auth.pb.collection('usuariosClient').update(this.currentUserId!, {
         photos: JSON.stringify(photos) // make sure the field is JSON type
       });
-  
+
       // Optionally update the UI
       this.imageUrl = fileUrl;
     } catch (error) {
@@ -233,26 +209,31 @@ async uploadImage() {
         await this.registerClient();
       }
     } catch (error: any) {
-      console.error('Error en el registro:', error);
-      
-      let errorMessage = 'Hubo un problema al registrar tu cuenta. Por favor intenta nuevamente.';
-      
-      if (error?.response?.data) {
-        const pbError = error.response.data;
-        if (pbError.email) {
-          errorMessage = pbError.email.message;
-        } else if (pbError.username) {
-          errorMessage = pbError.username.message;
-        }
-      }
-      this.resetForm();
-      
+      console.error('Error completo en el registro:', error);
+      console.error('Error data:', error?.data);
+
+      const pbFields = error?.data?.data || {};
+      const errorMessage =
+        pbFields?.email?.message ||
+        pbFields?.name?.message ||
+        pbFields?.address?.message ||
+        pbFields?.birthday?.message ||
+        pbFields?.gender?.message ||
+        pbFields?.interestedIn?.message ||
+        pbFields?.lookingFor?.message ||
+        pbFields?.photos?.message ||
+        error?.data?.message ||
+        error?.message ||
+        'Hubo un problema al registrar tu cuenta.';
+
       Swal.fire({
         title: 'Error',
         text: errorMessage,
         icon: 'error',
         confirmButtonText: 'Entendido'
       });
+    } finally {
+      this.isSubmitting = false;
     }
   }
   resetForm() {
@@ -262,26 +243,26 @@ async uploadImage() {
     this.userType = null;
     this.isSubmitting = false;
   }
- 
-    async registerPartner() {
-      this.isSubmitting = true;
-      if (this.partnerForm.invalid) {
-        this.markPartnerFieldsAsTouched(this.currentStep);
-        this.isSubmitting = false;
-        return;
-      }
-    
+
+  async registerPartner() {
+    this.isSubmitting = true;
+
+    if (this.partnerForm.invalid) {
+      this.markPartnerFieldsAsTouched(this.currentStep);
+      this.isSubmitting = false;
+      return;
+    }
+
+    try {
       const formData = this.partnerForm.value;
-    
-      // 1. Registrar usuario base
+
       const userResponse = await this.auth.onlyRegisterUser(
         formData.email,
         formData.password,
         'partner',
         formData.venueName
       ).toPromise();
-    
-      // 2. Preparar y guardar perfil en usuariosPartner
+
       const partnerData: any = {
         userId: userResponse.id,
         venueName: formData.venueName,
@@ -296,123 +277,145 @@ async uploadImage() {
         status: 'pending',
         approved: false
       };
-    
-      await this.auth.pb.collection('usuariosPartner').create(partnerData);
-     // 🔔 Email de bienvenida específico para locales
-  this.emailService.sendWelcome({
-    toEmail: formData.email,
-    toName: formData.venueName,
-    userType: 'partner',
-    params: { venueName: formData.venueName }
-  }).catch(err => console.warn('Welcome email failed:', err));
 
-      // 3. Autologin y redirección
+      await this.auth.pb.collection('usuariosPartner').create(partnerData);
+
+      this.emailService.sendWelcome({
+        toEmail: formData.email,
+        toName: formData.venueName,
+        userType: 'partner',
+        params: { venueName: formData.venueName }
+      }).catch(err => console.warn('Welcome email failed:', err));
+
       await this.auth.loginUser(formData.email, formData.password).toPromise();
+
+      // mantener navegación virtual
       this.router.navigate(['profile-local']);
-    
+
       Swal.fire({
         title: 'Registro Exitoso',
         text: 'Tu local ha sido registrado. Estará activo después de la aprobación.',
         icon: 'success',
         confirmButtonText: 'Entendido'
       });
-    
+
+    } catch (error) {
+      console.error('Error registrando partner:', error);
+      throw error;
+    } finally {
       this.isSubmitting = false;
     }
-    
-  
-      async registerClient() {
-        this.isSubmitting = true;
-        if (this.clientForm.invalid) {
-          this.markClientFieldsAsTouched(this.currentStep);
-          this.isSubmitting = false;
-          return;
-        }
-      
-        // Subir imagen si hay una seleccionada
-        /* if (this.selectedFile) {
-          const formData = new FormData();
-          formData.append('image', this.selectedFile, this.selectedFile.name);
-      
-          try {
-            const response = await this.auth.pb.collection('files').create(formData);
-            const collectionId = response.collectionId;
-            const fileId = response.id;
-            const fileName = response['file']; // asegúrate de que 'file' es el campo correcto
-            const constructedUrl = `${this.baseUrl}/api/files/${collectionId}/${fileId}/${fileName}`;
-             this.imageUrl = constructedUrl;
-          } catch (error) {
-            console.error('Error al cargar la imagen', error);
-            this.isSubmitting = false;
-            return;
-          }
-        } */
-          if (this.selectedFile) {
-            const formData = new FormData();
-            formData.append('file', this.selectedFile, this.selectedFile.name);
-          
-            try {
-              const response = await this.auth.pb.collection('files').create(formData);
-              const collectionId = response.collectionId;
-              const fileId = response.id;
-              const fileName = response['file'];
-          
-              this.imageUrl = `${this.baseUrl}/api/files/${collectionId}/${fileId}/${fileName}`;
-            } catch (error) {
-              console.error('Error al cargar la imagen', error);
-              this.isSubmitting = false;
-              return;
-            }
-          }
-          
-        const formData = this.clientForm.value;
-      
-        // Registrar usuario base
-        const userResponse = await this.auth.onlyRegisterUser(
-          formData.email,
-          formData.password,
-          'client',
-          formData.name
-        ).toPromise();
-      
-        // Preparar y guardar perfil en usuariosClient
-        const orientationGroup = formData.orientation;
-        const selectedOrientation = Object.keys(orientationGroup).find(key => orientationGroup[key]) || '';
-        const clientData: any = {
-          userId: userResponse.id,
-          name: formData.name,
-          address: formData.address,
-          birthday: new Date(formData.birthday).toISOString(),
-          gender: formData.gender,
-          orientation: selectedOrientation, // ✅ Solo la orientación seleccionada       
-          interestedIn: formData.interestedIn,
-          lookingFor: formData.lookingFor,
-          email: formData.email,
-          profileComplete: true,
-          status: 'pending',
-          photo: this.imageUrl // Aquí ya está la URL de la imagen
-        };
-      
-        await this.auth.pb.collection('usuariosClient').create(clientData);
-        // 🔔 Disparar email de bienvenida (no bloquear)
-  this.emailService.sendWelcome({
-    toEmail: formData.email,
-    toName: formData.name,
-    userType: 'client',
-    params: { plan: 'free' }
-  }).catch(err => console.warn('Welcome email failed:', err));
+  }
 
-        // Autologin y redirección        await this.auth.loginUser(formData.email, formData.password).toPromise();
-        this.router.navigate(['profile']);
-      
-        this.successTag = {
-          show: true,
-          message: `¡Bienvenido/a, ${formData.name}! Tu perfil ha sido creado exitosamente. Ahora puedes explorar, conectar y personalizar tu experiencia en OngoMatch.`
-        };
+  async registerClient() {
+    this.isSubmitting = true;
 
-      
-        this.isSubmitting = false;
+    if (this.clientForm.invalid) {
+      this.markClientFieldsAsTouched(this.currentStep);
+      console.log('clientForm INVALID');
+      console.log('value:', this.clientForm.value);
+      this.isSubmitting = false;
+      return;
+    }
+
+    try {
+      const formData = this.clientForm.value;
+
+      // 1. Crear usuario base
+      const userResponse = await this.auth.onlyRegisterUser(
+        formData.email,
+        formData.password,
+        'client',
+        formData.name
+      ).toPromise();
+
+      console.log('Usuario base creado:', userResponse);
+
+      let uploadedPhotos: string[] = [];
+
+      // 2. Subir imagen si existe
+      if (this.selectedFile) {
+        const imageFormData = new FormData();
+        imageFormData.append('file', this.selectedFile, this.selectedFile.name);
+
+        // agrega estos si tu colección files los exige
+        imageFormData.append('userId', userResponse.id);
+        imageFormData.append('type', 'profile');
+
+        const fileRecord = await this.auth.pb.collection('files').create(imageFormData);
+
+        const fileUrl = `${this.baseUrl}/api/files/${fileRecord.collectionId}/${fileRecord.id}/${fileRecord['file']}`;
+        uploadedPhotos = [fileUrl];
+        this.imageUrl = fileUrl;
+
+        console.log('Imagen subida:', fileUrl);
       }
+
+      // 3. Preparar orientación
+      const orientationGroup = formData.orientation || {};
+      const selectedOrientation = Object.keys(orientationGroup).filter(
+        key => orientationGroup[key]
+      );
+
+      // 4. Crear perfil usuario cliente
+      const clientData: any = {
+        userId: userResponse.id,
+        name: formData.name,
+        address: formData.address,
+        birthday: new Date(formData.birthday).toISOString(),
+        gender: formData.gender,
+        orientation: selectedOrientation,
+        interestedIn: formData.interestedIn,
+        lookingFor: formData.lookingFor,
+        email: formData.email,
+        status: 'pending',
+        profileComplete: true,
+        photos: uploadedPhotos
+      };
+
+      console.log('Payload usuariosClient:', clientData);
+
+      await this.auth.pb.collection('usuariosClient').create(clientData);
+      console.log('Perfil usuariosClient creado correctamente');
+
+      this.emailService.sendWelcome({
+        toEmail: formData.email,
+        toName: formData.name,
+        userType: 'client',
+        params: { plan: 'free' }
+      }).catch(err => console.warn('Welcome email failed:', err));
+
+      await this.auth.loginUser(formData.email, formData.password).toPromise();
+
+      // mantener navegación virtual
+      this.router.navigate(['profile']);
+
+      Swal.fire({
+        title: 'Registro exitoso',
+        text: `¡Bienvenido/a, ${formData.name}! Tu perfil ha sido creado exitosamente.`,
+        icon: 'success',
+        confirmButtonText: 'Continuar'
+      });
+
+    } catch (error: any) {
+      console.error('Error registrando cliente:', error);
+      console.error('PocketBase error data:', error?.data);
+      throw error;
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
+  getFormErrors(form: FormGroup): { [key: string]: string } {
+    const errors: { [key: string]: string } = {};
+    Object.keys(form.controls).forEach(key => {
+      const control = form.controls[key];
+      if (control.errors) {
+        errors[key] = Object.values(control.errors)[0];
+      }
+    });
+    return errors;
+  }
 
   // Tag visual de éxito
   public successTag: { show: boolean, message: string } = { show: false, message: '' };
@@ -465,32 +468,32 @@ async uploadImage() {
   passwordMatchValidator(form: AbstractControl): ValidationErrors | null {
     const password = form.get('password')?.value;
     const confirmPassword = form.get('confirmPassword')?.value;
-  
+
     if (password && confirmPassword && password !== confirmPassword) {
       return { mismatch: true };
     }
     return null;
   }
-  
+
 
   // Manejo de selección de tipo de usuario
- /*  selectUserType(type: 'partner' | 'client') {
-    this.userType = type;
-    this.nextStep();
-    if (type === 'partner') {
-      this.setPartnerStepValidators(1);
-    }
-    if (type === 'client') {
-      this.setClientStepValidators(1);
-    }
-  } */
+  /*  selectUserType(type: 'partner' | 'client') {
+     this.userType = type;
+     this.nextStep();
+     if (type === 'partner') {
+       this.setPartnerStepValidators(1);
+     }
+     if (type === 'client') {
+       this.setClientStepValidators(1);
+     }
+   } */
   selectUserType(type: 'partner' | 'client'): void {
-  this.userType = type;
-  this.currentStep = 1;
-  this.showPassword = false;
-  this.showConfirmPassword = false;
-}
-  setClientStepValidators(step: number) {
+    this.userType = type;
+    this.currentStep = 1;
+    this.showPassword = false;
+    this.showConfirmPassword = false;
+  }
+  /* setClientStepValidators(step: number) {
     // Limpiar validadores de todos los campos
     const controls = this.clientForm.controls;
     Object.keys(controls).forEach(key => {
@@ -516,44 +519,112 @@ async uploadImage() {
     // Mantener el validador de grupo (coincidencia de contraseñas)
     this.clientForm.setValidators(this.passwordMatchValidator);
     this.clientForm.updateValueAndValidity({ emitEvent: false });
+  } */
+
+  setClientStepValidators(step: number) {
+    const controls = this.clientForm.controls;
+
+    Object.keys(controls).forEach(key => {
+      controls[key].clearValidators();
+      controls[key].updateValueAndValidity({ emitEvent: false });
+    });
+
+    if (step === 1) {
+      controls['email'].setValidators([Validators.required, Validators.email]);
+      controls['password'].setValidators([Validators.required, Validators.minLength(8)]);
+      controls['confirmPassword'].setValidators([Validators.required]);
+    } else if (step === 2) {
+      controls['name'].setValidators([Validators.required]);
+      controls['birthday'].setValidators([Validators.required, this.validateAge]);
+      controls['gender'].setValidators([Validators.required]);
+    } else if (step === 3) {
+      controls['interestedIn'].setValidators([Validators.required]);
+      controls['lookingFor'].setValidators([Validators.required]);
+    } else if (step === 4) {
+      controls['terms'].setValidators([Validators.requiredTrue]);
+    }
+
+    Object.keys(controls).forEach(key =>
+      controls[key].updateValueAndValidity({ emitEvent: false })
+    );
+
+    this.clientForm.setValidators(this.passwordMatchValidator);
+    this.clientForm.updateValueAndValidity({ emitEvent: false });
   }
+
 
   // Navegación entre pasos
 
   nextStep() {
     if (this.userType === 'partner') {
-      if (this.currentStep === 1 &&
-          (this.partnerForm.get('email')?.invalid ||
-           this.partnerForm.get('password')?.invalid ||
-           this.partnerForm.get('confirmPassword')?.invalid ||
-           this.partnerForm.errors?.['mismatch'])) {
+      if (
+        this.currentStep === 1 &&
+        (
+          this.partnerForm.get('email')?.invalid ||
+          this.partnerForm.get('password')?.invalid ||
+          this.partnerForm.get('confirmPassword')?.invalid ||
+          this.partnerForm.errors?.['mismatch']
+        )
+      ) {
         this.markPartnerFieldsAsTouched(1);
         return;
       }
-      if (this.currentStep === 2 &&
-          (this.partnerForm.get('venueName')?.invalid ||
-           this.partnerForm.get('address')?.invalid ||
-           this.partnerForm.get('phone')?.invalid)) {
+
+      if (
+        this.currentStep === 2 &&
+        (
+          this.partnerForm.get('venueName')?.invalid ||
+          this.partnerForm.get('address')?.invalid ||
+          this.partnerForm.get('phone')?.invalid
+        )
+      ) {
         this.markPartnerFieldsAsTouched(2);
         return;
       }
-      // Paso 3 no necesita validación previa para avanzar
+
       this.currentStep++;
-      this.setPartnerStepValidators(this.currentStep);
       return;
     }
+
     if (this.userType === 'client') {
-      if (this.currentStep === 1 && this.clientForm.get('email')?.invalid) {
+      if (
+        this.currentStep === 1 &&
+        (
+          this.clientForm.get('email')?.invalid ||
+          this.clientForm.get('password')?.invalid ||
+          this.clientForm.get('confirmPassword')?.invalid ||
+          this.clientForm.errors?.['mismatch']
+        )
+      ) {
         this.markClientFieldsAsTouched(1);
         return;
       }
-      if (this.currentStep === 2 && this.clientForm.get('firstName')?.invalid) {
+
+      if (
+        this.currentStep === 2 &&
+        (
+          this.clientForm.get('name')?.invalid ||
+          this.clientForm.get('birthday')?.invalid ||
+          this.clientForm.get('gender')?.invalid
+        )
+      ) {
         this.markClientFieldsAsTouched(2);
         return;
       }
-    }
 
-    this.currentStep++;
+      if (
+        this.currentStep === 3 &&
+        (
+          this.clientForm.get('interestedIn')?.invalid ||
+          this.clientForm.get('lookingFor')?.invalid
+        )
+      ) {
+        this.markClientFieldsAsTouched(3);
+        return;
+      }
+
+      this.currentStep++;
+    }
   }
 
 
@@ -567,7 +638,7 @@ async uploadImage() {
       controls[key].clearValidators();
       controls[key].updateValueAndValidity({ emitEvent: false });
     });
-  
+
     // Paso 1: Credenciales
     if (step === 1) {
       controls['email'].setValidators([Validators.required, Validators.email]);
@@ -589,7 +660,7 @@ async uploadImage() {
     }
     // Actualizar validadores
     Object.keys(controls).forEach(key => controls[key].updateValueAndValidity({ emitEvent: false }));
-  
+
     // Mantener el validador de grupo (coincidencia de contraseñas)
     this.partnerForm.setValidators(this.passwordMatchValidator);
     this.partnerForm.updateValueAndValidity({ emitEvent: false });
@@ -602,9 +673,14 @@ async uploadImage() {
       this.clientForm.get('password')?.markAsTouched();
       this.clientForm.get('confirmPassword')?.markAsTouched();
     } else if (step === 2) {
-      this.clientForm.get('firstName')?.markAsTouched();
-      this.clientForm.get('birthDay')?.markAsTouched();
+      this.clientForm.get('name')?.markAsTouched();
+      this.clientForm.get('birthday')?.markAsTouched();
       this.clientForm.get('gender')?.markAsTouched();
+    } else if (step === 3) {
+      this.clientForm.get('interestedIn')?.markAsTouched();
+      this.clientForm.get('lookingFor')?.markAsTouched();
+    } else if (step === 4) {
+      this.clientForm.get('terms')?.markAsTouched();
     }
   }
 
@@ -628,10 +704,15 @@ async uploadImage() {
   // Método para el cargador de imagen de perfil simple
   public onImageSelected(event: any): void {
     const file = event.target.files && event.target.files[0];
+
     if (!file) {
       this.selectedImage = null;
+      this.selectedFile = null;
       return;
     }
+
+    this.selectedFile = file;
+
     const reader = new FileReader();
     reader.onload = (e: any) => {
       this.selectedImage = e.target.result;
@@ -640,22 +721,23 @@ async uploadImage() {
   }
 
   // Método para eliminar la imagen seleccionada
+
   public removeImage(): void {
     this.selectedImage = null;
+    this.selectedFile = null;
   }
-
   // Manejo de imágenes
- handleFileInput(event: any, index: number) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e: any) => {
-          const imageUrl = e.target.result;
-          this.photosArray.at(index).setValue(imageUrl);
-        };
-        reader.readAsDataURL(file);
-      }
+  handleFileInput(event: any, index: number) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        const imageUrl = e.target.result;
+        this.photosArray.at(index).setValue(imageUrl);
+      };
+      reader.readAsDataURL(file);
     }
+  }
   validateAge(control: AbstractControl): ValidationErrors | null {
     const birthday = new Date(control.value);
     const ageDiff = Date.now() - birthday.getTime();
@@ -686,5 +768,5 @@ async uploadImage() {
     const hasSelected = Object.values(group).some(value => value);
     return hasSelected ? null : { required: true };
   }
-  
+
 }

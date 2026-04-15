@@ -380,10 +380,22 @@
             <label class="form-label">Género *</label>
             <select class="form-control" formControlName="gender"
               [class.is-invalid]="f['gender'].touched && f['gender'].invalid">
+              <option value="" disabled>Selecciona tu género</option>
               <option value="Mujer">Mujer</option>
               <option value="Hombre">Hombre</option>
               <option value="Otro">Otro</option>
             </select>
+            <div *ngIf="f['gender'].touched && f['gender'].invalid" class="invalid-feedback">
+              Selecciona tu género
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Dirección *</label>
+            <input type="text" class="form-control" formControlName="address"
+              [class.is-invalid]="f['address'].touched && f['address'].invalid">
+            <div *ngIf="f['address'].touched && f['address'].invalid" class="invalid-feedback">
+              Por favor ingresa tu dirección
+            </div>
           </div>
         </form>
       </div>
@@ -448,16 +460,23 @@
 
           <div class="mb-4">
             <label class="form-label">Interesado en *</label>
-            <select class="form-control" formControlName="interestedIn">
+            <select class="form-control" formControlName="interestedIn"
+              [class.is-invalid]="f['interestedIn'].touched && f['interestedIn'].invalid">
+              <option value="" disabled>Selecciona una opción</option>
               <option value="Mujeres">Mujeres</option>
               <option value="Hombres">Hombres</option>
               <option value="Otros">Otros</option>
             </select>
+            <div *ngIf="f['interestedIn'].touched && f['interestedIn'].invalid" class="invalid-feedback">
+              Selecciona una opción
+            </div>
           </div>
 
           <div class="mb-4">
             <label class="form-label">Qué buscas *</label>
-            <select class="form-control" formControlName="lookingFor">
+            <select class="form-control" formControlName="lookingFor"
+              [class.is-invalid]="f['lookingFor'].touched && f['lookingFor'].invalid">
+              <option value="" disabled>Selecciona una opción</option>
               <option value="Relación seria">Relación seria</option>
               <option value="Diversión a corto plazo">Diversión a corto plazo</option>
               <option value="Nuevas amistades">Nuevas amistades</option>
@@ -465,6 +484,9 @@
               <option value="Abiert@ a opciones">Abiert&#64; a opciones</option>
               <option value="Averiguarlo">Averiguarlo</option>
             </select>
+            <div *ngIf="f['lookingFor'].touched && f['lookingFor'].invalid" class="invalid-feedback">
+              Selecciona una opción
+            </div>
           </div>
         </form>
       </div>
