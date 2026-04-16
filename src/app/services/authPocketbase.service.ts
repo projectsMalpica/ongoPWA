@@ -511,7 +511,7 @@ export class AuthPocketbaseService {
       throw error;
     }
   }
-  async loginWithGoogle() {
+ /*  async loginWithGoogle() {
     try {
       const authData = await this.pb.collection('users').authWithOAuth2({
         provider: 'google',
@@ -587,7 +587,96 @@ export class AuthPocketbaseService {
       console.error('Error en login con Google:', err);
       throw this.mapPocketbaseError(err);
     }
+  } */
+async loginWithGoogle(): Promise<UserInterface> {
+  try {
+    const authData = await this.pb.collection('users').authWithOAuth2({
+      provider: 'google',
+    });
+
+    const pbUser = authData?.record || this.pb.authStore.record;
+
+    if (!pbUser?.id) {
+      throw new Error('Google autenticó, pero PocketBase no devolvió el record del usuario.');
+    }
+
+    const userTypeRaw = pbUser['type'];
+    const userType = Array.isArray(userTypeRaw) ? userTypeRaw[0] : userTypeRaw;
+
+    const user: UserInterface = {
+      id: pbUser.id,
+      email: pbUser['email'] || '',
+      password: '',
+      name: pbUser['name'] || pbUser['username'] || '',
+      phone: pbUser['phone'] || '',
+      images: pbUser['images'] || {},
+      type: userType || null,
+      username: pbUser['username'] || '',
+      address: pbUser['address'] || '',
+      created: pbUser['created'],
+      updated: pbUser['updated'],
+      avatar: pbUser['avatar'] || '',
+      status: pbUser['status'] || 'active',
+      gender: pbUser['gender'] || '',
+    };
+
+    // authWithOAuth2 normalmente ya actualiza authStore,
+    // pero aquí lo dejas consistente con tu flujo actual
+    this.pb.authStore.save(authData.token, pbUser);
+
+    this.setUser(user);
+    localStorage.setItem('accessToken', authData.token);
+    localStorage.setItem('userId', user.id);
+    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem('type', JSON.stringify(user.type));
+    localStorage.setItem('isLoggedin', 'true');
+    localStorage.setItem('record', JSON.stringify(pbUser));
+
+    globalUser.set(user);
+    this.currentUserSubject.next(user);
+
+    try {
+      const coll =
+        user.type === 'partner'
+          ? 'usuariosPartner'
+          : user.type === 'client'
+            ? 'usuariosClient'
+            : null;
+
+      if (coll) {
+        const list = await this.pb.collection(coll).getList(1, 1, {
+          filter: `userId="${user.id}"`,
+        });
+
+        if (list.items.length) {
+          this.profile = list.items[0];
+
+          // mejor distinguir profilePartner/profileClient
+          if (user.type === 'partner') {
+            localStorage.setItem('profilePartner', JSON.stringify(this.profile));
+          } else {
+            localStorage.setItem('profile', JSON.stringify(this.profile));
+          }
+        }
+      }
+    } catch (profileErr) {
+      console.warn('[AUTH][GOOGLE] Usuario autenticado pero sin perfil de dominio todavía:', profileErr);
+    }
+
+    return user;
+  } catch (err: any) {
+    console.error('[AUTH][GOOGLE] Error completo:', err);
+
+    // Te ayuda a detectar la causa real
+    const message =
+      err?.response?.message ||
+      err?.data?.message ||
+      err?.message ||
+      'Error autenticando con Google';
+
+    throw new Error(message);
   }
+}
   private mapPocketbaseError(err: unknown): Error {
     const e = err as any;
     const payload = (e?.data ?? e?.response ?? {}) as {

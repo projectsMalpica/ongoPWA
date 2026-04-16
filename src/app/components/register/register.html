@@ -1,60 +1,4 @@
 <!-- Paso 1: Selección de tipo de usuario -->
-<!-- <div class="content-body" *ngIf="currentStep === 1 && !userType">
-  <div class="welcome-area bg-image" style="padding: 8px 28px;">
-    <div class="map-background"></div>
-
-    <div class="welcome-inner">
-      <div class="dz-media floating-avatars-container">
-        <div class="logo-area">
-          <img class="logo" src="../assets/images/logo.png" alt="" style="max-width: 40%;">
-          <p class="para-title">Ve, Sal y Conecta!</p>
-        </div>
-        <div class="floating-avatar-1 ">
-          <img src="../assets/images/edificio.png" alt="Avatar">
-        </div>
-        <div class="floating-avatar-1 avatar-2">
-          <img src="../assets/images/parque.png" alt="Avatar">
-        </div>
-        <div class="floating-avatar avatar-3">
-          <img src="https://images.pexels.com/photos/59497/pexels-photo-59497.jpeg" alt="Avatar">
-        </div>
-        <div class="floating-avatar avatar-4">
-          <img
-            src="https://images.pexels.com/photos/23876/pexels-photo.jpg?_gl=1*1o25mjz*_ga*OTg4Mjk5NjU4LjE3NTE3NTUyOTg.*_ga_8JE65Q40S6*czE3NTE3NTUyOTgkbzEkZzAkdDE3NTE3NTUyOTgkajYwJGwwJGgw"
-            alt="Avatar">
-        </div>
-        <div class="floating-avatar avatar-5">
-          <img src="https://images.pexels.com/photos/30743458/pexels-photo-30743458.jpeg" alt="Avatar">
-        </div>
-        <div class="location-pin pin-1"><i class="icon feather icon-map-pin"></i></div>
-        <div class="location-pin pin-2"><i class="icon feather icon-map-pin"></i></div>
-        <div class="location-pin pin-3"><i class="icon feather icon-map-pin"></i></div>
-        <div class="location-pin pin-4"><i class="icon feather icon-map-pin"></i></div>
-        <div class="location-pin pin-5"><i class="icon feather icon-map-pin"></i></div>
-      </div>
-
-    </div>
-    <div class="bottom-btn container">
-      <div class="row g-3">
-        <div class="col-12">
-          <button (click)="selectUserType('partner')" class="btn btn-lg btn-gradient-pink w-100">
-            Soy un Local Nocturno
-          </button>
-        </div>
-        <div class="col-12">
-          <button (click)="selectUserType('client')" class="btn btn-lg btn-gradient-purple w-100">
-            Soy un Cliente
-          </button>
-        </div>
-      </div>
-    </div>
-    <div class="register-link">
-      <p style="padding-top: 0px; text-align: center; font-size: 1.1rem;
-  font-weight: 600; cursor: pointer;">¿Tienes una cuenta? <a (click)="global.setRoute('login')"
-          style="color: #f70192;">Inicia sesión</a></p>
-    </div>
-  </div>
-</div> -->
 <div class="content-body onboarding-screen" *ngIf="currentStep === 1 && !userType">
   <div class="welcome-hero">
 
@@ -144,7 +88,17 @@
           <h3>Registro de Local Nocturno</h3>
           <p>Crea una cuenta para administrar tu local</p>
         </div>
+        <div class="mb-3">
+          <button type="button" class="btn btn-light w-100 federated-btn" (click)="registerWithGoogle('partner')"
+            [disabled]="loadingGoogle">
+            <img src="assets/images/google.svg" alt="Google" />
+            Registrar mi local con Google
+          </button>
+        </div>
 
+        <div class="separator my-3">
+          <span>o continúa con correo</span>
+        </div>
         <form [formGroup]="partnerForm">
           <div class="mb-3">
             <label class="form-label">Email *</label>
@@ -294,7 +248,17 @@
         <div class="section-head ps-0">
           <h3>Por favor ingresa tu correo electrónico</h3>
         </div>
+        <div class="mb-3">
+          <button type="button" class="btn btn-light w-100 federated-btn" (click)="registerWithGoogle('client')"
+            [disabled]="loadingGoogle">
+            <img src="assets/images/google.svg" alt="Google" />
+            Continuar con Google
+          </button>
+        </div>
 
+        <div class="separator my-3">
+          <span>o regístrate con correo</span>
+        </div>
         <form [formGroup]="clientForm">
 
           <div class="mb-3">

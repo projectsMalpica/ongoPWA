@@ -48,6 +48,7 @@ export class RegisterComponent {
   @ViewChild('profileFileInput') profileFileInput!: ElementRef;
   showPassword = false;
   showConfirmPassword = false;
+  loadingGoogle = false;
   constructor(
     private fb: FormBuilder,
     public auth: AuthPocketbaseService,
@@ -307,7 +308,7 @@ export class RegisterComponent {
     }
   }
 
-  async registerClient() {
+  /* async registerClient() {
     this.isSubmitting = true;
 
     if (this.clientForm.invalid) {
@@ -404,7 +405,117 @@ export class RegisterComponent {
     } finally {
       this.isSubmitting = false;
     }
+  } */
+  async registerClient() {
+  this.isSubmitting = true;
+
+  if (this.clientForm.invalid) {
+    this.markClientFieldsAsTouched(this.currentStep);
+    this.isSubmitting = false;
+    return;
   }
+
+  try {
+    const formData = this.clientForm.value;
+    const authRecord = this.auth.pb.authStore.record;
+
+    let userId: string;
+    let isGoogleFlow = false;
+
+    if (authRecord?.id) {
+      userId = authRecord.id;
+      isGoogleFlow = true;
+    } else {
+      const userResponse = await this.auth.onlyRegisterUser(
+        formData.email,
+        formData.password,
+        'client',
+        formData.name
+      ).toPromise();
+
+      userId = userResponse.id;
+
+      await this.auth.loginUser(formData.email, formData.password).toPromise();
+    }
+
+    let uploadedPhotos: string[] = [];
+
+    if (this.selectedFile) {
+      const imageFormData = new FormData();
+      imageFormData.append('file', this.selectedFile, this.selectedFile.name);
+      imageFormData.append('userId', userId);
+      imageFormData.append('type', 'profile');
+
+      const fileRecord = await this.auth.pb.collection('files').create(imageFormData);
+      const fileUrl = `${this.baseUrl}/api/files/${fileRecord.collectionId}/${fileRecord.id}/${fileRecord['file']}`;
+      uploadedPhotos = [fileUrl];
+      this.imageUrl = fileUrl;
+    }
+
+    const orientationGroup = formData.orientation || {};
+    const selectedOrientation = Object.keys(orientationGroup).filter(
+      key => orientationGroup[key]
+    );
+
+    const clientData = {
+      userId,
+      name: formData.name,
+      address: formData.address,
+      birthday: new Date(formData.birthday).toISOString(),
+      gender: formData.gender,
+      orientation: selectedOrientation,
+      interestedIn: formData.interestedIn,
+      lookingFor: formData.lookingFor,
+      email: formData.email || authRecord?.['email'] || '',
+      status: 'pending',
+      profileComplete: true,
+      photos: uploadedPhotos
+    };
+
+    // Upsert manual
+    try {
+      const existing = await this.auth.pb
+        .collection('usuariosClient')
+        .getFirstListItem(`userId="${userId}"`);
+
+      await this.auth.pb.collection('usuariosClient').update(existing.id, clientData);
+    } catch (error: any) {
+      if (error?.status === 404) {
+        await this.auth.pb.collection('usuariosClient').create(clientData);
+      } else {
+        throw error;
+      }
+    }
+
+    if (!isGoogleFlow) {
+      this.emailService.sendWelcome({
+        toEmail: formData.email,
+        toName: formData.name,
+        userType: 'client',
+        params: { plan: 'free' }
+      }).catch(err => console.warn('Fallo en email:', err));
+    }
+
+    await this.global.loadProfile();
+    await this.global.initClientesRealtime();
+    await this.global.initPartnersRealtime();
+
+    await this.router.navigate(['/profile']);
+
+    Swal.fire({
+      title: 'Registro exitoso',
+      text: `¡Bienvenido/a, ${formData.name}! Tu perfil ha sido creado exitosamente.`,
+      icon: 'success',
+      confirmButtonText: 'Continuar'
+    });
+
+  } catch (error: any) {
+    console.error('Error registrando cliente:', error);
+    throw error;
+  } finally {
+    this.isSubmitting = false;
+  }
+}
 
   getFormErrors(form: FormGroup): { [key: string]: string } {
     const errors: { [key: string]: string } = {};
@@ -768,5 +879,153 @@ export class RegisterComponent {
     const hasSelected = Object.values(group).some(value => value);
     return hasSelected ? null : { required: true };
   }
+
+  async registerWithGoogle(type: 'client' | 'partner') {
+  try {
+    this.loadingGoogle = true;
+    this.userType = type;
+
+    const authUser = await this.auth.loginWithGoogle();
+
+    if (!authUser?.id) {
+      throw new Error('No se pudo autenticar con Google.');
+    }
+
+    // Guarda el tipo en el auth record si aún no lo tiene
+    const currentType = authUser.type || this.auth.pb.authStore.record?.['type'];
+
+    if (!currentType) {
+      await this.auth.pb.collection('users').update(authUser.id, {
+        type
+      });
+    }
+
+    if (type === 'client') {
+      await this.ensureClientProfile(authUser);
+    } else {
+      await this.ensurePartnerProfile(authUser);
+    }
+
+  } catch (error: any) {
+    console.error('Error en registro con Google:', error);
+
+    Swal.fire({
+      title: 'Error',
+      text: error?.message || 'No fue posible continuar con Google.',
+      icon: 'error',
+      confirmButtonText: 'Entendido'
+    });
+  } finally {
+    this.loadingGoogle = false;
+  }
+}
+async ensureClientProfile(authUser: any) {
+  try {
+    const existing = await this.auth.pb
+      .collection('usuariosClient')
+      .getFirstListItem(`userId="${authUser.id}"`);
+
+    // Ya existe perfil: decidir si está completo o no
+    const isComplete =
+      !!existing['name'] &&
+      !!existing['birthday'] &&
+      !!existing['gender'] &&
+      !!existing['interestedIn'] &&
+      !!existing['lookingFor'];
+
+    if (isComplete) {
+      await this.global.loadProfile();
+      await this.global.initClientesRealtime();
+      await this.global.initPartnersRealtime();
+      await this.router.navigate(['/home']);
+      return;
+    }
+
+    // Precargar formulario y continuar onboarding
+    this.clientForm.patchValue({
+      email: authUser.email || existing['email'] || '',
+      name: existing['name'] || authUser['name'] || authUser['username'] || '',
+      address: existing['address'] || '',
+      gender: existing['gender'] || '',
+      interestedIn: existing['interestedIn'] || '',
+      lookingFor: existing['lookingFor'] || '',
+      terms: !!existing['terms']
+    });
+
+    this.currentStep = 2;
+  } catch (error: any) {
+    // Si no existe, crearlo parcial
+    if (error?.status === 404) {
+      const newClient = await this.auth.pb.collection('usuariosClient').create({
+        userId: authUser.id,
+        email: authUser.email || '',
+        name: authUser.name || authUser['username'] || '',
+        status: 'pending',
+        profileComplete: false,
+        photos: []
+      });
+
+      this.clientForm.patchValue({
+        email: authUser.email || '',
+        name: newClient['name'] || authUser['name'] || '',
+      });
+
+      this.currentStep = 2;
+      return;
+    }
+
+    throw error;
+  }
+}
+async ensurePartnerProfile(authUser: any) {
+  try {
+    const existing = await this.auth.pb
+      .collection('usuariosPartner')
+      .getFirstListItem(`userId="${authUser.id}"`);
+
+    const isComplete =
+      !!existing['venueName'] &&
+      !!existing['address'] &&
+      !!existing['phone'];
+
+    if (isComplete) {
+      await this.global.loadProfile();
+      await this.global.initClientesRealtime();
+      await this.global.initPartnersRealtime();
+      await this.router.navigate(['/home-local']);
+      return;
+    }
+
+    this.partnerForm.patchValue({
+      email: authUser.email || existing['email'] || '',
+      venueName: existing['venueName'] || '',
+      address: existing['address'] || '',
+      phone: existing['phone'] || '',
+      description: existing['description'] || '',
+      capacity: existing['capacity'] || '',
+      openingHours: existing['openingHours'] || ''
+    });
+
+    this.currentStep = 2;
+  } catch (error: any) {
+    if (error?.status === 404) {
+      await this.auth.pb.collection('usuariosPartner').create({
+        userId: authUser.id,
+        email: authUser.email || '',
+        status: 'pending',
+        approved: false
+      });
+
+      this.partnerForm.patchValue({
+        email: authUser.email || ''
+      });
+
+      this.currentStep = 2;
+      return;
+    }
+
+    throw error;
+  }
+}
 
 }
