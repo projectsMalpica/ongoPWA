@@ -121,7 +121,7 @@ export class RegisterComponent {
     this.showConfirmPassword = !this.showConfirmPassword;
   }
   openTermsModal(type: 'terms' | 'privacy') {
-    console.log('Opening modal with type:', type);
+    console.log('Abriendo modal con tipo:', type);
     this.modalContent = type;
     switch (type) {
       case 'terms':
@@ -132,7 +132,7 @@ export class RegisterComponent {
         break;
     }
     this.showModal = true;
-    console.log('Modal state:', { showModal: this.showModal, modalTitle: this.modalTitle, modalContent: this.modalContent });
+    console.log('Estado del modal:', { showModal: this.showModal, modalTitle: this.modalTitle, modalContent: this.modalContent });
   }
 
 
@@ -210,7 +210,7 @@ export class RegisterComponent {
       }
     } catch (error: any) {
       console.error('Error completo en el registro:', error);
-      console.error('Error data:', error?.data);
+      console.error('Datos de error:', error?.data);
 
       const pbFields = error?.data?.data || {};
       const errorMessage =
@@ -285,7 +285,7 @@ export class RegisterComponent {
         toName: formData.venueName,
         userType: 'partner',
         params: { venueName: formData.venueName }
-      }).catch(err => console.warn('Welcome email failed:', err));
+      }).catch(err => console.warn('Fallo en el envío del email de bienvenida:', err));
 
       await this.auth.loginUser(formData.email, formData.password).toPromise();
 
@@ -312,8 +312,8 @@ export class RegisterComponent {
 
     if (this.clientForm.invalid) {
       this.markClientFieldsAsTouched(this.currentStep);
-      console.log('clientForm INVALID');
-      console.log('value:', this.clientForm.value);
+      console.log('clientForm INVALIDO');
+      console.log('valor:', this.clientForm.value);
       this.isSubmitting = false;
       return;
     }
@@ -373,7 +373,7 @@ export class RegisterComponent {
         photos: uploadedPhotos
       };
 
-      console.log('Payload usuariosClient:', clientData);
+      console.log('Datos del cliente usuario:', clientData);
 
       await this.auth.pb.collection('usuariosClient').create(clientData);
       console.log('Perfil usuariosClient creado correctamente');
@@ -383,7 +383,7 @@ export class RegisterComponent {
         toName: formData.name,
         userType: 'client',
         params: { plan: 'free' }
-      }).catch(err => console.warn('Welcome email failed:', err));
+      }).catch(err => console.warn('Fallo en el envío del email de bienvenida:', err));
 
       await this.auth.loginUser(formData.email, formData.password).toPromise();
 
@@ -399,7 +399,7 @@ export class RegisterComponent {
 
     } catch (error: any) {
       console.error('Error registrando cliente:', error);
-      console.error('PocketBase error data:', error?.data);
+      console.error('Datos de error de PocketBase:', error?.data);
       throw error;
     } finally {
       this.isSubmitting = false;

@@ -20,7 +20,7 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
-             "allowedCommonJsDependencies": [
+            "allowedCommonJsDependencies": [
               "mapbox-gl",
               "@mapbox/mapbox-gl-geocoder",
               "sweetalert2"
@@ -40,6 +40,12 @@
           },
           "configurations": {
             "production": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ],
               "budgets": [
                 {
                   "type": "initial",
