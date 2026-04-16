@@ -1,6 +1,9 @@
 <!-- Sidebar -->
-<div class="dark-overlay"></div>
-<div class="sidebar">
+<div class="dark-overlay"   [class.active]="isOpen"
+  *ngIf="isOpen"
+  (click)="closeSidebar()"
+></div>
+<div class="sidebar" [class.active]="isOpen">
   <div class="inner-sidebar">
     <a class="author-box">
       <div class="dz-media">
