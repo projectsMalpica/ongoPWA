@@ -29,9 +29,23 @@ import 'swiper/css/pagination';
 export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
 @ViewChild('plansSwiper', { static: false }) plansSwiperRef?: ElementRef<HTMLDivElement>;
 @ViewChild('plansPagination', { static: false }) plansPaginationRef?: ElementRef<HTMLDivElement>;
+partnerProducts: any[] = [];
 
 private plansSwiper?: Swiper;
 private plansSwiperSub?: Subscription;
+newProduct = {
+  name: '',
+  description: '',
+  category: '',
+  price: null as number | null,
+  isAvailable: true,
+  userId: '',
+  partnerId: ''
+};
+
+productImageFile: File | null = null;
+isEditingProduct: boolean = false;
+editingProductId: string | null = null;
   openSubscriptionsModal() {
     const modalEl = document.getElementById('subscriptionsModal');
     if (modalEl) {
@@ -107,46 +121,23 @@ private plansSwiperSub?: Subscription;
     this.fetchPartnerData();
 
     await this.loadProfileDataPartner();
+    await this.loadPartnerProducts();
     this.global.initPlanningPartnersRealtime();
     this.initMapIfReady();
-
   }
 
-  /* ngAfterViewInit() {
-  ['promoModal', 'promoListModal', 'promoOptionsModal'].forEach(id => {
-    const modalEl = document.getElementById(id);
-    if (modalEl) {
-      modalEl.addEventListener('hidden.bs.modal', () => {
-        const backdrop = document.querySelector('.modal-backdrop');
-        if (backdrop) backdrop.remove();
-        document.body.classList.remove('modal-open');
-      });
-    }
-  });
-
-  const servicesOffcanvas = document.getElementById('offcanvasBottom1Local');
-
-  if (servicesOffcanvas) {
-    servicesOffcanvas.addEventListener('show.bs.offcanvas', () => {
-      this.isServicesOffcanvasOpen = true;
-    });
-
-    servicesOffcanvas.addEventListener('hidden.bs.offcanvas', () => {
-      this.isServicesOffcanvasOpen = false;
-    });
-  }
-} */
 ngAfterViewInit() {
-  ['promoModal', 'promoListModal', 'promoOptionsModal'].forEach(id => {
-    const modalEl = document.getElementById(id);
-    if (modalEl) {
-      modalEl.addEventListener('hidden.bs.modal', () => {
-        const backdrop = document.querySelector('.modal-backdrop');
-        if (backdrop) backdrop.remove();
-        document.body.classList.remove('modal-open');
-      });
-    }
-  });
+ ['promoModal', 'promoListModal', 'promoOptionsModal', 'productModal', 'productListModal', 'productOptionsModal'].forEach(id => {
+  const modalEl = document.getElementById(id);
+  if (modalEl) {
+    modalEl.addEventListener('hidden.bs.modal', () => {
+      const backdrop = document.querySelector('.modal-backdrop');
+      if (backdrop) backdrop.remove();
+      document.body.classList.remove('modal-open');
+    });
+  }
+});
+  
 
   const servicesOffcanvas = document.getElementById('offcanvasBottom1Local');
   if (servicesOffcanvas) {
@@ -206,6 +197,7 @@ private initPlansSwiper(): void {
     }
   });
 }
+
 ngOnDestroy(): void {
   this.plansSwiper?.destroy(true, true);
   this.plansSwiperSub?.unsubscribe();
@@ -247,7 +239,41 @@ ngOnDestroy(): void {
     this.modalService.open('promoOptionsModal');
   }
 
+openProductModal() {
+  this.cancelProduct(); // limpia el formulario si vas a crear uno nuevo
 
+  const optionsModalEl = document.getElementById('productOptionsModal');
+  const productModalEl = document.getElementById('productModal');
+
+  if (optionsModalEl) {
+    const optionsInstance = bootstrap.Modal.getOrCreateInstance(optionsModalEl);
+    optionsInstance.hide();
+  }
+
+  setTimeout(() => {
+    if (productModalEl) {
+      const productInstance = bootstrap.Modal.getOrCreateInstance(productModalEl);
+      productInstance.show();
+    }
+  }, 200);
+}
+
+openProductListModal() {
+  const optionsModalEl = document.getElementById('productOptionsModal');
+  const productListModalEl = document.getElementById('productListModal');
+
+  if (optionsModalEl) {
+    const optionsInstance = bootstrap.Modal.getOrCreateInstance(optionsModalEl);
+    optionsInstance.hide();
+  }
+
+  setTimeout(() => {
+    if (productListModalEl) {
+      const productListInstance = bootstrap.Modal.getOrCreateInstance(productListModalEl);
+      productListInstance.show();
+    }
+  }, 200);
+}
 
 
   openPromoListModal() {
@@ -894,12 +920,6 @@ ngOnDestroy(): void {
     }, 150);
 
   }
-  /* openPromoModal() {
-    this.modalService.close('promoOptionsModal'); // Cierra el modal de opciones
-    setTimeout(() => {
-      this.modalService.open('promoModal');
-    }, 150); // Pequeño delay para asegurar la transición
-  } */
 
   async guardarPerfil() {
     if (!this.coordenadasSeleccionadas) return;
@@ -957,6 +977,154 @@ ngOnDestroy(): void {
       this.showAppToast('Haz clic en el mapa para seleccionar una ubicación', 'info');
     }
   }
+  openProductOptions() {
+  const modalEl = document.getElementById('productOptionsModal');
+  if (modalEl) {
+    const modalInstance = new bootstrap.Modal(modalEl);
+    modalInstance.show();
+  } else {
+    console.warn('No se encontró el modal de productos en el DOM');
+  }
+}
+
+onProductImageSelected(event: any) {
+  const file = event.target.files[0];
+  if (file) {
+    this.productImageFile = file;
+  }
+}
+
+async loadPartnerProducts() {
+  try {
+    const userId = this.auth.currentUser?.id;
+    if (!userId) return;
+
+    const records = await this.pb.collection('partnerProducts').getFullList({
+      filter: `userId="${userId}"`,
+      sort: '-created'
+    });
+
+    this.partnerProducts = records.map((item: any) => ({
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      category: item.category,
+      price: item.price,
+      isAvailable: item.isAvailable,
+      userId: item.userId,
+      partnerId: item.partnerId,
+      image: item.image ? this.pb.files.getUrl(item, item.image) : ''
+    }));
+  } catch (error) {
+    console.error('Error cargando productos:', error);
+  }
+}
+
+async saveProduct() {
+  try {
+    const userId = this.auth.currentUser?.id;
+    if (!userId) {
+      this.showAppToast('No hay usuario autenticado', 'error');
+      return;
+    }
+
+    const partner = await this.pb.collection('usuariosPartner').getFirstListItem(`userId="${userId}"`);
+
+    const formData = new FormData();
+    formData.append('name', this.newProduct.name || '');
+    formData.append('description', this.newProduct.description || '');
+    formData.append('category', this.newProduct.category || '');
+    formData.append('price', String(this.newProduct.price || 0));
+    formData.append('isAvailable', String(this.newProduct.isAvailable));
+    formData.append('userId', userId);
+    formData.append('partnerId', partner.id);
+
+    if (this.productImageFile) {
+      formData.append('image', this.productImageFile);
+    }
+
+    if (this.isEditingProduct && this.editingProductId) {
+      await this.pb.collection('partnerProducts').update(this.editingProductId, formData);
+    } else {
+      await this.pb.collection('partnerProducts').create(formData);
+    }
+
+    this.cancelProduct();
+    await this.loadPartnerProducts();
+
+    const modalEl = document.getElementById('productModal');
+    if (modalEl) {
+      const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modalInstance.hide();
+    }
+
+    this.showAppToast(
+      this.isEditingProduct ? 'Producto actualizado correctamente' : 'Producto agregado correctamente',
+      'success'
+    );
+  } catch (error) {
+    console.error('Error guardando producto:', error);
+    this.showAppToast('No se pudo guardar el producto', 'error');
+  }
+}
+
+editProduct(product: any) {
+  this.newProduct = {
+    name: product.name || '',
+    description: product.description || '',
+    category: product.category || '',
+    price: product.price || null,
+    isAvailable: product.isAvailable ?? true,
+    userId: product.userId || '',
+    partnerId: product.partnerId || ''
+  };
+
+  this.editingProductId = product.id;
+  this.isEditingProduct = true;
+  this.productImageFile = null;
+
+  const listModalEl = document.getElementById('productListModal');
+  const productModalEl = document.getElementById('productModal');
+
+  if (listModalEl) {
+    const listInstance = bootstrap.Modal.getOrCreateInstance(listModalEl);
+    listInstance.hide();
+  }
+
+  setTimeout(() => {
+    if (productModalEl) {
+      const productInstance = bootstrap.Modal.getOrCreateInstance(productModalEl);
+      productInstance.show();
+    }
+  }, 200);
+}
+
+async deleteProduct(product: any) {
+  try {
+    await this.pb.collection('partnerProducts').delete(product.id);
+    await this.loadPartnerProducts();
+    this.showAppToast('Producto eliminado correctamente', 'success');
+  } catch (error) {
+    console.error('Error eliminando producto:', error);
+    this.showAppToast('No se pudo eliminar el producto', 'error');
+  }
+}
+
+cancelProduct() {
+  this.newProduct = {
+    name: '',
+    description: '',
+    category: '',
+    price: null,
+    isAvailable: true,
+    userId: '',
+    partnerId: ''
+  };
+
+  this.productImageFile = null;
+  this.isEditingProduct = false;
+  this.editingProductId = null;
+}
   /* <-- async subscribeToPlan(plan: any) {
     const amount = Number(plan.priceCOP || 0) * 100;
     const userEmail = this.global.profileDataPartner.email || this.auth.currentUser?.email;
