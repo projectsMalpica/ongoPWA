@@ -216,8 +216,10 @@ export class RegisterComponent {
       const pbFields = error?.data?.data || {};
       const errorMessage =
         pbFields?.email?.message ||
-        pbFields?.name?.message ||
+        pbFields?.venueName?.message ||
         pbFields?.address?.message ||
+        pbFields?.phone?.message ||
+        pbFields?.name?.message ||
         pbFields?.birthday?.message ||
         pbFields?.gender?.message ||
         pbFields?.interestedIn?.message ||
@@ -256,111 +258,137 @@ export class RegisterComponent {
 
     try {
       const formData = this.partnerForm.value;
+      const authRecord = this.auth.pb.authStore.record;
 
-      const userResponse = await this.auth.onlyRegisterUser(
-        formData.email,
-        formData.password,
-        'partner',
-        formData.venueName
-      ).toPromise();
+      let userId: string;
+      let isGoogleFlow = false;
+
+      if (authRecord?.id) {
+        userId = authRecord.id;
+        isGoogleFlow = true;
+      } else {
+        const userResponse = await this.auth.onlyRegisterUser(
+          formData.email,
+          formData.password,
+          'partner',
+          formData.venueName
+        ).toPromise();
+
+        userId = userResponse.id;
+
+        await this.auth.loginUser(formData.email, formData.password).toPromise();
+      }
 
       const partnerData: any = {
-        userId: userResponse.id,
+        userId,
         venueName: formData.venueName,
         address: formData.address,
         phone: formData.phone,
-        description: formData.description,
-        capacity: formData.capacity,
-        openingHours: formData.openingHours,
-        lat: formData.lat,
-        lng: formData.lng,
-        email: formData.email,
+        description: formData.description || '',
+        capacity: formData.capacity || null,
+        openingHours: formData.openingHours || '',
+        email: formData.email || authRecord?.['email'] || '',
         status: 'pending',
-        approved: false
+        approved: false,
+        profileComplete: true
       };
 
-      await this.auth.pb.collection('usuariosPartner').create(partnerData);
+      try {
+        const existing = await this.auth.pb
+          .collection('usuariosPartner')
+          .getFirstListItem(`userId="${userId}"`);
 
-      this.emailService.sendWelcome({
-        toEmail: formData.email,
-        toName: formData.venueName,
-        userType: 'partner',
-        params: { venueName: formData.venueName }
-      }).catch(err => console.warn('Fallo en el envío del email de bienvenida:', err));
+        await this.auth.pb.collection('usuariosPartner').update(existing.id, partnerData);
+      } catch (error: any) {
+        if (error?.status === 404) {
+          await this.auth.pb.collection('usuariosPartner').create(partnerData);
+        } else {
+          throw error;
+        }
+      }
 
-      await this.auth.loginUser(formData.email, formData.password).toPromise();
+      if (!isGoogleFlow) {
+        this.emailService.sendWelcome({
+          toEmail: partnerData.email,
+          toName: formData.venueName,
+          userType: 'partner',
+          params: { venueName: formData.venueName }
+        }).catch(err => console.warn('Fallo en el envío del email de bienvenida:', err));
+      }
 
-      // mantener navegación virtual
-      this.router.navigate(['profile-local']);
+      await this.global.loadProfile();
+      await this.global.initClientesRealtime();
+      await this.global.initPartnersRealtime();
+
+      await this.router.navigate(['/profile-local']);
 
       Swal.fire({
-        title: 'Registro Exitoso',
+        title: 'Registro exitoso',
         text: 'Tu local ha sido registrado. Estará activo después de la aprobación.',
         icon: 'success',
         confirmButtonText: 'Entendido'
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error registrando partner:', error);
+      console.error('Datos de error:', error?.data);
       throw error;
     } finally {
       this.isSubmitting = false;
     }
-  }
-
-  /* async registerClient() {
+  } async registerClient() {
     this.isSubmitting = true;
 
     if (this.clientForm.invalid) {
       this.markClientFieldsAsTouched(this.currentStep);
-      console.log('clientForm INVALIDO');
-      console.log('valor:', this.clientForm.value);
       this.isSubmitting = false;
       return;
     }
 
     try {
       const formData = this.clientForm.value;
+      const authRecord = this.auth.pb.authStore.record;
 
-      // 1. Crear usuario base
-      const userResponse = await this.auth.onlyRegisterUser(
-        formData.email,
-        formData.password,
-        'client',
-        formData.name
-      ).toPromise();
+      let userId: string;
+      let isGoogleFlow = false;
 
-      console.log('Usuario base creado:', userResponse);
+      if (authRecord?.id) {
+        userId = authRecord.id;
+        isGoogleFlow = true;
+      } else {
+        const userResponse = await this.auth.onlyRegisterUser(
+          formData.email,
+          formData.password,
+          'client',
+          formData.name
+        ).toPromise();
+
+        userId = userResponse.id;
+
+        await this.auth.loginUser(formData.email, formData.password).toPromise();
+      }
 
       let uploadedPhotos: string[] = [];
 
-      // 2. Subir imagen si existe
       if (this.selectedFile) {
         const imageFormData = new FormData();
         imageFormData.append('file', this.selectedFile, this.selectedFile.name);
-
-        // agrega estos si tu colección files los exige
-        imageFormData.append('userId', userResponse.id);
+        imageFormData.append('userId', userId);
         imageFormData.append('type', 'profile');
 
         const fileRecord = await this.auth.pb.collection('files').create(imageFormData);
-
         const fileUrl = `${this.baseUrl}/api/files/${fileRecord.collectionId}/${fileRecord.id}/${fileRecord['file']}`;
         uploadedPhotos = [fileUrl];
         this.imageUrl = fileUrl;
-
-        console.log('Imagen subida:', fileUrl);
       }
 
-      // 3. Preparar orientación
       const orientationGroup = formData.orientation || {};
       const selectedOrientation = Object.keys(orientationGroup).filter(
         key => orientationGroup[key]
       );
 
-      // 4. Crear perfil usuario cliente
-      const clientData: any = {
-        userId: userResponse.id,
+      const clientData = {
+        userId,
         name: formData.name,
         address: formData.address,
         birthday: new Date(formData.birthday).toISOString(),
@@ -368,28 +396,41 @@ export class RegisterComponent {
         orientation: selectedOrientation,
         interestedIn: formData.interestedIn,
         lookingFor: formData.lookingFor,
-        email: formData.email,
+        email: formData.email || authRecord?.['email'] || '',
         status: 'pending',
         profileComplete: true,
         photos: uploadedPhotos
       };
 
-      console.log('Datos del cliente usuario:', clientData);
+      // Upsert manual
+      try {
+        const existing = await this.auth.pb
+          .collection('usuariosClient')
+          .getFirstListItem(`userId="${userId}"`);
 
-      await this.auth.pb.collection('usuariosClient').create(clientData);
-      console.log('Perfil usuariosClient creado correctamente');
+        await this.auth.pb.collection('usuariosClient').update(existing.id, clientData);
+      } catch (error: any) {
+        if (error?.status === 404) {
+          await this.auth.pb.collection('usuariosClient').create(clientData);
+        } else {
+          throw error;
+        }
+      }
 
-      this.emailService.sendWelcome({
-        toEmail: formData.email,
-        toName: formData.name,
-        userType: 'client',
-        params: { plan: 'free' }
-      }).catch(err => console.warn('Fallo en el envío del email de bienvenida:', err));
+      if (!isGoogleFlow) {
+        this.emailService.sendWelcome({
+          toEmail: formData.email,
+          toName: formData.name,
+          userType: 'client',
+          params: { plan: 'free' }
+        }).catch(err => console.warn('Fallo en email:', err));
+      }
 
-      await this.auth.loginUser(formData.email, formData.password).toPromise();
+      await this.global.loadProfile();
+      await this.global.initClientesRealtime();
+      await this.global.initPartnersRealtime();
 
-      // mantener navegación virtual
-      this.router.navigate(['profile']);
+      await this.router.navigate(['/profile']);
 
       Swal.fire({
         title: 'Registro exitoso',
@@ -400,123 +441,11 @@ export class RegisterComponent {
 
     } catch (error: any) {
       console.error('Error registrando cliente:', error);
-      console.error('Datos de error de PocketBase:', error?.data);
       throw error;
     } finally {
       this.isSubmitting = false;
     }
-  } */
-  async registerClient() {
-  this.isSubmitting = true;
-
-  if (this.clientForm.invalid) {
-    this.markClientFieldsAsTouched(this.currentStep);
-    this.isSubmitting = false;
-    return;
   }
-
-  try {
-    const formData = this.clientForm.value;
-    const authRecord = this.auth.pb.authStore.record;
-
-    let userId: string;
-    let isGoogleFlow = false;
-
-    if (authRecord?.id) {
-      userId = authRecord.id;
-      isGoogleFlow = true;
-    } else {
-      const userResponse = await this.auth.onlyRegisterUser(
-        formData.email,
-        formData.password,
-        'client',
-        formData.name
-      ).toPromise();
-
-      userId = userResponse.id;
-
-      await this.auth.loginUser(formData.email, formData.password).toPromise();
-    }
-
-    let uploadedPhotos: string[] = [];
-
-    if (this.selectedFile) {
-      const imageFormData = new FormData();
-      imageFormData.append('file', this.selectedFile, this.selectedFile.name);
-      imageFormData.append('userId', userId);
-      imageFormData.append('type', 'profile');
-
-      const fileRecord = await this.auth.pb.collection('files').create(imageFormData);
-      const fileUrl = `${this.baseUrl}/api/files/${fileRecord.collectionId}/${fileRecord.id}/${fileRecord['file']}`;
-      uploadedPhotos = [fileUrl];
-      this.imageUrl = fileUrl;
-    }
-
-    const orientationGroup = formData.orientation || {};
-    const selectedOrientation = Object.keys(orientationGroup).filter(
-      key => orientationGroup[key]
-    );
-
-    const clientData = {
-      userId,
-      name: formData.name,
-      address: formData.address,
-      birthday: new Date(formData.birthday).toISOString(),
-      gender: formData.gender,
-      orientation: selectedOrientation,
-      interestedIn: formData.interestedIn,
-      lookingFor: formData.lookingFor,
-      email: formData.email || authRecord?.['email'] || '',
-      status: 'pending',
-      profileComplete: true,
-      photos: uploadedPhotos
-    };
-
-    // Upsert manual
-    try {
-      const existing = await this.auth.pb
-        .collection('usuariosClient')
-        .getFirstListItem(`userId="${userId}"`);
-
-      await this.auth.pb.collection('usuariosClient').update(existing.id, clientData);
-    } catch (error: any) {
-      if (error?.status === 404) {
-        await this.auth.pb.collection('usuariosClient').create(clientData);
-      } else {
-        throw error;
-      }
-    }
-
-    if (!isGoogleFlow) {
-      this.emailService.sendWelcome({
-        toEmail: formData.email,
-        toName: formData.name,
-        userType: 'client',
-        params: { plan: 'free' }
-      }).catch(err => console.warn('Fallo en email:', err));
-    }
-
-    await this.global.loadProfile();
-    await this.global.initClientesRealtime();
-    await this.global.initPartnersRealtime();
-
-    await this.router.navigate(['/profile']);
-
-    Swal.fire({
-      title: 'Registro exitoso',
-      text: `¡Bienvenido/a, ${formData.name}! Tu perfil ha sido creado exitosamente.`,
-      icon: 'success',
-      confirmButtonText: 'Continuar'
-    });
-
-  } catch (error: any) {
-    console.error('Error registrando cliente:', error);
-    throw error;
-  } finally {
-    this.isSubmitting = false;
-  }
-}
-
   getFormErrors(form: FormGroup): { [key: string]: string } {
     const errors: { [key: string]: string } = {};
     Object.keys(form.controls).forEach(key => {
@@ -588,49 +517,20 @@ export class RegisterComponent {
 
 
   // Manejo de selección de tipo de usuario
-  /*  selectUserType(type: 'partner' | 'client') {
-     this.userType = type;
-     this.nextStep();
-     if (type === 'partner') {
-       this.setPartnerStepValidators(1);
-     }
-     if (type === 'client') {
-       this.setClientStepValidators(1);
-     }
-   } */
+
   selectUserType(type: 'partner' | 'client'): void {
     this.userType = type;
     this.currentStep = 1;
     this.showPassword = false;
     this.showConfirmPassword = false;
+
+    if (type === 'partner') {
+      this.setPartnerStepValidators(1);
+    } else {
+      this.setClientStepValidators(1);
+    }
   }
-  /* setClientStepValidators(step: number) {
-    // Limpiar validadores de todos los campos
-    const controls = this.clientForm.controls;
-    Object.keys(controls).forEach(key => {
-      controls[key].clearValidators();
-      controls[key].updateValueAndValidity({ emitEvent: false });
-    });
-  
-    // Paso 1: Credenciales
-    if (step === 1) {
-      controls['email'].setValidators([Validators.required, Validators.email]);
-      controls['password'].setValidators([Validators.required, Validators.minLength(8)]);
-      controls['confirmPassword'].setValidators([Validators.required]);
-    }
-    // Paso 2: Datos del cliente
-    else if (step === 2) {
-      controls['firstName'].setValidators([Validators.required, Validators.maxLength(100)]);
-      controls['address'].setValidators([Validators.required, Validators.maxLength(200)]);
-      controls['phone'].setValidators([Validators.required, Validators.pattern(/^[0-9]{10,15}$/)]);
-    }
-    // Actualizar validadores
-    Object.keys(controls).forEach(key => controls[key].updateValueAndValidity({ emitEvent: false }));
-  
-    // Mantener el validador de grupo (coincidencia de contraseñas)
-    this.clientForm.setValidators(this.passwordMatchValidator);
-    this.clientForm.updateValueAndValidity({ emitEvent: false });
-  } */
+
 
   setClientStepValidators(step: number) {
     const controls = this.clientForm.controls;
@@ -665,7 +565,6 @@ export class RegisterComponent {
 
 
   // Navegación entre pasos
-
   nextStep() {
     if (this.userType === 'partner') {
       if (
@@ -693,7 +592,10 @@ export class RegisterComponent {
         return;
       }
 
-      this.currentStep++;
+      if (this.currentStep < 3) {
+        this.currentStep++;
+        this.setPartnerStepValidators(this.currentStep);
+      }
       return;
     }
 
@@ -716,10 +618,12 @@ export class RegisterComponent {
         (
           this.clientForm.get('name')?.invalid ||
           this.clientForm.get('birthday')?.invalid ||
-          this.clientForm.get('gender')?.invalid
+          this.clientForm.get('gender')?.invalid ||
+          this.clientForm.get('address')?.invalid
         )
       ) {
         this.markClientFieldsAsTouched(2);
+        this.clientForm.get('address')?.markAsTouched();
         return;
       }
 
@@ -734,45 +638,50 @@ export class RegisterComponent {
         return;
       }
 
-      this.currentStep++;
+      if (this.currentStep < 4) {
+        this.currentStep++;
+        this.setClientStepValidators(this.currentStep);
+      }
     }
   }
-
-
   prevStep() {
-    this.currentStep--;
+    if (this.currentStep > 1) {
+      this.currentStep--;
+
+      if (this.userType === 'partner') {
+        this.setPartnerStepValidators(this.currentStep);
+      } else if (this.userType === 'client') {
+        this.setClientStepValidators(this.currentStep);
+      }
+    }
   }
   setPartnerStepValidators(step: number) {
-    // Limpiar validadores de todos los campos
     const controls = this.partnerForm.controls;
+
     Object.keys(controls).forEach(key => {
       controls[key].clearValidators();
       controls[key].updateValueAndValidity({ emitEvent: false });
     });
 
-    // Paso 1: Credenciales
     if (step === 1) {
       controls['email'].setValidators([Validators.required, Validators.email]);
       controls['password'].setValidators([Validators.required, Validators.minLength(8)]);
       controls['confirmPassword'].setValidators([Validators.required]);
-    }
-    // Paso 2: Datos del local
-    else if (step === 2) {
+    } else if (step === 2) {
       controls['venueName'].setValidators([Validators.required, Validators.maxLength(100)]);
       controls['address'].setValidators([Validators.required, Validators.maxLength(200)]);
       controls['phone'].setValidators([Validators.required, Validators.pattern(/^[0-9]{10,15}$/)]);
-    }
-    // Paso 3: Preferencias y términos
-    else if (step === 3) {
-      controls['description'].setValidators([Validators.required, Validators.maxLength(500)]);
-      controls['capacity'].setValidators([Validators.required, Validators.min(10)]);
-      controls['openingHours'].setValidators([Validators.required, this.validateOpeningHours]);
+    } else if (step === 3) {
+      controls['description'].setValidators([Validators.maxLength(500)]);
+      controls['capacity'].setValidators([Validators.pattern(/^[0-9]*$/)]);
+      controls['openingHours'].setValidators([]);
       controls['terms'].setValidators([Validators.requiredTrue]);
     }
-    // Actualizar validadores
-    Object.keys(controls).forEach(key => controls[key].updateValueAndValidity({ emitEvent: false }));
 
-    // Mantener el validador de grupo (coincidencia de contraseñas)
+    Object.keys(controls).forEach(key =>
+      controls[key].updateValueAndValidity({ emitEvent: false })
+    );
+
     this.partnerForm.setValidators(this.passwordMatchValidator);
     this.partnerForm.updateValueAndValidity({ emitEvent: false });
   }
@@ -881,151 +790,151 @@ export class RegisterComponent {
   }
 
   async registerWithGoogle(type: 'client' | 'partner') {
-  try {
-    this.loadingGoogle = true;
-    this.userType = type;
+    try {
+      this.loadingGoogle = true;
+      this.userType = type;
 
-    const authUser = await this.auth.loginWithGoogle();
+      const authUser = await this.auth.loginWithGoogle();
 
-    if (!authUser?.id) {
-      throw new Error('No se pudo autenticar con Google.');
-    }
+      if (!authUser?.id) {
+        throw new Error('No se pudo autenticar con Google.');
+      }
 
-    // Guarda el tipo en el auth record si aún no lo tiene
-    const currentType = authUser.type || this.auth.pb.authStore.record?.['type'];
+      // Guarda el tipo en el auth record si aún no lo tiene
+      const currentType = authUser.type || this.auth.pb.authStore.record?.['type'];
 
-    if (!currentType) {
-      await this.auth.pb.collection('users').update(authUser.id, {
-        type
+      if (!currentType) {
+        await this.auth.pb.collection('users').update(authUser.id, {
+          type
+        });
+      }
+
+      if (type === 'client') {
+        await this.ensureClientProfile(authUser);
+      } else {
+        await this.ensurePartnerProfile(authUser);
+      }
+
+    } catch (error: any) {
+      console.error('Error en registro con Google:', error);
+
+      Swal.fire({
+        title: 'Error',
+        text: error?.message || 'No fue posible continuar con Google.',
+        icon: 'error',
+        confirmButtonText: 'Entendido'
       });
+    } finally {
+      this.loadingGoogle = false;
     }
-
-    if (type === 'client') {
-      await this.ensureClientProfile(authUser);
-    } else {
-      await this.ensurePartnerProfile(authUser);
-    }
-
-  } catch (error: any) {
-    console.error('Error en registro con Google:', error);
-
-    Swal.fire({
-      title: 'Error',
-      text: error?.message || 'No fue posible continuar con Google.',
-      icon: 'error',
-      confirmButtonText: 'Entendido'
-    });
-  } finally {
-    this.loadingGoogle = false;
   }
-}
-async ensureClientProfile(authUser: any) {
-  try {
-    const existing = await this.auth.pb
-      .collection('usuariosClient')
-      .getFirstListItem(`userId="${authUser.id}"`);
+  async ensureClientProfile(authUser: any) {
+    try {
+      const existing = await this.auth.pb
+        .collection('usuariosClient')
+        .getFirstListItem(`userId="${authUser.id}"`);
 
-    // Ya existe perfil: decidir si está completo o no
-    const isComplete =
-      !!existing['name'] &&
-      !!existing['birthday'] &&
-      !!existing['gender'] &&
-      !!existing['interestedIn'] &&
-      !!existing['lookingFor'];
+      // Ya existe perfil: decidir si está completo o no
+      const isComplete =
+        !!existing['name'] &&
+        !!existing['birthday'] &&
+        !!existing['gender'] &&
+        !!existing['interestedIn'] &&
+        !!existing['lookingFor'];
 
-    if (isComplete) {
-      await this.global.loadProfile();
-      await this.global.initClientesRealtime();
-      await this.global.initPartnersRealtime();
-      await this.router.navigate(['/home']);
-      return;
-    }
+      if (isComplete) {
+        await this.global.loadProfile();
+        await this.global.initClientesRealtime();
+        await this.global.initPartnersRealtime();
+        await this.router.navigate(['/home']);
+        return;
+      }
 
-    // Precargar formulario y continuar onboarding
-    this.clientForm.patchValue({
-      email: authUser.email || existing['email'] || '',
-      name: existing['name'] || authUser['name'] || authUser['username'] || '',
-      address: existing['address'] || '',
-      gender: existing['gender'] || '',
-      interestedIn: existing['interestedIn'] || '',
-      lookingFor: existing['lookingFor'] || '',
-      terms: !!existing['terms']
-    });
-
-    this.currentStep = 2;
-  } catch (error: any) {
-    // Si no existe, crearlo parcial
-    if (error?.status === 404) {
-      const newClient = await this.auth.pb.collection('usuariosClient').create({
-        userId: authUser.id,
-        email: authUser.email || '',
-        name: authUser.name || authUser['username'] || '',
-        status: 'pending',
-        profileComplete: false,
-        photos: []
-      });
-
+      // Precargar formulario y continuar onboarding
       this.clientForm.patchValue({
-        email: authUser.email || '',
-        name: newClient['name'] || authUser['name'] || '',
+        email: authUser.email || existing['email'] || '',
+        name: existing['name'] || authUser['name'] || authUser['username'] || '',
+        address: existing['address'] || '',
+        gender: existing['gender'] || '',
+        interestedIn: existing['interestedIn'] || '',
+        lookingFor: existing['lookingFor'] || '',
+        terms: !!existing['terms']
       });
 
       this.currentStep = 2;
-      return;
-    }
+    } catch (error: any) {
+      // Si no existe, crearlo parcial
+      if (error?.status === 404) {
+        const newClient = await this.auth.pb.collection('usuariosClient').create({
+          userId: authUser.id,
+          email: authUser.email || '',
+          name: authUser.name || authUser['username'] || '',
+          status: 'pending',
+          profileComplete: false,
+          photos: []
+        });
 
-    throw error;
+        this.clientForm.patchValue({
+          email: authUser.email || '',
+          name: newClient['name'] || authUser['name'] || '',
+        });
+
+        this.currentStep = 2;
+        return;
+      }
+
+      throw error;
+    }
   }
-}
-async ensurePartnerProfile(authUser: any) {
-  try {
-    const existing = await this.auth.pb
-      .collection('usuariosPartner')
-      .getFirstListItem(`userId="${authUser.id}"`);
+  async ensurePartnerProfile(authUser: any) {
+    try {
+      const existing = await this.auth.pb
+        .collection('usuariosPartner')
+        .getFirstListItem(`userId="${authUser.id}"`);
 
-    const isComplete =
-      !!existing['venueName'] &&
-      !!existing['address'] &&
-      !!existing['phone'];
+      const isComplete =
+        !!existing['venueName'] &&
+        !!existing['address'] &&
+        !!existing['phone'];
 
-    if (isComplete) {
-      await this.global.loadProfile();
-      await this.global.initClientesRealtime();
-      await this.global.initPartnersRealtime();
-      await this.router.navigate(['/home-local']);
-      return;
-    }
-
-    this.partnerForm.patchValue({
-      email: authUser.email || existing['email'] || '',
-      venueName: existing['venueName'] || '',
-      address: existing['address'] || '',
-      phone: existing['phone'] || '',
-      description: existing['description'] || '',
-      capacity: existing['capacity'] || '',
-      openingHours: existing['openingHours'] || ''
-    });
-
-    this.currentStep = 2;
-  } catch (error: any) {
-    if (error?.status === 404) {
-      await this.auth.pb.collection('usuariosPartner').create({
-        userId: authUser.id,
-        email: authUser.email || '',
-        status: 'pending',
-        approved: false
-      });
+      if (isComplete) {
+        await this.global.loadProfile();
+        await this.global.initClientesRealtime();
+        await this.global.initPartnersRealtime();
+        await this.router.navigate(['/home-local']);
+        return;
+      }
 
       this.partnerForm.patchValue({
-        email: authUser.email || ''
+        email: authUser.email || existing['email'] || '',
+        venueName: existing['venueName'] || '',
+        address: existing['address'] || '',
+        phone: existing['phone'] || '',
+        description: existing['description'] || '',
+        capacity: existing['capacity'] || '',
+        openingHours: existing['openingHours'] || ''
       });
 
       this.currentStep = 2;
-      return;
-    }
+    } catch (error: any) {
+      if (error?.status === 404) {
+        await this.auth.pb.collection('usuariosPartner').create({
+          userId: authUser.id,
+          email: authUser.email || '',
+          status: 'pending',
+          approved: false
+        });
 
-    throw error;
+        this.partnerForm.patchValue({
+          email: authUser.email || ''
+        });
+
+        this.currentStep = 2;
+        return;
+      }
+
+      throw error;
+    }
   }
-}
 
 }
