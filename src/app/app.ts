@@ -37,7 +37,7 @@ export class App {
   isIos = false;
   isInstalled = false;
   deferredPrompt: BeforeInstallPromptEvent | null = null;
-
+  toasts: { message: string; type: 'success' | 'error' | 'info' }[] = [];
   constructor() {
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))

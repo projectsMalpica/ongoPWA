@@ -9,7 +9,7 @@ import { UserInterface } from '../interface/user-interface ';
 export class GlobalService {
   activeRoute: string = '';
   pb = new PocketBase('https://db.ongomatch.com:8090');
-
+  selectedPromo: any = null;
   private clientesSubject = new BehaviorSubject<any[]>([]);
   clientes$ = this.clientesSubject.asObservable();
 

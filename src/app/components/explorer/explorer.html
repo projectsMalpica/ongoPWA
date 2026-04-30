@@ -14,17 +14,20 @@
                             <div class="swiper-wrapper">
                                 <div class="swiper-slide" *ngFor="let promo of promos">
                                     <div class="dz-media-card style-4">
-                                        <a>
+                                        <a role="button" (click)="goToPromo(promo)">
                                             <div class="dz-media">
                                                 <img [src]="promo.files?.[0] || 'assets/img/default.jpg'" alt="">
                                             </div>
+
                                             <div class="dz-content">
                                                 <div class="left-content">
-                                                    <h6 class="title">{{promo.name}}</h6>
-                                                    <span class="active-status">{{promo.description}}</span>
+                                                    <h6 class="title">{{ promo.name }}</h6>
+                                                    <span class="active-status">{{ promo.description }}</span>
                                                 </div>
-                                                <div class="dz-icon ms-auto me-0"><i
-                                                        class="flaticon flaticon-star-1"></i></div>
+
+                                                <div class="dz-icon ms-auto me-0">
+                                                    <i class="flaticon flaticon-star-1"></i>
+                                                </div>
                                             </div>
                                         </a>
                                     </div>
@@ -38,7 +41,7 @@
                     <div class="row g-2">
                         <div class="col-6" *ngFor="let partner of partners">
                             <div class="dz-media-card style-4">
-                                <a (click)="global.previewPartner(partner)">
+                                <a role="button" (click)="goToPartner(partner)">
                                     <div class="dz-media">
                                         <img [src]="partner.avatar || 'assets/img/default.jpg'" alt="">
                                     </div>

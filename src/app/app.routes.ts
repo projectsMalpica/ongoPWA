@@ -84,6 +84,12 @@ export const routes: Routes = [
     title: 'Perfil local'
   },
   {
+  path: 'detailprofilelocal/:id',
+  loadComponent: () =>
+    import('./components/detailprofilelocal/detailprofilelocal').then(c => c.Detailprofilelocal),
+  title: 'Perfil local'
+},
+  {
     path: 'favorites',
     loadComponent: () =>
       import('./components/favorites/favorites').then(c => c.Favorites),

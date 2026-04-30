@@ -54,3 +54,12 @@
 
   <app-menubar *ngIf="showLayout"></app-menubar>
 </div>
+<div class="app-toast-container">
+  <div
+    *ngFor="let toast of toasts"
+    class="app-toast"
+    [ngClass]="toast.type"
+  >
+    <span>{{ toast.message }}</span>
+  </div>
+</div>

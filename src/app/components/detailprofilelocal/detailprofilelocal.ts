@@ -1,36 +1,444 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { GlobalService } from '../../services/global.service';
 import { CommonModule } from '@angular/common';
-
+import PocketBase from 'pocketbase';
+import { AuthPocketbaseService } from '../../services/authPocketbase.service';
+import { WompiService } from '../../services/wompi.service';
+import { FormsModule } from '@angular/forms';
 @Component({
   selector: 'app-detailprofilelocal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './detailprofilelocal.html',
   styleUrl: './detailprofilelocal.scss',
 })
 export class Detailprofilelocal {
-avatarUrl: string = '';
-  constructor(public global: GlobalService){}
-  ngOnInit() {
-    const partner = this.global.selectedPartner;
-    if (!partner) return;
-  
-    if (partner.avatar?.startsWith('http')) {
-      this.avatarUrl = partner.avatar;
-    } else if (partner.avatar) {
-      this.avatarUrl = this.global.pb.files.getUrl(
-        partner,
-        partner.avatar,              // filename
-        { $autoCancel: false }
-      );
-    } else if (partner.files?.length) {
-      this.avatarUrl = partner.files[0];
-    } else {
-      this.avatarUrl = 'assets/images/user/pic1.jpg';
-    }
-  
-    console.log('Detail avatarUrl:', this.avatarUrl);
+  private pb = new PocketBase('https://db.ongomatch.com:8090');
+
+  avatarUrl: string = '';
+  partner: any = null;
+  partnerPromos: any[] = [];
+  partnerProducts: any[] = [];
+  showGiftModal = false;
+  selectedGiftProduct: any = null;
+  selectedReceiverUserId = '';
+  giftMessage = '';
+  giftPaymentMethod: 'wallet' | 'wompi' = 'wallet';
+  walletBalance = 0;
+  currentWallet: any = null;
+  giftReceivers: any[] = [];
+  isSendingGift = false;
+  toasts: { message: string; type: 'success' | 'error' | 'info' }[] = [];
+
+  constructor(public global: GlobalService,
+    public changeDetectorRef: ChangeDetectorRef,
+    public auth: AuthPocketbaseService,
+    public wompiService: WompiService
+  ) { 
+      this.pb.autoCancellation(false);
   }
-  
+  async ngOnInit(): Promise<void> {
+    const savedPartner = localStorage.getItem('selectedPartner');
+
+    if (savedPartner) {
+      this.partner = JSON.parse(savedPartner);
+    }
+
+    if (!this.partner && this.global.selectedPartner) {
+      this.partner = this.global.selectedPartner;
+    }
+
+    if (!this.partner?.id) {
+      console.warn('No hay partner para mostrar');
+      return;
+    }
+
+    this.normalizePartnerData();
+    this.setAvatarUrl();
+
+    await Promise.all([
+      this.loadPartnerPromos(),
+      this.loadPartnerProducts()
+    ]);
+
+    console.log('Partner detalle:', this.partner);
+    console.log('Promos:', this.partnerPromos);
+    console.log('Productos:', this.partnerProducts);
+    this.changeDetectorRef.detectChanges();
+  }
+showToast(message: string, type: 'success' | 'error' | 'info' = 'info') {
+  const toast = { message, type };
+  this.toasts.push(toast);
+
+  setTimeout(() => {
+    this.toasts = this.toasts.filter(t => t !== toast);
+  }, 3000);
+}
+  normalizePartnerData(): void {
+    if (typeof this.partner.files === 'string') {
+      try {
+        this.partner.files = JSON.parse(this.partner.files);
+      } catch {
+        this.partner.files = [];
+      }
+    }
+
+    if (!Array.isArray(this.partner.files)) {
+      this.partner.files = [];
+    }
+
+    if (typeof this.partner.services === 'string') {
+      this.partner.services = this.partner.services
+        .split(',')
+        .map((item: string) => item.trim())
+        .filter(Boolean);
+    }
+
+    if (!Array.isArray(this.partner.services)) {
+      this.partner.services = [];
+    }
+  }
+
+  setAvatarUrl(): void {
+    if (this.partner.avatar?.startsWith('http')) {
+      this.avatarUrl = this.partner.avatar;
+      return;
+    }
+
+    if (this.partner.avatar) {
+      this.avatarUrl = this.pb.files.getUrl(this.partner, this.partner.avatar);
+      return;
+    }
+
+    if (this.partner.files?.length) {
+      this.avatarUrl = this.partner.files[0];
+      return;
+    }
+
+    this.avatarUrl = 'assets/images/avatar-local.png';
+  }
+
+  async loadPartnerPromos(): Promise<void> {
+    try {
+      if (!this.partner?.userId) {
+        console.warn('El partner no tiene userId para cargar promociones');
+        return;
+      }
+
+      const records = await this.pb.collection('promos').getFullList({
+        filter: `userId="${this.partner.userId}"`,
+        sort: '-created',
+        requestKey: null
+      });
+
+      this.partnerPromos = records.map((promo: any) => ({
+        id: promo.id,
+        name: promo.name,
+        description: promo.description,
+        userId: promo.userId,
+        files: this.normalizeFiles(promo.files)
+      }));
+    } catch (error) {
+      console.error('Error cargando promociones:', error);
+    }
+  }
+
+  async loadPartnerProducts(): Promise<void> {
+    try {
+      const filters: string[] = [];
+
+      if (this.partner?.id) {
+        filters.push(`partnerId="${this.partner.id}"`);
+      }
+
+      if (this.partner?.userId) {
+        filters.push(`userId="${this.partner.userId}"`);
+      }
+
+      if (!filters.length) return;
+
+      const records = await this.pb.collection('partnerProducts').getFullList({
+        filter: `(${filters.join(' || ')}) && isAvailable=true`,
+        sort: '-created',
+        requestKey: null
+      });
+
+      this.partnerProducts = records.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        category: item.category,
+        price: item.price,
+        isAvailable: item.isAvailable,
+        userId: item.userId,
+        partnerId: item.partnerId,
+        image: item.image ? this.pb.files.getUrl(item, item.image) : ''
+      }));
+    } catch (error) {
+      console.error('Error cargando productos:', error);
+    }
+  }
+
+  normalizeFiles(files: any): string[] {
+    if (!files) return [];
+
+    if (Array.isArray(files)) {
+      return files;
+    }
+
+    if (typeof files === 'string') {
+      try {
+        const parsed = JSON.parse(files);
+        return Array.isArray(parsed) ? parsed : [files];
+      } catch {
+        return [files];
+      }
+    }
+
+    return [];
+  }
+ 
+  async openGiftModal(product: any): Promise<void> {
+  this.selectedGiftProduct = product;
+  this.selectedReceiverUserId = '';
+  this.giftMessage = '';
+  this.giftPaymentMethod = 'wallet';
+  this.showGiftModal = true;
+
+  await Promise.all([
+    this.loadWallet(),
+    this.loadGiftReceivers()
+  ]);
+
+  this.changeDetectorRef.detectChanges();
+}
+
+closeGiftModal(): void {
+  if (this.isSendingGift) return;
+
+  this.showGiftModal = false;
+  this.selectedGiftProduct = null;
+  this.selectedReceiverUserId = '';
+  this.giftMessage = '';
+}
+
+async loadWallet(): Promise<void> {
+  const userId = this.auth.currentUser?.id;
+
+  if (!userId) return;
+
+  try {
+    const wallet = await this.pb.collection('wallet').getFirstListItem(
+      `userId="${userId}"`,
+      { requestKey: null }
+    );
+
+    this.currentWallet = wallet;
+    this.walletBalance = Number(wallet['balance'] || 0);
+  } catch (error) {
+    console.warn('El usuario no tiene wallet creada todavía');
+
+    const wallet = await this.pb.collection('wallet').create({
+      userId,
+      balance: 0,
+      currency: 'COP',
+      status: 'active'
+    });
+
+    this.currentWallet = wallet;
+    this.walletBalance = 0;
+  }
+}
+
+async loadGiftReceivers(): Promise<void> {
+  try {
+    const currentUserId = this.auth.currentUser?.id;
+
+    if (!currentUserId) {
+      this.giftReceivers = [];
+      return;
+    }
+
+    const records = await this.pb.collection('usuariosClient').getFullList({
+      filter: `userId!="${currentUserId}"`,
+      sort: 'name',
+      requestKey: null
+    });
+
+    this.giftReceivers = records.map((client: any) => ({
+      id: client.id,
+      userId: client.userId,
+      name: client.name || 'Usuario',
+      email: client.email || '',
+      avatar: this.normalizeClientAvatar(client)
+    }));
+
+    this.changeDetectorRef.detectChanges();
+
+  } catch (error) {
+    console.error('Error cargando clientes receptores:', error);
+    this.giftReceivers = [];
+  }
+}
+normalizeClientAvatar(client: any): string {
+  if (!client.avatar) {
+    return 'assets/images/user/pic1.jpg';
+  }
+
+  if (typeof client.avatar === 'string') {
+    try {
+      const parsed = JSON.parse(client.avatar);
+
+      if (Array.isArray(parsed) && parsed.length) {
+        return parsed[0];
+      }
+
+      return client.avatar;
+    } catch {
+      return client.avatar.startsWith('http')
+        ? client.avatar
+        : this.pb.files.getUrl(client, client.avatar);
+    }
+  }
+
+  if (Array.isArray(client.avatar) && client.avatar.length) {
+    return client.avatar[0];
+  }
+
+  return 'assets/images/user/pic1.jpg';
+}
+async sendGift(): Promise<void> {
+  if (!this.selectedGiftProduct) return;
+
+  if (!this.selectedReceiverUserId) {
+    alert('Selecciona un usuario para enviar el regalo.');
+    return;
+  }
+
+  if (this.giftPaymentMethod === 'wallet') {
+    await this.sendGiftWithWallet();
+    return;
+  }
+
+  await this.sendGiftWithWompi();
+}
+async sendGiftWithWallet(): Promise<void> {
+  try {
+    this.isSendingGift = true;
+
+    const buyerUserId = this.auth.currentUser?.id;
+    const product = this.selectedGiftProduct;
+    const amount = Number(product.price || 0);
+    const receiverUserId = this.selectedReceiverUserId || buyerUserId;
+const isGift = receiverUserId !== buyerUserId;
+    if (!buyerUserId) {
+      alert('Debes iniciar sesión.');
+      return;
+    }
+
+    if (!this.currentWallet) {
+      await this.loadWallet();
+    }
+
+    const balanceBefore = Number(this.currentWallet.balance || 0);
+
+    if (balanceBefore < amount) {
+this.showToast(
+  'Saldo insuficiente. Usa Wompi o recarga tu wallet 💳',
+  'error'
+);      return;
+    }
+
+    const balanceAfter = balanceBefore - amount;
+
+    await this.pb.collection('wallet').update(this.currentWallet.id, {
+      balance: balanceAfter
+    }, { requestKey: null });
+
+    const order = await this.pb.collection('product_orders').create({
+      buyerUserId,
+      receiverUserId,
+      partnerId: product.partnerId || this.partner.id,
+      productId: product.id,
+      productName: product.name,
+      productImage: product.image || '',
+      amount,
+      paymentMethod: 'wallet',
+      status: 'paid',
+      message: this.giftMessage || ''
+    }, { requestKey: null });
+
+    await this.pb.collection('wallet_transactions').create({
+      walletId: this.currentWallet.id,
+      userId: buyerUserId,
+      type: 'purchase',
+      amount,
+      direction: 'debit',
+      balanceBefore,
+      balanceAfter,
+      referenceType: 'product_order',
+      referenceId: order.id,
+      status: 'approved',
+      description: `Regalo enviado: ${product.name}`
+    }, { requestKey: null });
+
+    this.walletBalance = balanceAfter;
+    this.closeGiftModal();
+
+    this.showToast('Regalo enviado correctamente 🎁', 'success');
+
+  } catch (error) {
+    console.error('Error enviando regalo con wallet:', error);
+    this.showToast('No se pudo enviar el regalo.', 'error');
+  } finally {
+    this.isSendingGift = false;
+  }
+}
+async sendGiftWithWompi(): Promise<void> {
+  try {
+    this.isSendingGift = true;
+
+    const buyerUserId = this.auth.currentUser?.id;
+    const product = this.selectedGiftProduct;
+    const amount = Number(product.price || 0);
+    const reference = `gift_${product.id}_${Date.now()}`;
+    const receiverUserId = this.selectedReceiverUserId || buyerUserId;
+const isGift = receiverUserId !== buyerUserId;
+    if (!buyerUserId) {
+      alert('Debes iniciar sesión.');
+      return;
+    }
+
+    await this.pb.collection('product_orders').create({
+      buyerUserId,
+      receiverUserId,
+      partnerId: product.partnerId || this.partner.id,
+      productId: product.id,
+      productName: product.name,
+      productImage: product.image || '',
+      amount,
+      paymentMethod: 'wompi',
+      status: 'pending',
+      message: this.giftMessage || '',
+      referenceId: reference
+    }, { requestKey: null });
+
+    this.showGiftModal = false;
+
+    await new Promise(resolve => setTimeout(resolve, 150));
+
+    await this.wompiService.openCheckout({
+      amountInCents: amount * 100,
+      reference,
+      currency: 'COP',
+      customerEmail: this.auth.currentUser?.email || ''
+    });
+
+  } catch (error) {
+    console.error('Error enviando regalo con Wompi:', error);
+    this.showToast('No se pudo iniciar el pago.', 'error');
+  } finally {
+    this.isSendingGift = false;
+  }
+}
 }
