@@ -5,6 +5,7 @@ import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import { CommonModule } from '@angular/common';
 import { GlobalService } from '../../services/global.service';
 import { environment } from '../../environments/environment';
+import { Router } from '@angular/router';
 @Component({
   selector: 'app-maps',
   standalone: true,
@@ -19,7 +20,20 @@ export class Maps implements AfterViewInit, OnDestroy {
   private map!: mapboxgl.Map;
   private pb = new PocketBase('https://db.ongomatch.com:8090');
   private markers: Map<string, mapboxgl.Marker> = new Map();
-constructor(public global: GlobalService){}
+  totalActiveUsers = 128;
+
+activeUsersPreview = [
+  { avatar: 'https://randomuser.me/api/portraits/women/1.jpg' },
+  { avatar: 'https://randomuser.me/api/portraits/men/2.jpg' },
+  { avatar: 'https://randomuser.me/api/portraits/women/3.jpg' }
+];
+
+extraUsers = 25;
+
+matchesNow = 23;
+newUsers = 5;
+viewsToday = 12;
+constructor(public global: GlobalService, public router: Router){}
   async ngOnInit() {
     window.addEventListener('resize', () => {
       this.map.resize();
@@ -29,7 +43,8 @@ constructor(public global: GlobalService){}
   async ngAfterViewInit() {
     this.map = new mapboxgl.Map({
       container: this.mapContainer.nativeElement,
-      style: 'mapbox://styles/mapbox/streets-v11',
+      /* style: 'mapbox://styles/mapbox/streets-v11' */
+      style: 'mapbox://styles/mapbox/dark-v11',
 
       center: [-75.576, 6.244],
       zoom: 13,
@@ -181,5 +196,8 @@ constructor(public global: GlobalService){}
     this.pb.collection('usuariosPartner').unsubscribe('*');
     this.map.remove();
   }
-  
+  goRadar() {
+  this.router.navigate(['/home']); // tu swipe actual
+}
+
 }

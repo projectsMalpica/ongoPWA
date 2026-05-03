@@ -5,6 +5,7 @@ import PocketBase from 'pocketbase';
 import { AuthPocketbaseService } from '../../services/authPocketbase.service';
 import { WompiService } from '../../services/wompi.service';
 import { FormsModule } from '@angular/forms';
+import { ToastService } from '../../services/ToastService.service';
 @Component({
   selector: 'app-detailprofilelocal',
   standalone: true,
@@ -28,12 +29,12 @@ export class Detailprofilelocal {
   currentWallet: any = null;
   giftReceivers: any[] = [];
   isSendingGift = false;
-  toasts: { message: string; type: 'success' | 'error' | 'info' }[] = [];
 
   constructor(public global: GlobalService,
     public changeDetectorRef: ChangeDetectorRef,
     public auth: AuthPocketbaseService,
-    public wompiService: WompiService
+    public wompiService: WompiService,
+      private toastService: ToastService
   ) { 
       this.pb.autoCancellation(false);
   }
@@ -66,14 +67,7 @@ export class Detailprofilelocal {
     console.log('Productos:', this.partnerProducts);
     this.changeDetectorRef.detectChanges();
   }
-showToast(message: string, type: 'success' | 'error' | 'info' = 'info') {
-  const toast = { message, type };
-  this.toasts.push(toast);
 
-  setTimeout(() => {
-    this.toasts = this.toasts.filter(t => t !== toast);
-  }, 3000);
-}
   normalizePartnerData(): void {
     if (typeof this.partner.files === 'string') {
       try {
@@ -343,7 +337,7 @@ const isGift = receiverUserId !== buyerUserId;
     const balanceBefore = Number(this.currentWallet.balance || 0);
 
     if (balanceBefore < amount) {
-this.showToast(
+this.toastService.show(
   'Saldo insuficiente. Usa Wompi o recarga tu wallet 💳',
   'error'
 );      return;
@@ -385,11 +379,11 @@ this.showToast(
     this.walletBalance = balanceAfter;
     this.closeGiftModal();
 
-    this.showToast('Regalo enviado correctamente 🎁', 'success');
+    this.toastService.show('Regalo enviado correctamente 🎁', 'success');
 
   } catch (error) {
     console.error('Error enviando regalo con wallet:', error);
-    this.showToast('No se pudo enviar el regalo.', 'error');
+    this.toastService.show('No se pudo enviar el regalo.', 'error');
   } finally {
     this.isSendingGift = false;
   }
@@ -436,7 +430,7 @@ const isGift = receiverUserId !== buyerUserId;
 
   } catch (error) {
     console.error('Error enviando regalo con Wompi:', error);
-    this.showToast('No se pudo iniciar el pago.', 'error');
+    this.toastService.show('No se pudo iniciar el pago.', 'error');
   } finally {
     this.isSendingGift = false;
   }

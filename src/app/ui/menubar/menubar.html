@@ -1,35 +1,27 @@
+
+
 <!-- Menubar Mejorado -->
 <div class="menubar-area footer-fixed">
   <div class="toolbar-inner menubar-nav">
 
-    <!-- Home / Home-local -->
-    <a
-      class="nav-link"
-      [routerLink]="auth.isPartner() ? '/home-local' : '/home'"
-      routerLinkActive="active"
-      [routerLinkActiveOptions]="{ exact: true }"
-      title="Inicio">
-      <i class="flaticon flaticon-dog-house"></i>
-    </a>
-
-    <!-- Maps -->
+    <!-- Mapa / pantalla inicial -->
     <a
       class="nav-link"
       routerLink="/maps"
       routerLinkActive="active"
       [routerLinkActiveOptions]="{ exact: true }"
-      title="Mapas">
+      title="Mapa">
       <i class="fas fa-map-marker-alt"></i>
     </a>
 
-    <!-- Explorer -->
+    <!-- Radar / perfiles para match -->
     <a
       class="nav-link"
-      routerLink="/explorer"
+      [routerLink]="auth.isPartner() ? '/home-local' : '/home'"
       routerLinkActive="active"
       [routerLinkActiveOptions]="{ exact: true }"
-      title="Explorar">
-      <i class="flaticon flaticon-search"></i>
+      title="Radar">
+      <i class="fas fa-fire"></i>
     </a>
 
     <!-- Chat solo para client -->
@@ -41,6 +33,16 @@
       [routerLinkActiveOptions]="{ exact: true }"
       title="Chat">
       <i class="flaticon flaticon-chat-1"></i>
+    </a>
+
+    <!-- Explorar locales y promociones -->
+    <a
+      class="nav-link"
+      routerLink="/explorer"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      title="Explorar">
+      <i class="flaticon flaticon-search"></i>
     </a>
 
     <!-- Perfil partner -->

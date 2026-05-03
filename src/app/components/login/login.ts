@@ -85,7 +85,7 @@ export class LoginComponent {
           } else if (userType === 'admin') {
             await this.router.navigate(['/admin']);
           } else {
-            await this.router.navigate(['/home']);
+            await this.router.navigate(['/maps']);
           }
         } catch (error) {
           console.error('Error en post-login:', error);
@@ -119,7 +119,7 @@ export class LoginComponent {
     } else if (user.type === 'admin') {
       await this.router.navigate(['/admin']);
     } else {
-      await this.router.navigate(['/home']);
+      await this.router.navigate(['/maps']);
     }
 
   } catch (error) {

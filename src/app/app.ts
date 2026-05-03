@@ -5,6 +5,7 @@ import { Menubar } from './ui/menubar/menubar';
 import { Sidebar } from './ui/sidebar/sidebar';
 import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
+import { ToastService } from './services/ToastService.service';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -32,13 +33,15 @@ export class App {
     '/forgot-password',
     '/reset-password'
   ];
+  toasts: any[] = [];
 
   showPwaPrompt = false;
   isIos = false;
   isInstalled = false;
   deferredPrompt: BeforeInstallPromptEvent | null = null;
-  toasts: { message: string; type: 'success' | 'error' | 'info' }[] = [];
-  constructor() {
+  constructor(
+    private toastService: ToastService
+  ) {
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
@@ -61,6 +64,9 @@ export class App {
         this.showPwaPrompt = true;
       }
     }
+      this.toastService.toasts$.subscribe(t => {
+    this.toasts = t;
+  });
   }
 
   @HostListener('window:beforeinstallprompt', ['$event'])

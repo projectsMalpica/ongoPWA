@@ -1,5 +1,17 @@
-<div class="page-content space-top p-b65">
+<div class="page-content radar-page p-b65">
   <div class="container fixed-full-area">
+
+    <!-- Header Radar -->
+    <section class="radar-header">
+      <div>
+<span class="radar-label">⚡ Conecta cerca de ti</span>
+        <p>Desliza para conectar o toca dos veces para abrir chat.</p>
+      </div>
+
+      <button type="button" class="radar-map-btn" routerLink="/maps">
+        <i class="fas fa-map-marker-alt"></i>
+      </button>
+    </section>
 
     <div *ngIf="loadingClients" class="empty-state">
       Cargando perfiles...
@@ -7,11 +19,9 @@
 
     <div class="dzSwipe_card-cont dz-gallery-slider" *ngIf="!loadingClients && clientes.length > 0">
 
-      <div
-        class="dzSwipe_card dzSwipe_card--next"
-        *ngIf="clientes.length > 1"
-      >
-        <div class="dz-media">
+      <!-- Card siguiente -->
+      <div class="dzSwipe_card dzSwipe_card--next" *ngIf="clientes.length > 1"style="height: 85%;">
+                <div class="dz-media">
           <img
             [src]="clientes[(currentIndex + 1) % clientes.length]?.avatar || 'assets/images/hero-night.png'"
             (error)="$any($event.target).src='assets/images/hero-night.png'"
@@ -27,9 +37,7 @@
             </span>
 
             <h4 class="title">
-              <a href="javascript:void(0)">
-                {{ clientes[(currentIndex + 1) % clientes.length]?.name || 'Usuario' }}
-              </a>
+              {{ clientes[(currentIndex + 1) % clientes.length]?.name || 'Usuario' }}
             </h4>
 
             <p class="mb-0">
@@ -46,15 +54,19 @@
         <div class="dzSwipe_card__option dzReject">
           <i class="fa-solid fa-xmark"></i>
         </div>
+
         <div class="dzSwipe_card__option dzLike">
           <i class="fa-solid fa-check"></i>
         </div>
+
         <div class="dzSwipe_card__option dzSuperlike">
           <h5 class="title mb-0">Super Like</h5>
         </div>
+
         <div class="dzSwipe_card__drag"></div>
       </div>
 
+      <!-- Card activa -->
       <div
         class="dzSwipe_card dzSwipe_card--active"
         [ngStyle]="{ transform: transform }"
@@ -83,10 +95,7 @@
             </span>
 
             <h4 class="title">
-              <a
-                href="javascript:void(0)"
-                (click)="global.previewClient(clientes[currentIndex])"
-              >
+              <a href="javascript:void(0)" (click)="global.previewClient(clientes[currentIndex])">
                 {{ clientes[currentIndex]?.name || 'Usuario' }}
               </a>
             </h4>
@@ -105,19 +114,22 @@
         <div class="dzSwipe_card__option dzReject">
           <i class="fa-solid fa-xmark"></i>
         </div>
+
         <div class="dzSwipe_card__option dzLike">
           <i class="fa-solid fa-check"></i>
         </div>
+
         <div class="dzSwipe_card__option dzSuperlike">
           <h5 class="title mb-0">Super Like</h5>
         </div>
+
         <div class="dzSwipe_card__drag"></div>
       </div>
 
     </div>
 
     <div *ngIf="!loadingClients && clientes.length === 0" class="empty-state">
-      No hay clientes para mostrar
+      No hay perfiles cerca por ahora.
     </div>
 
   </div>
