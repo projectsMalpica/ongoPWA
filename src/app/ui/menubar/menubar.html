@@ -1,11 +1,10 @@
-
-
 <!-- Menubar Mejorado -->
 <div class="menubar-area footer-fixed">
   <div class="toolbar-inner menubar-nav">
 
-    <!-- Mapa / pantalla inicial -->
+    <!-- CLIENT: Mapa -->
     <a
+      *ngIf="auth.isClient()"
       class="nav-link"
       routerLink="/maps"
       routerLinkActive="active"
@@ -14,17 +13,29 @@
       <i class="fas fa-map-marker-alt"></i>
     </a>
 
-    <!-- Radar / perfiles para match -->
+    <!-- PARTNER: Inicio local -->
     <a
+      *ngIf="auth.isPartner()"
       class="nav-link"
-      [routerLink]="auth.isPartner() ? '/home-local' : '/home'"
+      routerLink="/home-local"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      title="Inicio">
+      <i class="flaticon flaticon-dog-house"></i>
+    </a>
+
+    <!-- CLIENT: Radar -->
+    <a
+      *ngIf="auth.isClient()"
+      class="nav-link"
+      routerLink="/home"
       routerLinkActive="active"
       [routerLinkActiveOptions]="{ exact: true }"
       title="Radar">
       <i class="fas fa-fire"></i>
     </a>
 
-    <!-- Chat solo para client -->
+    <!-- CLIENT: Chat -->
     <a
       *ngIf="auth.isClient()"
       class="nav-link"
@@ -35,8 +46,20 @@
       <i class="flaticon flaticon-chat-1"></i>
     </a>
 
-    <!-- Explorar locales y promociones -->
+    <!-- PARTNER: Promociones / gestión -->
     <a
+      *ngIf="auth.isPartner()"
+      class="nav-link"
+      routerLink="/explorer"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      title="Promociones">
+      <i class="flaticon flaticon-search"></i>
+    </a>
+
+    <!-- CLIENT: Explorar -->
+    <a
+      *ngIf="auth.isClient()"
       class="nav-link"
       routerLink="/explorer"
       routerLinkActive="active"
@@ -45,7 +68,7 @@
       <i class="flaticon flaticon-search"></i>
     </a>
 
-    <!-- Perfil partner -->
+    <!-- PARTNER: Perfil local -->
     <a
       *ngIf="auth.isPartner()"
       class="nav-link"
@@ -56,7 +79,7 @@
       <i class="flaticon flaticon-user"></i>
     </a>
 
-    <!-- Perfil client -->
+    <!-- CLIENT: Perfil -->
     <a
       *ngIf="auth.isClient()"
       class="nav-link"
@@ -69,4 +92,3 @@
 
   </div>
 </div>
-<!-- Menubar Mejorado -->
