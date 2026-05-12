@@ -5,11 +5,8 @@
       <div class="main-profile">
         <div class="about-profile">
           <div class="media-rect position-relative">
-            <img
-              [src]="global.profileDataPartner.avatar || 'assets/images/avatar-local.png'"
-              alt="profile-image"
-              class="profile-avatar-rect"
-            >
+            <img [src]="global.profileDataPartner.avatar || 'assets/images/avatar-local.png'" alt="profile-image"
+              class="profile-avatar-rect">
           </div>
 
           <a (click)="editProfile()" class="edit-profile dz-icon">
@@ -126,12 +123,8 @@
                 <div class="row g-3" *ngIf="partnerProducts.length; else emptyProductsBlock">
                   <div class="col-12 col-md-6" *ngFor="let product of partnerProducts">
                     <div class="card h-100 shadow-sm border-0">
-                      <img
-                        [src]="product.image || 'assets/images/default-product.jpg'"
-                        class="card-img-top"
-                        alt="producto"
-                        style="height: 180px; object-fit: cover;"
-                      />
+                      <img [src]="product.image || 'assets/images/default-product.jpg'" class="card-img-top"
+                        alt="producto" style="height: 180px; object-fit: cover;" />
 
                       <div class="card-body">
                         <h6 class="mb-1">{{ product.name }}</h6>
@@ -143,9 +136,7 @@
                             {{ product.price | number:'1.0-0' }} COP
                           </strong>
 
-                          <span
-                            class="badge"
-                            [ngClass]="product.isAvailable ? 'bg-success' : 'bg-secondary'">
+                          <span class="badge" [ngClass]="product.isAvailable ? 'bg-success' : 'bg-secondary'">
                             {{ product.isAvailable ? 'Disponible' : 'No disponible' }}
                           </span>
                         </div>
@@ -222,11 +213,8 @@
         <div class="subscribe-area-top">
           <div class="swiper subscription-swiper2" #plansSwiper>
             <div class="swiper-wrapper">
-              <div
-                class="swiper-slide"
-                data-card="premium-plus"
-                *ngFor="let planning of global.planningPartners$ | async"
-              >
+              <div class="swiper-slide" data-card="premium-plus"
+                *ngFor="let planning of global.planningPartners$ | async">
                 <div class="subscribe-box style-2 premium-plus">
                   <h5 class="title">
                     <img [src]="planning.subscription" alt="">
@@ -283,10 +271,8 @@
       <div class="main-profile">
         <div class="about-profile">
           <div class="media rounded-circle">
-            <img
-              [src]="avatarPreview || global.profileDataPartner.avatar || auth.currentUser?.avatar"
-              alt="profile-image"
-            >
+            <img [src]="avatarPreview || global.profileDataPartner.avatar || auth.currentUser?.avatar"
+              alt="profile-image">
             <input type="file" accept="image/*" (change)="onAvatarSelected($event)" class="d-none" #avatarInput>
             <button type="button" class="btn btn-sm btn-primary mt-2" (click)="avatarInput.click()">
               Cambiar foto
@@ -311,13 +297,8 @@
                 <i class="icon feather icon-x"></i>
               </div>
 
-              <input
-                type="file"
-                [id]="'imageUpload' + i"
-                class="d-none"
-                (change)="onPhotoSelected($event, i)"
-                accept=".png, .jpg, .jpeg"
-              >
+              <input type="file" [id]="'imageUpload' + i" class="d-none" (change)="onPhotoSelected($event, i)"
+                accept=".png, .jpg, .jpeg">
             </div>
           </div>
         </div>
@@ -327,14 +308,8 @@
             <label for="venueName">Nombre</label>
           </div>
           <div class="card-body">
-            <input
-              type="text"
-              class="form-control"
-              name="venueName"
-              id="venueName"
-              [(ngModel)]="global.profileDataPartner.venueName"
-              placeholder="Nombre del lugar"
-            />
+            <input type="text" class="form-control" name="venueName" id="venueName"
+              [(ngModel)]="global.profileDataPartner.venueName" placeholder="Nombre del lugar" />
           </div>
         </div>
 
@@ -343,14 +318,8 @@
             <label for="address">Dirección</label>
           </div>
           <div class="card-body">
-            <input
-              type="text"
-              class="form-control"
-              name="address"
-              id="address"
-              [(ngModel)]="global.profileDataPartner.address"
-              placeholder="Medellín, Colombia"
-            />
+            <input type="text" class="form-control" name="address" id="address"
+              [(ngModel)]="global.profileDataPartner.address" placeholder="Medellín, Colombia" />
           </div>
         </div>
 
@@ -359,14 +328,8 @@
             <label for="description">Biografía</label>
           </div>
           <div class="card-body">
-            <input
-              type="text"
-              class="form-control"
-              name="description"
-              id="description"
-              [(ngModel)]="global.profileDataPartner.description"
-              placeholder="Hola, me encanta bailar"
-            />
+            <input type="text" class="form-control" name="description" id="description"
+              [(ngModel)]="global.profileDataPartner.description" placeholder="Hola, me encanta bailar" />
           </div>
         </div>
 
@@ -375,14 +338,8 @@
             <label for="phone">Teléfono</label>
           </div>
           <div class="card-body">
-            <input
-              type="number"
-              class="form-control"
-              name="phone"
-              id="phone"
-              [(ngModel)]="global.profileDataPartner.phone"
-              placeholder="Ingresa tu teléfono"
-            />
+            <input type="number" class="form-control" name="phone" id="phone"
+              [(ngModel)]="global.profileDataPartner.phone" placeholder="Ingresa tu teléfono" />
           </div>
         </div>
 
@@ -391,14 +348,8 @@
             <label for="email">Correo</label>
           </div>
           <div class="card-body">
-            <input
-              type="email"
-              class="form-control"
-              name="email"
-              id="email"
-              [(ngModel)]="global.profileDataPartner.email"
-              placeholder="Ingresa tu correo"
-            />
+            <input type="email" class="form-control" name="email" id="email"
+              [(ngModel)]="global.profileDataPartner.email" placeholder="Ingresa tu correo" />
           </div>
         </div>
 
@@ -407,14 +358,8 @@
             <label for="capacity">Capacidad</label>
           </div>
           <div class="card-body">
-            <input
-              type="number"
-              class="form-control"
-              name="capacity"
-              id="capacity"
-              [(ngModel)]="global.profileDataPartner.capacity"
-              placeholder="Capacidad del local"
-            />
+            <input type="number" class="form-control" name="capacity" id="capacity"
+              [(ngModel)]="global.profileDataPartner.capacity" placeholder="Capacidad del local" />
           </div>
         </div>
 
@@ -423,14 +368,8 @@
             <label for="openingHours">Horario de apertura</label>
           </div>
           <div class="card-body">
-            <input
-              type="text"
-              class="form-control"
-              name="openingHours"
-              id="openingHours"
-              [(ngModel)]="global.profileDataPartner.openingHours"
-              placeholder="Ej: 20:00 - 05:00"
-            />
+            <input type="text" class="form-control" name="openingHours" id="openingHours"
+              [(ngModel)]="global.profileDataPartner.openingHours" placeholder="Ej: 20:00 - 05:00" />
           </div>
         </div>
 
@@ -439,29 +378,54 @@
             <label for="purchaseLink">Link para compra de entradas o productos</label>
           </div>
           <div class="card-body">
-            <input
-              type="text"
-              class="form-control"
-              name="purchaseLink"
-              id="purchaseLink"
-              [(ngModel)]="global.profileDataPartner.purchaseLink"
-              placeholder="Ingresa tu link"
-            />
+            <input type="text" class="form-control" name="purchaseLink" id="purchaseLink"
+              [(ngModel)]="global.profileDataPartner.purchaseLink" placeholder="Ingresa tu link" />
+          </div>
+        </div>
+        <div class="card style-4">
+          <div class="card-header">
+            <label>Reservas habilitadas</label>
+          </div>
+          <div class="card-body">
+            <input type="checkbox" [(ngModel)]="global.profileDataPartner.reservationEnabled">
           </div>
         </div>
 
         <div class="card style-4">
           <div class="card-header">
+            <label>WhatsApp reservas</label>
+          </div>
+          <div class="card-body">
+            <input type="text" class="form-control" [(ngModel)]="global.profileDataPartner.whatsappReservations"
+              placeholder="+573001112233">
+          </div>
+        </div>
+
+        <div class="card style-4">
+          <div class="card-header">
+            <label>Venta de entradas activa</label>
+          </div>
+          <div class="card-body">
+            <input type="checkbox" [(ngModel)]="global.profileDataPartner.ticketsEnabled">
+          </div>
+        </div>
+
+        <div class="card style-4">
+          <div class="card-header">
+            <label>Precio de entrada</label>
+          </div>
+          <div class="card-body">
+            <input type="number" class="form-control" [(ngModel)]="global.profileDataPartner.ticketPrice"
+              placeholder="Ej: 30000">
+          </div>
+        </div>
+        <div class="card style-4">
+          <div class="card-header">
             <h6 class="title mb-0">Servicios</h6>
           </div>
           <div class="card-body">
-            <a
-              href="javascript:void(0);"
-              class="setting-input"
-              data-bs-toggle="offcanvas"
-              data-bs-target="#offcanvasBottom1Local"
-              aria-controls="offcanvasBottom1Local"
-            >
+            <a href="javascript:void(0);" class="setting-input" data-bs-toggle="offcanvas"
+              data-bs-target="#offcanvasBottom1Local" aria-controls="offcanvasBottom1Local">
               <span>{{ global.profileDataPartner.services || 'Servicios' }}</span>
               <i class="icon feather dz-flex-box icon-chevron-right ms-auto me-0"></i>
             </a>
@@ -496,13 +460,8 @@
 
   <div class="offcanvas-body">
     <div class="input-group input-group-icon search-input">
-      <input
-        type="search"
-        class="form-control ms-0"
-        placeholder="Buscar..."
-        [(ngModel)]="serviceSearch"
-        (input)="filterServices()"
-      >
+      <input type="search" class="form-control ms-0" placeholder="Buscar..." [(ngModel)]="serviceSearch"
+        (input)="filterServices()">
       <div class="input-group-text">
         <div class="input-icon">
           <i class="icon feather icon-search"></i>
@@ -519,11 +478,7 @@
 
     <ul class="dz-tag-list style-2">
       <li *ngFor="let service of filteredServices">
-        <div
-          class="dz-tag"
-          [class.active]="selectedServices.includes(service.value)"
-          (click)="toggleService(service)"
-        >
+        <div class="dz-tag" [class.active]="selectedServices.includes(service.value)" (click)="toggleService(service)">
           <span>{{ service.value }}</span>
         </div>
       </li>
@@ -540,22 +495,16 @@
 <!-- ========================= -->
 <!-- TOASTS -->
 <!-- ========================= -->
-<div
-  class="custom-toast alert shadow-sm border-0 px-4 py-3 animate__animated animate__fadeInDown"
-  [ngClass]="{
+<div class="custom-toast alert shadow-sm border-0 px-4 py-3 animate__animated animate__fadeInDown" [ngClass]="{
     'alert-success': toastType === 'success',
     'alert-danger': toastType === 'error',
     'alert-info': toastType === 'info'
-  }"
-  *ngIf="showToast"
->
+  }" *ngIf="showToast">
   {{ toastMessage }}
 </div>
 
-<div
-  class="custom-toast alert alert-info shadow-sm border-0 px-4 py-3 animate__animated animate__fadeInDown"
-  *ngIf="successPromoToast"
->
+<div class="custom-toast alert alert-info shadow-sm border-0 px-4 py-3 animate__animated animate__fadeInDown"
+  *ngIf="successPromoToast">
   🎉 Promoción procesada exitosamente.
 </div>
 
@@ -579,7 +528,8 @@
 
           <div class="mb-3">
             <label for="promoDesc" class="form-label">Descripción</label>
-            <textarea class="form-control" id="promoDesc" [(ngModel)]="newPromo.description" name="description" rows="3"></textarea>
+            <textarea class="form-control" id="promoDesc" [(ngModel)]="newPromo.description" name="description"
+              rows="3"></textarea>
           </div>
 
           <div class="mb-3">
@@ -628,9 +578,7 @@
                 <a class="dz-media">
                   <img
                     [src]="promo.files && promo.files[0] ? promo.files[0] : 'https://via.placeholder.com/300x200?text=Sin+imagen'"
-                    alt=""
-                    style="width:100%;max-height:200px;object-fit:cover;"
-                  >
+                    alt="" style="width:100%;max-height:200px;object-fit:cover;">
                 </a>
 
                 <div class="dz-content">
@@ -695,7 +643,8 @@
 <!-- ========================= -->
 <!-- MODAL SUBSCRIPCIONES -->
 <!-- ========================= -->
-<div class="modal fade" id="subscriptionsModal" tabindex="-1" aria-labelledby="subscriptionsModalLabel" aria-hidden="true">
+<div class="modal fade" id="subscriptionsModal" tabindex="-1" aria-labelledby="subscriptionsModalLabel"
+  aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
@@ -760,7 +709,8 @@
 
           <div class="mb-3">
             <label class="form-label">Descripción</label>
-            <textarea class="form-control" [(ngModel)]="newProduct.description" name="productDescription" rows="3"></textarea>
+            <textarea class="form-control" [(ngModel)]="newProduct.description" name="productDescription"
+              rows="3"></textarea>
           </div>
 
           <div class="mb-3">
@@ -774,13 +724,8 @@
           </div>
 
           <div class="form-check mb-3">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              [(ngModel)]="newProduct.isAvailable"
-              name="productAvailable"
-              id="productAvailable"
-            >
+            <input class="form-check-input" type="checkbox" [(ngModel)]="newProduct.isAvailable" name="productAvailable"
+              id="productAvailable">
             <label class="form-check-label" for="productAvailable">
               Disponible
             </label>
@@ -824,11 +769,8 @@
           <div class="row g-3">
             <div class="col-12 col-md-6" *ngFor="let product of partnerProducts">
               <div class="card h-100 shadow-sm">
-                <img
-                  [src]="product.image || 'assets/images/default-product.jpg'"
-                  alt="producto"
-                  style="width:100%; height:180px; object-fit:cover;"
-                >
+                <img [src]="product.image || 'assets/images/default-product.jpg'" alt="producto"
+                  style="width:100%; height:180px; object-fit:cover;">
 
                 <div class="card-body">
                   <h6>{{ product.name }}</h6>

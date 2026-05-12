@@ -6,6 +6,8 @@ import { AuthPocketbaseService } from '../../services/authPocketbase.service';
 import { WompiService } from '../../services/wompi.service';
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../services/ToastService.service';
+import { Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 @Component({
   selector: 'app-detailprofilelocal',
   standalone: true,
@@ -29,25 +31,38 @@ export class Detailprofilelocal {
   currentWallet: any = null;
   giftReceivers: any[] = [];
   isSendingGift = false;
-
+  isBuyingTicket = false;
   constructor(public global: GlobalService,
     public changeDetectorRef: ChangeDetectorRef,
     public auth: AuthPocketbaseService,
     public wompiService: WompiService,
-      private toastService: ToastService
+      private toastService: ToastService,
+      private router: Router,
+      private activatedRoute: ActivatedRoute
   ) { 
       this.pb.autoCancellation(false);
   }
   async ngOnInit(): Promise<void> {
-    const savedPartner = localStorage.getItem('selectedPartner');
 
-    if (savedPartner) {
-      this.partner = JSON.parse(savedPartner);
-    }
+    const partnerId = this.activatedRoute.snapshot.paramMap.get('id');
 
-    if (!this.partner && this.global.selectedPartner) {
-      this.partner = this.global.selectedPartner;
-    }
+if (!partnerId) {
+  console.warn('No se recibió ID del local');
+  return;
+}
+
+try {
+
+  this.partner = await this.pb
+    .collection('usuariosPartner')
+    .getOne(partnerId);
+
+} catch (error) {
+
+  console.error('Error cargando local:', error);
+  return;
+
+}
 
     if (!this.partner?.id) {
       console.warn('No hay partner para mostrar');
@@ -67,7 +82,52 @@ export class Detailprofilelocal {
     console.log('Productos:', this.partnerProducts);
     this.changeDetectorRef.detectChanges();
   }
+async buyTicket(): Promise<void> {
+  try {
+    this.isBuyingTicket = true;
 
+    const buyerUserId = this.auth.currentUser?.id;
+
+    if (!buyerUserId) {
+      this.toastService.show('Debes iniciar sesión para comprar entrada.', 'error');
+      return;
+    }
+
+    const amount = Number(this.partner.ticketPrice || 0);
+
+    if (!amount || amount <= 0) {
+      this.toastService.show('Este local no tiene precio de entrada configurado.', 'error');
+      return;
+    }
+
+    const reference = `ticket_${this.partner.id}_${Date.now()}`;
+
+    await this.pb.collection('ticket_orders').create({
+      buyerUserId,
+      partnerId: this.partner.id,
+      partnerUserId: this.partner.userId,
+      partnerName: this.partner.venueName,
+      amount,
+      status: 'pending',
+      paymentMethod: 'wompi',
+      referenceId: reference
+    }, { requestKey: null });
+
+    await this.wompiService.openCheckout({
+      amountInCents: amount * 100,
+      reference,
+      currency: 'COP',
+      customerEmail: this.auth.currentUser?.email || '',
+      redirectUrl: `${window.location.origin}/detailprofilelocal/${this.partner.id}`
+    });
+
+  } catch (error) {
+    console.error('Error comprando entrada:', error);
+    this.toastService.show('No se pudo iniciar la compra de la entrada.', 'error');
+  } finally {
+    this.isBuyingTicket = false;
+  }
+}
   normalizePartnerData(): void {
     if (typeof this.partner.files === 'string') {
       try {

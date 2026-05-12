@@ -485,3 +485,47 @@
     transform: translateY(0);
   }
 }
+
+.local-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+
+  flex: 1;
+
+  min-width: 140px;
+
+  text-align: center;
+
+  padding: 14px;
+
+  border-radius: 14px;
+
+  font-weight: 600;
+
+  text-decoration: none;
+
+  color: white;
+
+  transition: 0.3s ease;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+}
+
+.reserve {
+  background: #ff4fa3;
+}
+
+.tickets {
+  background: #6c5ce7;
+}
+
+.maps {
+  background: #00b894;
+}

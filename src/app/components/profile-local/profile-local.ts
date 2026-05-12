@@ -27,25 +27,25 @@ import 'swiper/css/pagination';
   styleUrl: './profile-local.scss',
 })
 export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
-@ViewChild('plansSwiper', { static: false }) plansSwiperRef?: ElementRef<HTMLDivElement>;
-@ViewChild('plansPagination', { static: false }) plansPaginationRef?: ElementRef<HTMLDivElement>;
-partnerProducts: any[] = [];
+  @ViewChild('plansSwiper', { static: false }) plansSwiperRef?: ElementRef<HTMLDivElement>;
+  @ViewChild('plansPagination', { static: false }) plansPaginationRef?: ElementRef<HTMLDivElement>;
+  partnerProducts: any[] = [];
 
-private plansSwiper?: Swiper;
-private plansSwiperSub?: Subscription;
-newProduct = {
-  name: '',
-  description: '',
-  category: '',
-  price: null as number | null,
-  isAvailable: true,
-  userId: '',
-  partnerId: ''
-};
+  private plansSwiper?: Swiper;
+  private plansSwiperSub?: Subscription;
+  newProduct = {
+    name: '',
+    description: '',
+    category: '',
+    price: null as number | null,
+    isAvailable: true,
+    userId: '',
+    partnerId: ''
+  };
 
-productImageFile: File | null = null;
-isEditingProduct: boolean = false;
-editingProductId: string | null = null;
+  productImageFile: File | null = null;
+  isEditingProduct: boolean = false;
+  editingProductId: string | null = null;
   openSubscriptionsModal() {
     const modalEl = document.getElementById('subscriptionsModal');
     if (modalEl) {
@@ -126,82 +126,82 @@ editingProductId: string | null = null;
     this.initMapIfReady();
   }
 
-ngAfterViewInit() {
- ['promoModal', 'promoListModal', 'promoOptionsModal', 'productModal', 'productListModal', 'productOptionsModal'].forEach(id => {
-  const modalEl = document.getElementById(id);
-  if (modalEl) {
-    modalEl.addEventListener('hidden.bs.modal', () => {
-      const backdrop = document.querySelector('.modal-backdrop');
-      if (backdrop) backdrop.remove();
-      document.body.classList.remove('modal-open');
-    });
-  }
-});
-  
-
-  const servicesOffcanvas = document.getElementById('offcanvasBottom1Local');
-  if (servicesOffcanvas) {
-    servicesOffcanvas.addEventListener('show.bs.offcanvas', () => {
-      this.isServicesOffcanvasOpen = true;
-    });
-
-    servicesOffcanvas.addEventListener('hidden.bs.offcanvas', () => {
-      this.isServicesOffcanvasOpen = false;
-    });
-  }
-
-  this.bindPlansSwiper();
-}
-private bindPlansSwiper(): void {
-  this.plansSwiperSub?.unsubscribe();
-
-  this.plansSwiperSub = this.global.planningPartners$.subscribe((plans) => {
-    if (!plans || !plans.length) return;
-
-    setTimeout(() => {
-      this.initPlansSwiper();
-    }, 0);
-  });
-}
-
-private initPlansSwiper(): void {
-  if (!this.plansSwiperRef?.nativeElement || !this.plansPaginationRef?.nativeElement) {
-    return;
-  }
-
-  if (this.plansSwiper) {
-    this.plansSwiper.destroy(true, true);
-  }
-
-  this.plansSwiper = new Swiper(this.plansSwiperRef.nativeElement, {
-    modules: [Pagination, Autoplay],
-    slidesPerView: 1.08,
-    spaceBetween: 12,
-    grabCursor: true,
-    observer: true,
-    observeParents: true,
-    watchOverflow: true,
-    pagination: {
-      el: this.plansPaginationRef.nativeElement,
-      clickable: true
-    },
-    breakpoints: {
-      576: {
-        slidesPerView: 1.15,
-        spaceBetween: 14
-      },
-      768: {
-        slidesPerView: 1.4,
-        spaceBetween: 16
+  ngAfterViewInit() {
+    ['promoModal', 'promoListModal', 'promoOptionsModal', 'productModal', 'productListModal', 'productOptionsModal'].forEach(id => {
+      const modalEl = document.getElementById(id);
+      if (modalEl) {
+        modalEl.addEventListener('hidden.bs.modal', () => {
+          const backdrop = document.querySelector('.modal-backdrop');
+          if (backdrop) backdrop.remove();
+          document.body.classList.remove('modal-open');
+        });
       }
-    }
-  });
-}
+    });
 
-ngOnDestroy(): void {
-  this.plansSwiper?.destroy(true, true);
-  this.plansSwiperSub?.unsubscribe();
-}
+
+    const servicesOffcanvas = document.getElementById('offcanvasBottom1Local');
+    if (servicesOffcanvas) {
+      servicesOffcanvas.addEventListener('show.bs.offcanvas', () => {
+        this.isServicesOffcanvasOpen = true;
+      });
+
+      servicesOffcanvas.addEventListener('hidden.bs.offcanvas', () => {
+        this.isServicesOffcanvasOpen = false;
+      });
+    }
+
+    this.bindPlansSwiper();
+  }
+  private bindPlansSwiper(): void {
+    this.plansSwiperSub?.unsubscribe();
+
+    this.plansSwiperSub = this.global.planningPartners$.subscribe((plans) => {
+      if (!plans || !plans.length) return;
+
+      setTimeout(() => {
+        this.initPlansSwiper();
+      }, 0);
+    });
+  }
+
+  private initPlansSwiper(): void {
+    if (!this.plansSwiperRef?.nativeElement || !this.plansPaginationRef?.nativeElement) {
+      return;
+    }
+
+    if (this.plansSwiper) {
+      this.plansSwiper.destroy(true, true);
+    }
+
+    this.plansSwiper = new Swiper(this.plansSwiperRef.nativeElement, {
+      modules: [Pagination, Autoplay],
+      slidesPerView: 1.08,
+      spaceBetween: 12,
+      grabCursor: true,
+      observer: true,
+      observeParents: true,
+      watchOverflow: true,
+      pagination: {
+        el: this.plansPaginationRef.nativeElement,
+        clickable: true
+      },
+      breakpoints: {
+        576: {
+          slidesPerView: 1.15,
+          spaceBetween: 14
+        },
+        768: {
+          slidesPerView: 1.4,
+          spaceBetween: 16
+        }
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.plansSwiper?.destroy(true, true);
+    this.plansSwiperSub?.unsubscribe();
+  }
   private showAppToast(
     message: string,
     type: 'success' | 'error' | 'info' = 'info'
@@ -239,41 +239,41 @@ ngOnDestroy(): void {
     this.modalService.open('promoOptionsModal');
   }
 
-openProductModal() {
-  this.cancelProduct(); // limpia el formulario si vas a crear uno nuevo
+  openProductModal() {
+    this.cancelProduct(); // limpia el formulario si vas a crear uno nuevo
 
-  const optionsModalEl = document.getElementById('productOptionsModal');
-  const productModalEl = document.getElementById('productModal');
+    const optionsModalEl = document.getElementById('productOptionsModal');
+    const productModalEl = document.getElementById('productModal');
 
-  if (optionsModalEl) {
-    const optionsInstance = bootstrap.Modal.getOrCreateInstance(optionsModalEl);
-    optionsInstance.hide();
+    if (optionsModalEl) {
+      const optionsInstance = bootstrap.Modal.getOrCreateInstance(optionsModalEl);
+      optionsInstance.hide();
+    }
+
+    setTimeout(() => {
+      if (productModalEl) {
+        const productInstance = bootstrap.Modal.getOrCreateInstance(productModalEl);
+        productInstance.show();
+      }
+    }, 200);
   }
 
-  setTimeout(() => {
-    if (productModalEl) {
-      const productInstance = bootstrap.Modal.getOrCreateInstance(productModalEl);
-      productInstance.show();
+  openProductListModal() {
+    const optionsModalEl = document.getElementById('productOptionsModal');
+    const productListModalEl = document.getElementById('productListModal');
+
+    if (optionsModalEl) {
+      const optionsInstance = bootstrap.Modal.getOrCreateInstance(optionsModalEl);
+      optionsInstance.hide();
     }
-  }, 200);
-}
 
-openProductListModal() {
-  const optionsModalEl = document.getElementById('productOptionsModal');
-  const productListModalEl = document.getElementById('productListModal');
-
-  if (optionsModalEl) {
-    const optionsInstance = bootstrap.Modal.getOrCreateInstance(optionsModalEl);
-    optionsInstance.hide();
+    setTimeout(() => {
+      if (productListModalEl) {
+        const productListInstance = bootstrap.Modal.getOrCreateInstance(productListModalEl);
+        productListInstance.show();
+      }
+    }, 200);
   }
-
-  setTimeout(() => {
-    if (productListModalEl) {
-      const productListInstance = bootstrap.Modal.getOrCreateInstance(productListModalEl);
-      productListInstance.show();
-    }
-  }, 200);
-}
 
 
   openPromoListModal() {
@@ -396,6 +396,21 @@ openProductListModal() {
         lng: userData['lng'] || '',
         services: userData['services'] || '',
         purchaseLink: userData['purchaseLink'] || '',
+        reservationEnabled:
+          userData['reservationEnabled'] || false,
+
+        reservationLink:
+          userData['reservationLink'] || '',
+
+        ticketsEnabled: userData['ticketsEnabled'] || false,
+        ticketPrice: userData['ticketPrice'] || 0,
+        ticketDescription: userData['ticketDescription'] || '',
+
+        ticketsLink:
+          userData['ticketsLink'] || '',
+
+        whatsappReservations:
+          userData['whatsappReservations'] || '',
       };
       this.global.profileDataPartner.avatar = this.pb.files.getUrl(userData, userData['avatar']);
 
@@ -532,7 +547,29 @@ openProductListModal() {
       formData.append('services', this.selectedServices.join(', '));
       formData.append('files', JSON.stringify(uploadedPhotos));
       formData.append('purchaseLink', this.global.profileDataPartner.purchaseLink || '');
+      formData.append(
+        'reservationEnabled',
+        String(this.global.profileDataPartner.reservationEnabled || false)
+      );
 
+      formData.append(
+        'reservationLink',
+        this.global.profileDataPartner.reservationLink || ''
+      );
+
+      formData.append('ticketsEnabled', String(this.global.profileDataPartner.ticketsEnabled || false));
+      formData.append('ticketPrice', String(this.global.profileDataPartner.ticketPrice || 0));
+      formData.append('ticketDescription', this.global.profileDataPartner.ticketDescription || '');
+
+      formData.append(
+        'ticketsLink',
+        this.global.profileDataPartner.ticketsLink || ''
+      );
+
+      formData.append(
+        'whatsappReservations',
+        this.global.profileDataPartner.whatsappReservations || ''
+      );
       if (this.newAvatar) {
         formData.append('avatar', this.newAvatar);
       }
@@ -595,7 +632,13 @@ openProductListModal() {
         services: savedRecord.services || '',
         purchaseLink: savedRecord.purchaseLink || '',
         files: normalizedFiles,
-        avatar: avatarUrl
+        avatar: avatarUrl,
+        ticketsEnabled: savedRecord.ticketsEnabled || false,
+        ticketPrice: savedRecord.ticketPrice || 0,
+        ticketDescription: savedRecord.ticketDescription || '',
+        reservationEnabled: savedRecord.reservationEnabled || false,
+        reservationLink: savedRecord.reservationLink || '',
+        whatsappReservations: savedRecord.whatsappReservations || '',
       };
 
       this.avatarPreview = null;
@@ -606,14 +649,14 @@ openProductListModal() {
         this.showAppToast('Perfil actualizado correctamente', 'success');
       }, 120); */
       Swal.fire({
-  icon: 'success',
-  title: 'Perfil actualizado',
-  text: 'Los cambios se guardaron correctamente',
-  timer: 1800,
-  showConfirmButton: false,
-  background: '#101935',
-  color: '#fff'
-});
+        icon: 'success',
+        title: 'Perfil actualizado',
+        text: 'Los cambios se guardaron correctamente',
+        timer: 1800,
+        showConfirmButton: false,
+        background: '#101935',
+        color: '#fff'
+      });
 
       console.log('Perfil actualizado correctamente');
     } catch (error: any) {
@@ -978,153 +1021,153 @@ openProductListModal() {
     }
   }
   openProductOptions() {
-  const modalEl = document.getElementById('productOptionsModal');
-  if (modalEl) {
-    const modalInstance = new bootstrap.Modal(modalEl);
-    modalInstance.show();
-  } else {
-    console.warn('No se encontró el modal de productos en el DOM');
-  }
-}
-
-onProductImageSelected(event: any) {
-  const file = event.target.files[0];
-  if (file) {
-    this.productImageFile = file;
-  }
-}
-
-async loadPartnerProducts() {
-  try {
-    const userId = this.auth.currentUser?.id;
-    if (!userId) return;
-
-    const records = await this.pb.collection('partnerProducts').getFullList({
-      filter: `userId="${userId}"`,
-      sort: '-created'
-    });
-
-    this.partnerProducts = records.map((item: any) => ({
-      id: item.id,
-      name: item.name,
-      description: item.description,
-      category: item.category,
-      price: item.price,
-      isAvailable: item.isAvailable,
-      userId: item.userId,
-      partnerId: item.partnerId,
-      image: item.image ? this.pb.files.getUrl(item, item.image) : ''
-    }));
-  } catch (error) {
-    console.error('Error cargando productos:', error);
-  }
-}
-
-async saveProduct() {
-  try {
-    const userId = this.auth.currentUser?.id;
-    if (!userId) {
-      this.showAppToast('No hay usuario autenticado', 'error');
-      return;
-    }
-
-    const partner = await this.pb.collection('usuariosPartner').getFirstListItem(`userId="${userId}"`);
-
-    const formData = new FormData();
-    formData.append('name', this.newProduct.name || '');
-    formData.append('description', this.newProduct.description || '');
-    formData.append('category', this.newProduct.category || '');
-    formData.append('price', String(this.newProduct.price || 0));
-    formData.append('isAvailable', String(this.newProduct.isAvailable));
-    formData.append('userId', userId);
-    formData.append('partnerId', partner.id);
-
-    if (this.productImageFile) {
-      formData.append('image', this.productImageFile);
-    }
-
-    if (this.isEditingProduct && this.editingProductId) {
-      await this.pb.collection('partnerProducts').update(this.editingProductId, formData);
-    } else {
-      await this.pb.collection('partnerProducts').create(formData);
-    }
-
-    this.cancelProduct();
-    await this.loadPartnerProducts();
-
-    const modalEl = document.getElementById('productModal');
+    const modalEl = document.getElementById('productOptionsModal');
     if (modalEl) {
-      const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
-      modalInstance.hide();
+      const modalInstance = new bootstrap.Modal(modalEl);
+      modalInstance.show();
+    } else {
+      console.warn('No se encontró el modal de productos en el DOM');
+    }
+  }
+
+  onProductImageSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      this.productImageFile = file;
+    }
+  }
+
+  async loadPartnerProducts() {
+    try {
+      const userId = this.auth.currentUser?.id;
+      if (!userId) return;
+
+      const records = await this.pb.collection('partnerProducts').getFullList({
+        filter: `userId="${userId}"`,
+        sort: '-created'
+      });
+
+      this.partnerProducts = records.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        category: item.category,
+        price: item.price,
+        isAvailable: item.isAvailable,
+        userId: item.userId,
+        partnerId: item.partnerId,
+        image: item.image ? this.pb.files.getUrl(item, item.image) : ''
+      }));
+    } catch (error) {
+      console.error('Error cargando productos:', error);
+    }
+  }
+
+  async saveProduct() {
+    try {
+      const userId = this.auth.currentUser?.id;
+      if (!userId) {
+        this.showAppToast('No hay usuario autenticado', 'error');
+        return;
+      }
+
+      const partner = await this.pb.collection('usuariosPartner').getFirstListItem(`userId="${userId}"`);
+
+      const formData = new FormData();
+      formData.append('name', this.newProduct.name || '');
+      formData.append('description', this.newProduct.description || '');
+      formData.append('category', this.newProduct.category || '');
+      formData.append('price', String(this.newProduct.price || 0));
+      formData.append('isAvailable', String(this.newProduct.isAvailable));
+      formData.append('userId', userId);
+      formData.append('partnerId', partner.id);
+
+      if (this.productImageFile) {
+        formData.append('image', this.productImageFile);
+      }
+
+      if (this.isEditingProduct && this.editingProductId) {
+        await this.pb.collection('partnerProducts').update(this.editingProductId, formData);
+      } else {
+        await this.pb.collection('partnerProducts').create(formData);
+      }
+
+      this.cancelProduct();
+      await this.loadPartnerProducts();
+
+      const modalEl = document.getElementById('productModal');
+      if (modalEl) {
+        const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modalInstance.hide();
+      }
+
+      this.showAppToast(
+        this.isEditingProduct ? 'Producto actualizado correctamente' : 'Producto agregado correctamente',
+        'success'
+      );
+    } catch (error) {
+      console.error('Error guardando producto:', error);
+      this.showAppToast('No se pudo guardar el producto', 'error');
+    }
+  }
+
+  editProduct(product: any) {
+    this.newProduct = {
+      name: product.name || '',
+      description: product.description || '',
+      category: product.category || '',
+      price: product.price || null,
+      isAvailable: product.isAvailable ?? true,
+      userId: product.userId || '',
+      partnerId: product.partnerId || ''
+    };
+
+    this.editingProductId = product.id;
+    this.isEditingProduct = true;
+    this.productImageFile = null;
+
+    const listModalEl = document.getElementById('productListModal');
+    const productModalEl = document.getElementById('productModal');
+
+    if (listModalEl) {
+      const listInstance = bootstrap.Modal.getOrCreateInstance(listModalEl);
+      listInstance.hide();
     }
 
-    this.showAppToast(
-      this.isEditingProduct ? 'Producto actualizado correctamente' : 'Producto agregado correctamente',
-      'success'
-    );
-  } catch (error) {
-    console.error('Error guardando producto:', error);
-    this.showAppToast('No se pudo guardar el producto', 'error');
-  }
-}
-
-editProduct(product: any) {
-  this.newProduct = {
-    name: product.name || '',
-    description: product.description || '',
-    category: product.category || '',
-    price: product.price || null,
-    isAvailable: product.isAvailable ?? true,
-    userId: product.userId || '',
-    partnerId: product.partnerId || ''
-  };
-
-  this.editingProductId = product.id;
-  this.isEditingProduct = true;
-  this.productImageFile = null;
-
-  const listModalEl = document.getElementById('productListModal');
-  const productModalEl = document.getElementById('productModal');
-
-  if (listModalEl) {
-    const listInstance = bootstrap.Modal.getOrCreateInstance(listModalEl);
-    listInstance.hide();
+    setTimeout(() => {
+      if (productModalEl) {
+        const productInstance = bootstrap.Modal.getOrCreateInstance(productModalEl);
+        productInstance.show();
+      }
+    }, 200);
   }
 
-  setTimeout(() => {
-    if (productModalEl) {
-      const productInstance = bootstrap.Modal.getOrCreateInstance(productModalEl);
-      productInstance.show();
+  async deleteProduct(product: any) {
+    try {
+      await this.pb.collection('partnerProducts').delete(product.id);
+      await this.loadPartnerProducts();
+      this.showAppToast('Producto eliminado correctamente', 'success');
+    } catch (error) {
+      console.error('Error eliminando producto:', error);
+      this.showAppToast('No se pudo eliminar el producto', 'error');
     }
-  }, 200);
-}
-
-async deleteProduct(product: any) {
-  try {
-    await this.pb.collection('partnerProducts').delete(product.id);
-    await this.loadPartnerProducts();
-    this.showAppToast('Producto eliminado correctamente', 'success');
-  } catch (error) {
-    console.error('Error eliminando producto:', error);
-    this.showAppToast('No se pudo eliminar el producto', 'error');
   }
-}
 
-cancelProduct() {
-  this.newProduct = {
-    name: '',
-    description: '',
-    category: '',
-    price: null,
-    isAvailable: true,
-    userId: '',
-    partnerId: ''
-  };
+  cancelProduct() {
+    this.newProduct = {
+      name: '',
+      description: '',
+      category: '',
+      price: null,
+      isAvailable: true,
+      userId: '',
+      partnerId: ''
+    };
 
-  this.productImageFile = null;
-  this.isEditingProduct = false;
-  this.editingProductId = null;
-}
+    this.productImageFile = null;
+    this.isEditingProduct = false;
+    this.editingProductId = null;
+  }
   /* <-- async subscribeToPlan(plan: any) {
     const amount = Number(plan.priceCOP || 0) * 100;
     const userEmail = this.global.profileDataPartner.email || this.auth.currentUser?.email;

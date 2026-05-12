@@ -67,6 +67,30 @@
                 {{ partner.openingHours || 'Horario no especificado' }}
             </div>
         </div>
+        <div class="local-actions">
+            <!-- link externo -->
+            <a *ngIf="partner.purchaseLink" [href]="partner.purchaseLink" target="_blank" class="action-btn reserve">
+                Comprar entrada en enlace externo
+            </a>
+            <!-- Reservar -->
+            <a *ngIf="partner.reservationEnabled" [href]="partner.reservationLink" target="_blank"
+                class="action-btn reserve">
+                Reservar mesa
+            </a>
+
+            <!-- Entradas -->
+            <button *ngIf="partner.ticketsEnabled" type="button" class="action-btn tickets" [disabled]="isBuyingTicket"
+                (click)="buyTicket()">
+                {{ isBuyingTicket ? 'Procesando...' : 'Comprar entrada' }}
+            </button>
+
+            <!-- Cómo llegar -->
+            <a [href]="'https://www.google.com/maps/dir/?api=1&destination=' + partner.lat + ',' + partner.lng"
+                target="_blank" class="action-btn maps">
+                Cómo llegar
+            </a>
+
+        </div>
 
         <!-- PROMOCIONES -->
         <div class="detail-section" *ngIf="partnerPromos.length">
@@ -87,6 +111,7 @@
                 </div>
             </div>
         </div>
+
 
         <!-- PRODUCTOS -->
         <div class="detail-section" *ngIf="partnerProducts.length">
@@ -178,14 +203,9 @@
             </div>
         </div>
 
-        <button
-  type="button"
-  class="send-gift-btn"
-  [disabled]="isSendingGift"
-  (click)="sendGift()"
->
-  {{ isSendingGift ? 'Procesando...' : 'Confirmar compra / Enviar regalo 🎁' }}
-</button>
+        <button type="button" class="send-gift-btn" [disabled]="isSendingGift" (click)="sendGift()">
+            {{ isSendingGift ? 'Procesando...' : 'Confirmar compra / Enviar regalo 🎁' }}
+        </button>
 
     </div>
 </div>
