@@ -530,7 +530,7 @@ export class AuthPocketbaseService {
       throw error;
     }
   }
-  async loginWithGoogle(): Promise<UserInterface> {
+  /* async loginWithGoogle(): Promise<UserInterface> {
     const authData = await this.pb.collection('users').authWithOAuth2({
       provider: 'google',
       createData: {
@@ -617,7 +617,44 @@ export class AuthPocketbaseService {
     this.currentUserSubject.next(user);
 
     return user;
+  } */
+  async loginWithGoogle(): Promise<UserInterface> {
+  try {
+    console.log('[GOOGLE] iniciando OAuth');
+
+    const authData = await this.pb.collection('users').authWithOAuth2({
+      provider: 'google',
+      createData: {
+        type: 'client',
+        status: 'active',
+      }
+    });
+
+    console.log('[GOOGLE] authData:', authData);
+    console.log('[GOOGLE] authStore:', this.pb.authStore.record);
+
+    const pbUser = authData?.record || this.pb.authStore.record;
+
+    if (!pbUser?.id) {
+      throw new Error('Google autenticó, pero PocketBase no devolvió usuario.');
+    }
+
+    // sigue tu lógica...
+    return pbUser as any;
+
+  } catch (err: any) {
+    console.error('[GOOGLE][ERROR COMPLETO]', err);
+    console.error('[GOOGLE][DATA]', err?.data);
+    console.error('[GOOGLE][RESPONSE]', err?.response);
+
+    throw new Error(
+      err?.response?.message ||
+      err?.data?.message ||
+      err?.message ||
+      'Error autenticando con Google'
+    );
   }
+}
   private mapPocketbaseError(err: unknown): Error {
     const e = err as any;
     const payload = (e?.data ?? e?.response ?? {}) as {
