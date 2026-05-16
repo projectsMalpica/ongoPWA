@@ -102,28 +102,42 @@ export class LoginComponent {
   }
 
 
-  async handleGoogleLogin() {
+async handleGoogleLogin() {
   try {
     this.loading = true;
 
     const user = await this.auth.loginWithGoogle();
 
-    if (!user) return;
+    console.log('Usuario Google:', user);
+    console.log('AuthStore:', this.auth.pb.authStore.record);
+
+    if (!user) {
+      Swal.fire('Error', 'No se pudo iniciar sesión con Google', 'error');
+      return;
+    }
 
     await this.global.loadProfile();
     await this.global.initClientesRealtime();
     await this.global.initPartnersRealtime();
 
-    if (user.type === 'partner') {
+    const userType = user?.type || this.auth.pb.authStore.record?.['type'];
+
+    if (userType === 'partner') {
       await this.router.navigate(['/home-local']);
-    } else if (user.type === 'admin') {
+    } else if (userType === 'admin') {
       await this.router.navigate(['/admin']);
     } else {
       await this.router.navigate(['/maps']);
     }
 
-  } catch (error) {
-    console.error(error);
+  } catch (error: any) {
+    console.error('Error Google Login:', error);
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Error con Google',
+      text: error?.message || 'No se pudo iniciar sesión con Google'
+    });
   } finally {
     this.loading = false;
   }

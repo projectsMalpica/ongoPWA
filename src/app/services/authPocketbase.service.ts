@@ -165,12 +165,29 @@ export class AuthPocketbaseService {
   }
   async loadProfileFromBackend() {
     if (!this.currentUser?.id) return;
+
     try {
-      const profile = await this.pb.collection('usuariosClient').getFirstListItem(`userId="${this.currentUser.id}"`);
+      const type = this.currentUser?.type;
+
+      const coll =
+        type === 'partner'
+          ? 'usuariosPartner'
+          : 'usuariosClient';
+
+      const profile = await this.pb
+        .collection(coll)
+        .getFirstListItem(`userId="${this.currentUser.id}"`);
+
       this.profile = profile;
-      localStorage.setItem('profile', JSON.stringify(profile));
+
+      if (type === 'partner') {
+        localStorage.setItem('profilePartner', JSON.stringify(profile));
+      } else {
+        localStorage.setItem('profile', JSON.stringify(profile));
+      }
+
     } catch (e) {
-      console.warn('No se pudo cargar el perfil del backend:', e);
+      console.warn('No se pudo cargar el perfil:', e);
     }
   }
   async updateUserField(userId: string, updateData: any): Promise<void> {
@@ -180,7 +197,7 @@ export class AuthPocketbaseService {
   async findPartnerByUserId(userId: string): Promise<any> {
     return await this.pb
       .collection('usuariosPartner')
-      .getFirstListItem(`id="${userId}"`);
+      .getFirstListItem(`userId="${userId}"`);
   }
 
   async updatePartnerField(partnerId: string, updateData: any): Promise<void> {
@@ -291,9 +308,11 @@ export class AuthPocketbaseService {
   loginUser(email: string, password: string): Observable<any> {
     return from(this.pb.collection('users').authWithPassword(email, password)).pipe(
       map((authData) => {
-        const pbUser = authData.record;
-        const userTypeRaw = pbUser['type'];
-        const userType = Array.isArray(userTypeRaw) ? userTypeRaw[0] : userTypeRaw;
+        const pbUser = authData.record || this.pb.authStore.record;
+        let userTypeRaw = pbUser['type'];
+        let userType = Array.isArray(userTypeRaw) ? userTypeRaw[0] : userTypeRaw;
+
+
 
         const user: UserInterface = {
           id: pbUser.id,
@@ -511,97 +530,29 @@ export class AuthPocketbaseService {
       throw error;
     }
   }
- /*  async loginWithGoogle() {
-    try {
-      const authData = await this.pb.collection('users').authWithOAuth2({
-        provider: 'google',
-      });
-
-      const pbUser = authData.record;
-
-      if (!pbUser) {
-        throw new Error('Google autenticó, pero PocketBase no devolvió usuario.');
-      }
-
-      const userTypeRaw = pbUser['type'];
-      const userType = Array.isArray(userTypeRaw) ? userTypeRaw[0] : userTypeRaw;
-
-      const user: UserInterface = {
-        id: pbUser.id,
-        email: pbUser['email'],
-        password: '',
-        name: pbUser['name'],
-        phone: pbUser['phone'],
-        images: pbUser['images'] || {},
-        type: userType,
-        username: pbUser['username'],
-        address: pbUser['address'],
-        created: pbUser['created'],
-        updated: pbUser['updated'],
-        avatar: pbUser['avatar'] || '',
-        status: pbUser['status'] || 'active',
-        gender: pbUser['gender'],
-      };
-
-      await this.pb.realtime.unsubscribe();
-      this.pb.authStore.clear();
-      this.pb.authStore.save(authData.token, authData.record);
-
-      this.setUser(user);
-      localStorage.setItem('accessToken', authData.token);
-      localStorage.setItem('userId', user.id);
-      localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('type', JSON.stringify(user.type));
-      localStorage.setItem('isLoggedin', 'true');
-      localStorage.setItem('record', JSON.stringify(authData.record));
-
-      globalUser.set(user);
-      this.currentUserSubject.next(user);
-
-      try {
-        const coll =
-          user.type === 'partner'
-            ? 'usuariosPartner'
-            : user.type === 'client'
-              ? 'usuariosClient'
-              : null;
-
-        if (coll) {
-          const list = await this.pb.collection(coll).getList(1, 1, {
-            filter: `userId="${user.id}"`,
-          });
-
-          if (list.items.length) {
-            this.profile = list.items[0];
-            localStorage.setItem('profile', JSON.stringify(this.profile));
-          } else {
-            console.warn(`⚠️ Sin perfil en ${coll} para userId ${user.id}`);
-          }
-        }
-      } catch (err) {
-        console.error('[AUTH][GOOGLE] Error obteniendo perfil:', err);
-      }
-
-      return user;
-    } catch (err: any) {
-      console.error('Error en login con Google:', err);
-      throw this.mapPocketbaseError(err);
-    }
-  } */
-async loginWithGoogle(): Promise<UserInterface> {
-  try {
+  async loginWithGoogle(): Promise<UserInterface> {
     const authData = await this.pb.collection('users').authWithOAuth2({
       provider: 'google',
     });
 
-    const pbUser = authData?.record || this.pb.authStore.record;
+    const pbUser = authData.record;
 
     if (!pbUser?.id) {
-      throw new Error('Google autenticó, pero PocketBase no devolvió el record del usuario.');
+      throw new Error('Google autenticó, pero PocketBase no devolvió usuario.');
     }
 
-    const userTypeRaw = pbUser['type'];
-    const userType = Array.isArray(userTypeRaw) ? userTypeRaw[0] : userTypeRaw;
+    let userTypeRaw = pbUser['type'];
+    let userType = Array.isArray(userTypeRaw) ? userTypeRaw[0] : userTypeRaw;
+
+    if (!userType) {
+      userType = 'client';
+
+      await this.pb.collection('users').update(pbUser.id, {
+        type: userType
+      });
+
+      pbUser['type'] = userType;
+    }
 
     const user: UserInterface = {
       id: pbUser.id,
@@ -610,7 +561,7 @@ async loginWithGoogle(): Promise<UserInterface> {
       name: pbUser['name'] || pbUser['username'] || '',
       phone: pbUser['phone'] || '',
       images: pbUser['images'] || {},
-      type: userType || null,
+      type: userType,
       username: pbUser['username'] || '',
       address: pbUser['address'] || '',
       created: pbUser['created'],
@@ -620,8 +571,6 @@ async loginWithGoogle(): Promise<UserInterface> {
       gender: pbUser['gender'] || '',
     };
 
-    // authWithOAuth2 normalmente ya actualiza authStore,
-    // pero aquí lo dejas consistente con tu flujo actual
     this.pb.authStore.save(authData.token, pbUser);
 
     this.setUser(user);
@@ -632,51 +581,39 @@ async loginWithGoogle(): Promise<UserInterface> {
     localStorage.setItem('isLoggedin', 'true');
     localStorage.setItem('record', JSON.stringify(pbUser));
 
+    const coll = user.type === 'partner' ? 'usuariosPartner' : 'usuariosClient';
+
+    try {
+      const profile = await this.pb
+        .collection(coll)
+        .getFirstListItem(`userId="${user.id}"`);
+
+      this.profile = profile;
+      localStorage.setItem(
+        user.type === 'partner' ? 'profilePartner' : 'profile',
+        JSON.stringify(profile)
+      );
+    } catch {
+      const profile = await this.pb.collection(coll).create({
+        userId: user.id,
+        email: user.email,
+        name: user.name,
+        status: user.type === 'partner' ? 'pending' : 'active',
+        profileComplete: false,
+      });
+
+      this.profile = profile;
+      localStorage.setItem(
+        user.type === 'partner' ? 'profilePartner' : 'profile',
+        JSON.stringify(profile)
+      );
+    }
+
     globalUser.set(user);
     this.currentUserSubject.next(user);
 
-    try {
-      const coll =
-        user.type === 'partner'
-          ? 'usuariosPartner'
-          : user.type === 'client'
-            ? 'usuariosClient'
-            : null;
-
-      if (coll) {
-        const list = await this.pb.collection(coll).getList(1, 1, {
-          filter: `userId="${user.id}"`,
-        });
-
-        if (list.items.length) {
-          this.profile = list.items[0];
-
-          // mejor distinguir profilePartner/profileClient
-          if (user.type === 'partner') {
-            localStorage.setItem('profilePartner', JSON.stringify(this.profile));
-          } else {
-            localStorage.setItem('profile', JSON.stringify(this.profile));
-          }
-        }
-      }
-    } catch (profileErr) {
-      console.warn('[AUTH][GOOGLE] Usuario autenticado pero sin perfil de dominio todavía:', profileErr);
-    }
-
     return user;
-  } catch (err: any) {
-    console.error('[AUTH][GOOGLE] Error completo:', err);
-
-    // Te ayuda a detectar la causa real
-    const message =
-      err?.response?.message ||
-      err?.data?.message ||
-      err?.message ||
-      'Error autenticando con Google';
-
-    throw new Error(message);
   }
-}
   private mapPocketbaseError(err: unknown): Error {
     const e = err as any;
     const payload = (e?.data ?? e?.response ?? {}) as {
