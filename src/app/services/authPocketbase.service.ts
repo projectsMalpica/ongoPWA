@@ -533,9 +533,13 @@ export class AuthPocketbaseService {
   async loginWithGoogle(): Promise<UserInterface> {
     const authData = await this.pb.collection('users').authWithOAuth2({
       provider: 'google',
+      createData: {
+        type: 'client',
+        status: 'active',
+      }
     });
 
-    const pbUser = authData.record;
+    const pbUser = authData?.record || this.pb.authStore.record;
 
     if (!pbUser?.id) {
       throw new Error('Google autenticó, pero PocketBase no devolvió usuario.');
