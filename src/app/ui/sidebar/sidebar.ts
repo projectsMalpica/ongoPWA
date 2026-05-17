@@ -64,6 +64,10 @@ export class Sidebar implements OnInit, OnDestroy {
     this.closeSidebar();
     this.router.navigate([this.auth.isPartner() ? '/profile-local' : '/profile']);
   }
+goChats(): void {
+     this.closeSidebar();
+    this.router.navigate(['/chat']);
+  }
 
   goWallet(): void {
     this.closeSidebar();

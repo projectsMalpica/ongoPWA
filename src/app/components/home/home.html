@@ -4,7 +4,7 @@
     <!-- Header Radar -->
     <section class="radar-header">
       <div>
-<span class="radar-label">⚡ Conecta cerca de ti</span>
+        <span class="radar-label">⚡ Conecta cerca de ti</span>
         <p>Desliza para conectar o toca dos veces para abrir chat.</p>
       </div>
 
@@ -20,8 +20,8 @@
     <div class="dzSwipe_card-cont dz-gallery-slider" *ngIf="!loadingClients && clientes.length > 0">
 
       <!-- Card siguiente -->
-      <div class="dzSwipe_card dzSwipe_card--next" *ngIf="clientes.length > 1"style="height: 85%;">
-                <div class="dz-media">
+      <div class="dzSwipe_card dzSwipe_card--next" *ngIf="clientes.length > 1" style="height: 85%;">
+        <div class="dz-media">
           <img
             [src]="clientes[(currentIndex + 1) % clientes.length]?.avatar || 'assets/images/hero-night.png'"
             (error)="$any($event.target).src='assets/images/hero-night.png'"
@@ -79,36 +79,87 @@
         (touchend)="endDrag($event, clientes[currentIndex])"
         (dblclick)="abrirChat(clientes[currentIndex])"
       >
+
         <div class="dz-media">
           <img
-            [src]="clientes[currentIndex]?.avatar || 'assets/images/hero-night.png'"
+            [src]="getCurrentPhoto(clientes[currentIndex])"
             (error)="$any($event.target).src='assets/images/hero-night.png'"
             alt=""
           />
         </div>
 
-        <div class="dz-content">
-          <div class="left-content">
-            <span class="badge badge-primary d-inline-flex gap-1 mb-2">
-              <i class="icon feather icon-map-pin"></i>
-              {{ clientes[currentIndex]?.address || 'Cerca de ti' }}
+        <!-- Indicadores de fotos -->
+        <div
+          class="photo-indicators"
+          *ngIf="clientes[currentIndex]?.photos?.length > 1"
+        >
+          <span
+            *ngFor="let photo of clientes[currentIndex]?.photos; let i = index"
+            [class.active]="i === currentPhotoIndex">
+          </span>
+        </div>
+
+        <!-- Zonas invisibles para cambiar foto -->
+        <button
+          type="button"
+          class="photo-nav photo-nav-left"
+          *ngIf="clientes[currentIndex]?.photos?.length > 1"
+          (click)="prevPhoto($event)">
+        </button>
+
+        <button
+          type="button"
+          class="photo-nav photo-nav-right"
+          *ngIf="clientes[currentIndex]?.photos?.length > 1"
+          (click)="nextPhoto($event)">
+        </button>
+
+        <div class="profile-overlay">
+          <div class="profile-info">
+
+            <span class="status-badge">
+              Activo
             </span>
 
-            <h4 class="title">
-              <a href="javascript:void(0)" (click)="global.previewClient(clientes[currentIndex])">
-                {{ clientes[currentIndex]?.name || 'Usuario' }}
-              </a>
-            </h4>
+            <h2 (click)="openProfile(clientes[currentIndex])">
+              {{ clientes[currentIndex]?.name || 'Usuario' }}
+              <span *ngIf="clientes[currentIndex]?.age">
+                {{ clientes[currentIndex]?.age }}
+              </span>
+            </h2>
 
-            <p class="mb-0">
-              <i class="icon feather icon-user"></i>
-              {{ clientes[currentIndex]?.gender || 'Sin dato' }}
+            <p class="bio-preview">
+              {{ clientes[currentIndex]?.Biography || clientes[currentIndex]?.bio || 'Sin biografía disponible.' }}
             </p>
-          </div>
 
-          <a href="javascript:void(0);" class="dz-icon dz-sp-like">
-            <i class="flaticon flaticon-star-1"></i>
-          </a>
+            <div class="profile-tags">
+              <span *ngIf="clientes[currentIndex]?.gender">
+                <i class="icon feather icon-user"></i>
+                {{ clientes[currentIndex]?.gender }}
+              </span>
+
+              <span *ngIf="clientes[currentIndex]?.address">
+                <i class="icon feather icon-map-pin"></i>
+                {{ clientes[currentIndex]?.address }}
+              </span>
+
+              <span *ngIf="clientes[currentIndex]?.zodiac">
+                ♏ {{ clientes[currentIndex]?.zodiac }}
+              </span>
+
+              <span *ngIf="clientes[currentIndex]?.pets">
+                🐾 {{ clientes[currentIndex]?.pets }}
+              </span>
+            </div>
+
+            <button
+              class="view-profile-btn"
+              type="button"
+              (click)="openProfile(clientes[currentIndex])">
+              Ver perfil completo
+            </button>
+
+          </div>
         </div>
 
         <div class="dzSwipe_card__option dzReject">
@@ -124,6 +175,29 @@
         </div>
 
         <div class="dzSwipe_card__drag"></div>
+      </div>
+
+      <!-- Botones flotantes fuera de la card -->
+      <div class="swipe-actions" *ngIf="clientes[currentIndex]">
+        <button type="button" class="action-btn undo" (click)="undoLastSwipe()">
+          <i class="fa-solid fa-rotate-left"></i>
+        </button>
+
+        <button type="button" class="action-btn dislike" (click)="dislike(clientes[currentIndex])">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <button type="button" class="action-btn superlike" (click)="superLike(clientes[currentIndex])">
+          <i class="fa-solid fa-star"></i>
+        </button>
+
+        <button type="button" class="action-btn like" (click)="like(clientes[currentIndex])">
+          <i class="fa-solid fa-heart"></i>
+        </button>
+
+        <button type="button" class="action-btn chat" (click)="openChat(clientes[currentIndex])">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
       </div>
 
     </div>

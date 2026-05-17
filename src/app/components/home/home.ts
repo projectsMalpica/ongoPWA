@@ -22,14 +22,14 @@ export class Home implements OnInit {
   startY = 0;
   swipeHistory: { clientId: string; action: 'like' | 'dislike' | 'superlike' }[] = [];
   transform = '';
-  threshold = 100;
   isDragging = false;
-  superlikeThreshold = -150;
   pb: PocketBase;
   touchStartTime = 0;
-
+  hasDragged = false;
   loadingClients = true;
-
+  threshold = 140;
+  superlikeThreshold = -180;
+  minDragDistance = 35;
   constructor(
     public global: GlobalService,
     public authPocketbaseService: AuthPocketbaseService,
@@ -40,28 +40,29 @@ export class Home implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-  this.loadingClients = true;
+    this.loadingClients = true;
 
-  this.global.clientes$.subscribe((clientes: any[]) => {
-    this.clientes = clientes || [];
-    this.loadingClients = false;
+    this.global.clientes$.subscribe((clientes: any[]) => {
+      this.clientes = clientes || [];
+      this.loadingClients = false;
 
-    if (this.currentIndex >= this.clientes.length) {
-      this.currentIndex = 0;
+      if (this.currentIndex >= this.clientes.length) {
+        this.currentIndex = 0;
+      }
+    });
+
+    try {
+      if (!this.global.getClientesSnapshot().length) {
+        await this.global.initClientesRealtime();
+      }
+    } catch (error) {
+      console.error('Error cargando clientes en home:', error);
+      this.loadingClients = false;
     }
-  });
-
-  try {
-    if (!this.global.getClientesSnapshot().length) {
-      await this.global.initClientesRealtime();
-    }
-  } catch (error) {
-    console.error('Error cargando clientes en home:', error);
-    this.loadingClients = false;
   }
-}
 
   startDrag(event: MouseEvent | TouchEvent) {
+    this.hasDragged = false;
     this.isDragging = true;
     const pos = this.getXY(event);
     this.startX = pos.x;
@@ -69,6 +70,7 @@ export class Home implements OnInit {
   }
 
   onDrag(event: MouseEvent | TouchEvent) {
+    this.hasDragged = true;
     if (!this.isDragging) return;
     const pos = this.getXY(event);
     this.deltaX = pos.x - this.startX;
@@ -77,22 +79,74 @@ export class Home implements OnInit {
   }
 
   async endDrag(event: MouseEvent | TouchEvent, cliente: any) {
-    if (!this.isDragging) return;
-    this.isDragging = false;
+  if (!this.isDragging) return;
 
-    if (this.deltaY < this.superlikeThreshold) {
-      await this.registerSwipe(cliente, 'superlike');
-      this.global.selectedClient = cliente;
-      this.global.chatReceiverId = cliente.id;
-      await this.router.navigate(['/chat-detail', cliente.id]);
-    } else if (this.deltaX > this.threshold) {
-      await this.registerSwipe(cliente, 'like');
-    } else if (this.deltaX < -this.threshold) {
-      await this.registerSwipe(cliente, 'dislike');
-    }
+  this.isDragging = false;
 
-    this.nextCard();
+  const movedEnough =
+    Math.abs(this.deltaX) > this.minDragDistance ||
+    Math.abs(this.deltaY) > this.minDragDistance;
+
+  if (!movedEnough) {
+    this.resetCard();
+    return;
   }
+
+  if (this.deltaY < this.superlikeThreshold) {
+    await this.superLike(cliente);
+    return;
+  }
+
+  if (this.deltaX > this.threshold) {
+    await this.like(cliente);
+    return;
+  }
+
+  if (this.deltaX < -this.threshold) {
+    await this.dislike(cliente);
+    return;
+  }
+
+  this.resetCard();
+}
+
+resetCard() {
+  this.transform = '';
+  this.deltaX = 0;
+  this.deltaY = 0;
+}
+
+async like(cliente: any) {
+  await this.registerSwipe(cliente, 'like');
+  this.nextCard();
+}
+
+async dislike(cliente: any) {
+  await this.registerSwipe(cliente, 'dislike');
+  this.nextCard();
+}
+
+async superLike(cliente: any) {
+  await this.registerSwipe(cliente, 'superlike');
+  this.nextCard();
+}
+
+openProfile(cliente: any) {
+  this.global.previewClient(cliente);
+  if (this.hasDragged) return;
+}
+get likeOpacity() {
+  return Math.max(0, this.deltaX / 120);
+}
+
+get rejectOpacity() {
+  return Math.max(0, -this.deltaX / 120);
+}
+async openChat(cliente: any) {
+  this.global.selectedClient = cliente;
+  this.global.chatReceiverId = cliente.id;
+  await this.router.navigate(['/chat-detail', cliente.id]);
+}
 
   async registerSwipe(cliente: any, action: 'like' | 'dislike' | 'superlike') {
     await this.swipesService.registerSwipe(cliente.id, action);
@@ -108,7 +162,7 @@ export class Home implements OnInit {
     this.transform = '';
     this.deltaX = 0;
     this.deltaY = 0;
-
+    this.currentPhotoIndex = 0;
     if (!this.clientes.length) return;
 
     this.currentIndex = (this.currentIndex + 1) % this.clientes.length;
@@ -145,4 +199,37 @@ export class Home implements OnInit {
   showSuperLikeNotification(cliente: any) {
     alert(`¡Le diste Super Like a ${cliente.name}!`);
   }
+  currentPhotoIndex = 0;
+
+getCurrentPhoto(cliente: any): string {
+  if (cliente?.photos?.length) {
+    return cliente.photos[this.currentPhotoIndex];
+  }
+
+  return cliente?.avatar || 'assets/images/hero-night.png';
+}
+
+nextPhoto(event?: Event) {
+  event?.stopPropagation();
+
+  const photos = this.clientes[this.currentIndex]?.photos || [];
+
+  if (!photos.length) return;
+
+  this.currentPhotoIndex =
+    (this.currentPhotoIndex + 1) % photos.length;
+}
+
+prevPhoto(event?: Event) {
+  event?.stopPropagation();
+
+  const photos = this.clientes[this.currentIndex]?.photos || [];
+
+  if (!photos.length) return;
+
+  this.currentPhotoIndex =
+    this.currentPhotoIndex === 0
+      ? photos.length - 1
+      : this.currentPhotoIndex - 1;
+}
 }

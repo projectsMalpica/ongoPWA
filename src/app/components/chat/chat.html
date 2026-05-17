@@ -1,37 +1,56 @@
 <div class="page-content p-t100 p-b50">
-    <div class="container">
-        <div class="dz-chat-search input-group input-group-icon input-mini">
-            <div class="input-group-text">
-                <div class="input-icon">
-                    <i class="icon feather icon-search"></i>
-                </div>
-            </div>
-            <input type="text" class="form-control" placeholder="Buscar...">
-        </div>
+  <div class="container">
 
-        <div class="title-bar">
-            <h6 class="title">Mensajes</h6>
+    <div class="dz-chat-search input-group input-group-icon input-mini">
+      <div class="input-group-text">
+        <div class="input-icon">
+          <i class="icon feather icon-search"></i>
         </div>
-        <ul class="message-list">
-            <li *ngFor="let msg of messages">
-                <a (click)="global.activeRoute = 'chat-detail'">
-                    <div class="media media-60">
-                        <img src="../assets/images/user/pic1.jpg" alt="image">
-                    </div>
-                    <div class="media-content">
-                        <div>
-                            <h6 class="name">{{msg['sender']}}</h6>
-                            <p class="last-msg">{{msg['text']}}</p>
-                        </div>
-                        <div class="right-content">
-                            <span class="date">2m ago</span>
-                            <div class="seen-btn active dz-flex-box">
-                                <i class="icon feather icon-check"></i>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-            </li>
-        </ul>
+      </div>
+      <input type="text" class="form-control" placeholder="Buscar...">
     </div>
+
+    <div class="title-bar">
+      <h6 class="title">Mensajes</h6>
+    </div>
+
+    <ul class="message-list" *ngIf="conversations.length > 0; else emptyMessages">
+      <li *ngFor="let conversation of conversations">
+        <a (click)="openChat(conversation)">
+          <div class="media media-60">
+            <img src="../assets/images/user/pic1.jpg" alt="image">
+          </div>
+
+          <div class="media-content">
+            <div>
+              <h6 class="name">
+                {{ conversation.user?.name || conversation.user?.username || 'Usuario' }}
+              </h6>
+
+              <p class="last-msg">
+                {{ conversation.lastMessage?.text }}
+              </p>
+            </div>
+
+            <div class="right-content">
+              <span class="date">
+                {{ conversation.lastMessage?.created | date:'shortTime' }}
+              </span>
+
+              <div class="seen-btn active dz-flex-box">
+                <i class="icon feather icon-check"></i>
+              </div>
+            </div>
+          </div>
+        </a>
+      </li>
+    </ul>
+
+    <ng-template #emptyMessages>
+      <div class="text-center p-4">
+        <p>No tienes mensajes todavía.</p>
+      </div>
+    </ng-template>
+
+  </div>
 </div>

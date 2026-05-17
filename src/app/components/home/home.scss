@@ -3,14 +3,24 @@
 }
 
 .dzSwipe_card-cont {
-  position: relative;
-  min-height: 70vh;
+  height: calc(100vh - 220px);
+  padding-bottom: 95px;
+  overflow: visible;
 }
 
 .dzSwipe_card {
-  position: absolute;
-  inset: 0;
-  width: 100%;
+  height: 100%;
+  max-height: calc(100vh - 245px);
+}
+
+
+
+.menubar-area.footer-fixed {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1200;
 }
 
 .dzSwipe_card--active {
@@ -31,6 +41,13 @@
 .radar-page {
   background: #050818;
   min-height: calc(100vh - 65px);
+   height: 100%;
+  overflow: hidden;
+}
+.fixed-full-area {
+  height: calc(100vh - 140px);
+  display: flex;
+  flex-direction: column;
 }
 
 .radar-header {
@@ -73,4 +90,167 @@
   border-radius: 50%;
   color: #fff;
   background: linear-gradient(135deg, #a600ff, #f70192);
+}
+.dzSwipe_card-cont {
+  position: relative;
+  height: calc(100vh - 155px);
+  overflow: hidden;
+}
+
+.dzSwipe_card {
+  height: 100%;
+  border-radius: 28px;
+  overflow: hidden;
+  position: absolute;
+  inset: 0;
+  background: #111;
+  touch-action: pan-y;
+}
+
+.dz-media {
+  width: 100%;
+  height: 100%;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.profile-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 95px;
+  padding: 24px 18px 20px;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.95),
+    rgba(0, 0, 0, 0.55),
+    transparent
+  );
+  color: #fff;
+  z-index: 5;
+}
+
+.status-badge {
+  background: #b8f7d4;
+  color: #0a5733;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.profile-info h2 {
+  margin: 10px 0 6px;
+  font-size: 34px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.bio-preview {
+  font-size: 14px;
+  line-height: 1.4;
+  max-height: 42px;
+  overflow: hidden;
+  opacity: .82;
+  margin-bottom: 10px;
+}
+
+.profile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  span {
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(8px);
+    border-radius: 20px;
+    padding: 7px 11px;
+    font-size: 12px;
+    color: #fff;
+  }
+}
+
+.view-profile-btn {
+  margin-top: 12px;
+  border: none;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border-radius: 22px;
+  padding: 9px 15px;
+  font-size: 14px;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+}
+
+.swipe-actions {
+  position: fixed;
+  left: 50%;
+  bottom: 88px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  z-index: 999;
+    bottom: 95px;
+  padding: 10px 14px;
+  border-radius: 40px;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(16px);
+}
+
+.action-btn {
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.action-btn.undo,
+.action-btn.chat {
+  width: 50px;
+  height: 50px;
+  font-size: 20px;
+}
+
+.action-btn.dislike,
+.action-btn.superlike,
+.action-btn.like {
+  width: 64px;
+  height: 64px;
+  font-size: 28px;
+}
+
+.action-btn.undo {
+  color: #9ca3af;
+}
+
+.action-btn.dislike {
+  color: #ff2d75;
+}
+
+.action-btn.superlike {
+  color: #259bff;
+}
+
+.action-btn.like {
+  color: #35e982;
+}
+
+.action-btn.chat {
+  color: #2296ff;
+}
+.dzLike {
+  opacity: 0;
+}
+
+.dzReject {
+  opacity: 0;
 }

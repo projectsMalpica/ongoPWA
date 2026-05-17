@@ -7,83 +7,199 @@ import { BehaviorSubject } from "rxjs";
 })
 export class ChatPocketbaseService {
   public pb = new PocketBase('https://db.ongomatch.com:8090');
+
   public messagesSubject = new BehaviorSubject<RecordModel[]>([]);
   public messages$ = this.messagesSubject.asObservable();
 
-  private userId = '';
-  chatReceiverId: string = '';
+  public conversationsSubject = new BehaviorSubject<any[]>([]);
+  public conversations$ = this.conversationsSubject.asObservable();
+
+  chatReceiverId = '';
+
   constructor() {
-    if (this.pb.authStore.model) {
-      this.userId = this.pb.authStore.model['id'];
+    this.restoreSession();
+  }
+
+  restoreSession() {
+    const token = localStorage.getItem('accessToken');
+    const recordString = localStorage.getItem('record') || localStorage.getItem('user');
+
+    if (token && recordString) {
+      try {
+        const record = JSON.parse(recordString);
+        this.pb.authStore.save(token, record);
+      } catch (error) {
+        console.warn('[Chat] No se pudo restaurar sesión:', error);
+      }
     }
   }
 
   getCurrentUserId(): string {
-    return this.userId;
+    this.restoreSession();
+
+    return (
+      this.pb.authStore.record?.id ||
+      this.pb.authStore.model?.id ||
+      localStorage.getItem('userId') ||
+      ''
+    );
+  }
+
+  async getUserById(userId: string) {
+    try {
+      return await this.pb.collection('users').getOne(userId);
+    } catch {
+      return null;
+    }
+  }
+
+  async loadConversations() {
+    const currentUserId = this.getCurrentUserId();
+
+    if (!currentUserId) {
+      this.conversationsSubject.next([]);
+      return;
+    }
+
+    try {
+      const messages = await this.pb.collection('messages').getFullList({
+        sort: '-created',
+        filter: `sender="${currentUserId}" || receiver="${currentUserId}"`
+      });
+
+      const map = new Map<string, any>();
+
+      for (const msg of messages) {
+        const senderId = msg['sender'];
+        const receiverId = msg['receiver'];
+
+        const otherUserId = senderId === currentUserId ? receiverId : senderId;
+
+        if (!map.has(otherUserId)) {
+          const otherUser = await this.getUserById(otherUserId);
+
+          map.set(otherUserId, {
+            userId: otherUserId,
+            user: otherUser,
+            lastMessage: msg
+          });
+        }
+      }
+
+      this.conversationsSubject.next(Array.from(map.values()));
+
+    } catch (error) {
+      console.error('[Chat] Error cargando conversaciones:', error);
+      this.conversationsSubject.next([]);
+    }
   }
 
   async initRealtime(receiverId: string) {
-    if (!this.userId) return;
+    const currentUserId = this.getCurrentUserId();
 
-    await this.pb.collection('messages').unsubscribe('*'); // Limpiar subs previas
+    if (!currentUserId || !receiverId) return;
 
-    this.pb.collection('messages').subscribe('*', (event) => {
+    await this.pb.collection('messages').unsubscribe('*');
+
+    this.pb.collection('messages').subscribe('*', async (event) => {
       if (event.action !== 'create') return;
+
       const record = event.record;
       const involved = [record['sender'], record['receiver']];
 
-      if (involved.includes(this.userId) && involved.includes(receiverId)) {
+      if (involved.includes(currentUserId) && involved.includes(receiverId)) {
         const current = this.messagesSubject.getValue();
-        this.messagesSubject.next([...current, record]);
+        const exists = current.some(msg => msg.id === record.id);
+
+        if (!exists) {
+          this.messagesSubject.next([...current, record]);
+        }
+      }
+
+      if (involved.includes(currentUserId)) {
+        await this.loadConversations();
       }
     });
   }
 
-  async sendMessage(text: string, receiverId: string) {
-    try {
-      const record = await this.pb.collection('messages').create({
-        text,
-        sender: this.userId,
-        receiver: receiverId
-      });
-      // Agregamos el mensaje manualmente (opcional si realtime funciona bien)
-      const current = this.messagesSubject.getValue();
-      this.messagesSubject.next([...current, record]);
-      console.log('[ChatPocketbaseService] Mensaje enviado:', record);
-    } catch (error) {
-      console.error('[ChatPocketbaseService] Error enviando mensaje:', error);
-    }
-  }
-
   async loadMessages(receiverId: string) {
+    const currentUserId = this.getCurrentUserId();
+
+    if (!currentUserId || !receiverId) {
+      console.warn('[Chat] Falta currentUserId o receiverId', {
+        currentUserId,
+        receiverId
+      });
+
+      this.messagesSubject.next([]);
+      return;
+    }
+
     try {
+      this.chatReceiverId = receiverId;
+
       await this.initRealtime(receiverId);
 
-      const res = await this.pb.collection('messages').getFullList({
-        filter: `(sender="${this.userId}" && receiver="${receiverId}") || (sender="${receiverId}" && receiver="${this.userId}")`,
-        sort: '-created'
+      const messages = await this.pb.collection('messages').getFullList({
+        filter: `(sender="${currentUserId}" && receiver="${receiverId}") || (sender="${receiverId}" && receiver="${currentUserId}")`,
+        sort: 'created'
       });
 
-      this.messagesSubject.next(res.reverse());
-      console.log(`[ChatPocketbaseService] Mensajes cargados (${res.length})`);
+      this.messagesSubject.next(messages);
+
     } catch (error) {
-      console.error('[ChatPocketbaseService] Error cargando mensajes:', error);
+      console.error('[Chat] Error cargando mensajes:', error);
       this.messagesSubject.next([]);
     }
   }
 
-  async login(email: string, password: string) {
+  async sendMessage(receiverId: string, text: string) {
+    const currentUserId = this.getCurrentUserId();
+
+    if (!currentUserId || !receiverId || !text.trim()) {
+      console.warn('[Chat] No se puede enviar mensaje', {
+        currentUserId,
+        receiverId,
+        text
+      });
+      return;
+    }
+
     try {
-      const authData = await this.pb.collection('users').authWithPassword(email, password);
-      this.userId = authData.record.id;
-      console.log('[ChatPocketbaseService] Login exitoso:', authData);
+      const record = await this.pb.collection('messages').create({
+        idUser: currentUserId,
+        text: text.trim(),
+        read: false,
+        chatRoomId: this.getChatRoomId(currentUserId, receiverId),
+        sender: currentUserId,
+        receiver: receiverId
+      });
+
+      const current = this.messagesSubject.getValue();
+      const exists = current.some(msg => msg.id === record.id);
+
+      if (!exists) {
+        this.messagesSubject.next([...current, record]);
+      }
+
+      await this.loadConversations();
+
+      return record;
+
     } catch (error) {
-      console.error('[ChatPocketbaseService] Error al iniciar sesión:', error);
+      console.error('[Chat] Error enviando mensaje:', error);
+      throw error;
     }
   }
 
-  logout() {
+  getChatRoomId(userA: string, userB: string): string {
+    return [userA, userB].sort().join('_');
+  }
+
+  async logout() {
+    await this.pb.collection('messages').unsubscribe('*');
     this.pb.authStore.clear();
-    console.log('[ChatPocketbaseService] Sesión cerrada');
+    this.messagesSubject.next([]);
+    this.conversationsSubject.next([]);
   }
 }

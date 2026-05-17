@@ -46,21 +46,14 @@ export class ChatDetail implements OnInit, AfterViewInit {
     
   
   async send() {
-    const message = this.form.value.message?.trim();
-    if (!message) return;
-  
-  
-    await this.chatService.pb.collection('messages').create({
-      text: message,
-      sender: this.currentUserId,
-      receiver: this.receiverId
-    }).then((record: any) => {
-      const current = this.chatService.messagesSubject.getValue();
-      this.chatService.messagesSubject.next([...current, record]);
-      this.form.reset();
-    });
-    
-  }
+  const message = this.form.value.message?.trim();
+
+  if (!message) return;
+
+  await this.chatService.sendMessage(this.receiverId, message);
+
+  this.form.reset();
+}
   
     
   ngAfterViewInit() {

@@ -7,7 +7,9 @@
   border-top-right-radius: 18px;
   min-height: 220px;
 }
-
+.page-body {
+  padding-bottom: 90px;
+}
 .pwa-backdrop {
   z-index: 1990 !important;
   background: rgba(0, 0, 0, 0.45);

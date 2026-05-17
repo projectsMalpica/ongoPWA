@@ -12,17 +12,26 @@ import { RecordModel } from 'pocketbase';
   styleUrl: './chat.scss',
 })
 export class Chat {
-  messages: RecordModel[] = [];
+  conversations: any[] = [];
   currentUserId: string = '';
-constructor(public global: GlobalService,
-  public chatService: ChatPocketbaseService
-) {
-  this.currentUserId = this.chatService.getCurrentUserId();
-}
 
-ngOnInit(): void {
-  this.chatService.messages$.subscribe((messages) => {
-    this.messages = messages;
-  });
-}
+  constructor(
+    public global: GlobalService,
+    public chatService: ChatPocketbaseService
+  ) {
+    this.currentUserId = this.chatService.getCurrentUserId();
+  }
+
+  async ngOnInit(): Promise<void> {
+    this.chatService.conversations$.subscribe((conversations) => {
+      this.conversations = conversations;
+    });
+
+    await this.chatService.loadConversations();
+  }
+
+  openChat(conversation: any) {
+    this.chatService.chatReceiverId = conversation.userId;
+    this.global.activeRoute = 'chat-detail';
+  }
 }
