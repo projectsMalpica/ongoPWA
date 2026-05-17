@@ -91,8 +91,25 @@ export class LoginComponent {
           console.error('Error en post-login:', error);
         }
       },
-      error: (error) => {
+      error: async (error) => {
         console.error('Error en el login:', error);
+
+        const result = await Swal.fire({
+          icon: 'warning',
+          title: 'Cuenta no encontrada',
+          text: 'No pudimos iniciar sesión. Puedes registrarte para continuar.',
+          showCancelButton: true,
+          confirmButtonText: 'Registrarme',
+          cancelButtonText: 'Intentar de nuevo'
+        });
+
+        if (result.isConfirmed) {
+          await this.router.navigate(['/register'], {
+            queryParams: {
+              email: this.loginForm.value.email
+            }
+          });
+        }
       }
     });
   }
@@ -102,44 +119,51 @@ export class LoginComponent {
   }
 
 
-async handleGoogleLogin() {
-  try {
-    this.loading = true;
+  async handleGoogleLogin() {
+    try {
+      this.loading = true;
 
-    const user = await this.auth.loginWithGoogle();
+      const user = await this.auth.loginWithGoogle();
 
-    console.log('Usuario Google:', user);
-    console.log('AuthStore:', this.auth.pb.authStore.record);
+      if (!user?.id) {
+        throw new Error('No se pudo iniciar sesión con Google');
+      }
 
-    if (!user) {
-      Swal.fire('Error', 'No se pudo iniciar sesión con Google', 'error');
-      return;
+      const profileStatus = await this.auth.getRegistrationStatus(user);
+
+      if (!profileStatus.completed) {
+        await Swal.fire({
+          icon: 'info',
+          title: 'Completa tu registro',
+          text: 'Necesitamos algunos datos para terminar tu cuenta.'
+        });
+
+        await this.router.navigate(['/register']);
+        return;
+      }
+
+      await this.global.loadProfile();
+      await this.global.initClientesRealtime();
+      await this.global.initPartnersRealtime();
+
+      if (profileStatus.type === 'partner') {
+        await this.router.navigate(['/home-local']);
+      } else if (profileStatus.type === 'admin') {
+        await this.router.navigate(['/admin']);
+      } else {
+        await this.router.navigate(['/maps']);
+      }
+
+    } catch (error: any) {
+      console.error('Error Google Login:', error);
+
+      Swal.fire({
+        icon: 'error',
+        title: 'Error con Google',
+        text: error?.message || 'No se pudo iniciar sesión con Google'
+      });
+    } finally {
+      this.loading = false;
     }
-
-    await this.global.loadProfile();
-    await this.global.initClientesRealtime();
-    await this.global.initPartnersRealtime();
-
-    const userType = user?.type || this.auth.pb.authStore.record?.['type'];
-
-    if (userType === 'partner') {
-      await this.router.navigate(['/home-local']);
-    } else if (userType === 'admin') {
-      await this.router.navigate(['/admin']);
-    } else {
-      await this.router.navigate(['/maps']);
-    }
-
-  } catch (error: any) {
-    console.error('Error Google Login:', error);
-
-    Swal.fire({
-      icon: 'error',
-      title: 'Error con Google',
-      text: error?.message || 'No se pudo iniciar sesión con Google'
-    });
-  } finally {
-    this.loading = false;
   }
-}
 }

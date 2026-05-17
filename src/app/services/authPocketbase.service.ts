@@ -530,117 +530,83 @@ export class AuthPocketbaseService {
       throw error;
     }
   }
-  /* async loginWithGoogle(): Promise<UserInterface> {
-    const authData = await this.pb.collection('users').authWithOAuth2({
-      provider: 'google',
-      createData: {
-        type: 'client',
-        status: 'active',
-      }
-    });
-
-    const pbUser = authData?.record || this.pb.authStore.record;
-
-    if (!pbUser?.id) {
-      throw new Error('Google autenticó, pero PocketBase no devolvió usuario.');
-    }
-
-    let userTypeRaw = pbUser['type'];
-    let userType = Array.isArray(userTypeRaw) ? userTypeRaw[0] : userTypeRaw;
-
-    if (!userType) {
-      userType = 'client';
-
-      await this.pb.collection('users').update(pbUser.id, {
-        type: userType
-      });
-
-      pbUser['type'] = userType;
-    }
-
-    const user: UserInterface = {
-      id: pbUser.id,
-      email: pbUser['email'] || '',
-      password: '',
-      name: pbUser['name'] || pbUser['username'] || '',
-      phone: pbUser['phone'] || '',
-      images: pbUser['images'] || {},
-      type: userType,
-      username: pbUser['username'] || '',
-      address: pbUser['address'] || '',
-      created: pbUser['created'],
-      updated: pbUser['updated'],
-      avatar: pbUser['avatar'] || '',
-      status: pbUser['status'] || 'active',
-      gender: pbUser['gender'] || '',
-    };
-
-    this.pb.authStore.save(authData.token, pbUser);
-
-    this.setUser(user);
-    localStorage.setItem('accessToken', authData.token);
-    localStorage.setItem('userId', user.id);
-    localStorage.setItem('user', JSON.stringify(user));
-    localStorage.setItem('type', JSON.stringify(user.type));
-    localStorage.setItem('isLoggedin', 'true');
-    localStorage.setItem('record', JSON.stringify(pbUser));
-
-    const coll = user.type === 'partner' ? 'usuariosPartner' : 'usuariosClient';
-
-    try {
-      const profile = await this.pb
-        .collection(coll)
-        .getFirstListItem(`userId="${user.id}"`);
-
-      this.profile = profile;
-      localStorage.setItem(
-        user.type === 'partner' ? 'profilePartner' : 'profile',
-        JSON.stringify(profile)
-      );
-    } catch {
-      const profile = await this.pb.collection(coll).create({
-        userId: user.id,
-        email: user.email,
-        name: user.name,
-        status: user.type === 'partner' ? 'pending' : 'active',
-        profileComplete: false,
-      });
-
-      this.profile = profile;
-      localStorage.setItem(
-        user.type === 'partner' ? 'profilePartner' : 'profile',
-        JSON.stringify(profile)
-      );
-    }
-
-    globalUser.set(user);
-    this.currentUserSubject.next(user);
-
-    return user;
-  } */
 async loginWithGoogle(): Promise<any> {
+  const authData = await this.pb.collection('users').authWithOAuth2({
+    provider: 'google',
+    createData: {
+      status: 'active',
+      profileComplete: false
+    }
+  });
+
+  const user = authData?.record || this.pb.authStore.record;
+  const token = authData?.token || this.pb.authStore.token;
+
+  if (!user?.id) {
+    throw new Error('Google autenticó, pero no devolvió usuario.');
+  }
+
+  if (token) {
+    this.pb.authStore.save(token, user);
+  }
+
+  this.currentUser = user;
+
+  localStorage.setItem('accessToken', token);
+  localStorage.setItem('userId', user.id);
+  localStorage.setItem('user', JSON.stringify(user));
+  localStorage.setItem('record', JSON.stringify(user));
+  localStorage.setItem('isLoggedin', 'true');
+
+  globalUser.set(user);
+  this.currentUserSubject.next(user);
+
+  return user;
+}
+async getRegistrationStatus(user: any): Promise<{
+  completed: boolean;
+  type: 'client' | 'partner' | 'admin' | null;
+  profile: any | null;
+}> {
+  const type = user?.type || this.pb.authStore.record?.['type'];
+
+  if (type === 'admin') {
+    return {
+      completed: true,
+      type: 'admin',
+      profile: null
+    };
+  }
+
+  if (!type) {
+    return {
+      completed: false,
+      type: null,
+      profile: null
+    };
+  }
+
+  const collection =
+    type === 'partner'
+      ? 'usuariosPartner'
+      : 'usuariosClient';
+
   try {
-    console.log('[GOOGLE] inicio');
+    const profile = await this.pb
+      .collection(collection)
+      .getFirstListItem(`userId="${user.id}"`);
 
-    const authData = await this.pb.collection('users').authWithOAuth2({
-      provider: 'google',
-      urlCallback: (url) => {
-        console.log('[GOOGLE] URL:', url);
-        window.location.href = url;
-      },
-      createData: {
-        type: 'client',
-        status: 'active',
-      },
-    });
-
-    console.log('[GOOGLE] authData:', authData);
-
-    return authData.record;
-
-  } catch (err: any) {
-    console.error('[GOOGLE ERROR]', err);
-    throw err;
+    return {
+      completed: !!profile?.['profileComplete'],
+      type,
+      profile
+    };
+  } catch {
+    return {
+      completed: false,
+      type,
+      profile: null
+    };
   }
 }
   private mapPocketbaseError(err: unknown): Error {
