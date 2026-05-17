@@ -41,13 +41,6 @@
 .radar-page {
   background: #050818;
   min-height: calc(100vh - 65px);
-   height: 100%;
-  overflow: hidden;
-}
-.fixed-full-area {
-  height: calc(100vh - 140px);
-  display: flex;
-  flex-direction: column;
 }
 
 .radar-header {
@@ -195,7 +188,6 @@
   align-items: center;
   gap: 13px;
   z-index: 999;
-    bottom: 95px;
   padding: 10px 14px;
   border-radius: 40px;
   background: rgba(0, 0, 0, 0.35);
