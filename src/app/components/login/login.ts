@@ -131,14 +131,22 @@ export class LoginComponent {
 
       const profileStatus = await this.auth.getRegistrationStatus(user);
 
-      if (!profileStatus.completed) {
+      if (!profileStatus.profile) {
         await Swal.fire({
           icon: 'info',
           title: 'Completa tu registro',
           text: 'Necesitamos algunos datos para terminar tu cuenta.'
         });
 
-        await this.router.navigate(['/register']);
+        await this.router.navigate(['/register'], {
+          queryParams: {
+            google: 'true',
+            userId: user.id,
+            email: user.email,
+            type: user.type || ''
+          }
+        });
+
         return;
       }
 

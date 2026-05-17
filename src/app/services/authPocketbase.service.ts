@@ -530,40 +530,37 @@ export class AuthPocketbaseService {
       throw error;
     }
   }
-async loginWithGoogle(): Promise<any> {
-  const authData = await this.pb.collection('users').authWithOAuth2({
-    provider: 'google',
-    createData: {
-      status: 'active',
-      profileComplete: false
+  async loginWithGoogle(): Promise<any> {
+    const authData = await this.pb.collection('users').authWithOAuth2({
+      provider: 'google',
+    });
+
+    const user = authData?.record || this.pb.authStore.record;
+    const token = authData?.token || this.pb.authStore.token;
+
+    if (!user?.id) {
+      throw new Error('Google autenticó, pero no devolvió usuario.');
     }
-  });
 
-  const user = authData?.record || this.pb.authStore.record;
-  const token = authData?.token || this.pb.authStore.token;
+    if (token) {
+      this.pb.authStore.save(token, user);
+    }
 
-  if (!user?.id) {
-    throw new Error('Google autenticó, pero no devolvió usuario.');
+    this.currentUser = user;
+
+    localStorage.setItem('accessToken', token || '');
+    localStorage.setItem('userId', user.id);
+    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem('record', JSON.stringify(user));
+    localStorage.setItem('type', JSON.stringify(user['type'] || null));
+    localStorage.setItem('isLoggedin', 'true');
+
+    globalUser.set(user);
+    this.currentUserSubject.next(user);
+
+    return user;
   }
-
-  if (token) {
-    this.pb.authStore.save(token, user);
-  }
-
-  this.currentUser = user;
-
-  localStorage.setItem('accessToken', token);
-  localStorage.setItem('userId', user.id);
-  localStorage.setItem('user', JSON.stringify(user));
-  localStorage.setItem('record', JSON.stringify(user));
-  localStorage.setItem('isLoggedin', 'true');
-
-  globalUser.set(user);
-  this.currentUserSubject.next(user);
-
-  return user;
-}
-async getRegistrationStatus(user: any): Promise<{
+  async getRegistrationStatus(user: any): Promise<{
   completed: boolean;
   type: 'client' | 'partner' | 'admin' | null;
   profile: any | null;
@@ -571,36 +568,46 @@ async getRegistrationStatus(user: any): Promise<{
   const type = user?.type || this.pb.authStore.record?.['type'];
 
   if (type === 'admin') {
-    return {
-      completed: true,
-      type: 'admin',
-      profile: null
-    };
+    return { completed: true, type: 'admin', profile: null };
   }
 
   if (!type) {
-    return {
-      completed: false,
-      type: null,
-      profile: null
-    };
+    return { completed: false, type: null, profile: null };
   }
 
-  const collection =
-    type === 'partner'
-      ? 'usuariosPartner'
-      : 'usuariosClient';
+  const collection = type === 'partner'
+    ? 'usuariosPartner'
+    : 'usuariosClient';
 
   try {
     const profile = await this.pb
       .collection(collection)
       .getFirstListItem(`userId="${user.id}"`);
 
+    let completed = false;
+
+    if (type === 'client') {
+      completed =
+        !!profile?.['name'] &&
+        !!profile?.['birthday'] &&
+        !!profile?.['gender'] &&
+        !!profile?.['interestedIn'] &&
+        !!profile?.['lookingFor'];
+    }
+
+    if (type === 'partner') {
+      completed =
+        !!profile?.['venueName'] &&
+        !!profile?.['address'] &&
+        !!profile?.['phone'];
+    }
+
     return {
-      completed: !!profile?.['profileComplete'],
+      completed,
       type,
       profile
     };
+
   } catch {
     return {
       completed: false,

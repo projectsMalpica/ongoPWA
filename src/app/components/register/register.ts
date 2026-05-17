@@ -4,12 +4,12 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, F
 import Swal from 'sweetalert2';
 import { AuthPocketbaseService } from '../../services/authPocketbase.service';
 import { GlobalService } from '../../services/global.service';
-/* import { register as registerSwiperElements } from 'swiper/element/bundle';
- */import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { Terms } from '../terms/terms';
 import { Privacy } from '../privacy/privacy';
 import { EmailService } from '../../services/email.service';
 import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 @Component({
   selector: 'app-register',
   standalone: true,
@@ -54,7 +54,8 @@ export class RegisterComponent {
     public auth: AuthPocketbaseService,
     public global: GlobalService,
     public emailService: EmailService,
-    public router: Router
+    public router: Router,
+    public route: ActivatedRoute
   ) {
     // Formulario para partners (locales nocturnos)
     this.partnerForm = this.fb.group({
@@ -107,6 +108,31 @@ export class RegisterComponent {
   get pf() {
     return this.partnerForm.controls;
   }
+  ngOnInit() {
+  this.route.queryParams.subscribe(params => {
+    if (params['google'] === 'true') {
+      const email = params['email'] || '';
+      const type = params['type'] || '';
+
+      if (type === 'client' || type === 'partner') {
+        this.userType = type;
+        this.currentStep = type === 'client' ? 2 : 2;
+      }
+
+      this.clientForm.patchValue({
+        email,
+        password: 'GoogleAuth123',
+        confirmPassword: 'GoogleAuth123'
+      });
+
+      this.partnerForm.patchValue({
+        email,
+        password: 'GoogleAuth123',
+        confirmPassword: 'GoogleAuth123'
+      });
+    }
+  });
+}
   validateOpeningHours(control: AbstractControl): ValidationErrors | null {
     const hours = control.get('openingHours')?.value;
     if (hours && !/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]\s*-\s*([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(hours)) {
