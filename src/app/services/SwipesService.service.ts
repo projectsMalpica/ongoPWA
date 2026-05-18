@@ -23,11 +23,16 @@ export class SwipesService {
     throw new Error('No hay clientId');
   }
 
-  const userId = this.global.profileData?.id;
+  let userId = this.global.profileData?.id;
 
-  if (!userId) {
-    throw new Error('No existe global.profileData.id. Debes cargar el perfil antes de hacer swipe.');
-  }
+if (!userId) {
+  const profile = await pb.collection('usuariosClient').getFirstListItem(
+    `userId="${currentUser.id}"`
+  );
+
+  userId = profile.id;
+  this.global.profileData = profile;
+}
 
   console.log('Creando swipe:', {
     action,
