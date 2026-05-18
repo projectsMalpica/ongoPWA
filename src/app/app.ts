@@ -6,6 +6,8 @@ import { Sidebar } from './ui/sidebar/sidebar';
 import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
 import { ToastService } from './services/ToastService.service';
+import { NotificationsService } from './services/NotificationsService.service';
+import { GlobalService } from './services/global.service';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -40,7 +42,9 @@ export class App {
   isInstalled = false;
   deferredPrompt: BeforeInstallPromptEvent | null = null;
   constructor(
-    private toastService: ToastService
+    private toastService: ToastService,
+    public notificationsService: NotificationsService,
+    public global: GlobalService
   ) {
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
@@ -64,9 +68,21 @@ export class App {
         this.showPwaPrompt = true;
       }
     }
-      this.toastService.toasts$.subscribe(t => {
-    this.toasts = t;
-  });
+    this.toastService.toasts$.subscribe(t => {
+      this.toasts = t;
+    });
+  }
+  async ngOnInit() {
+    setTimeout(async () => {
+      const user = this.global.pb.authStore.model;
+
+      if (user?.id) {
+        await this.notificationsService.initRealtimeNotifications(user.id);
+        console.log('Realtime notifications iniciado para:', user.id);
+      } else {
+        console.warn('No hay usuario autenticado para iniciar notificaciones');
+      }
+    }, 500);
   }
 
   @HostListener('window:beforeinstallprompt', ['$event'])

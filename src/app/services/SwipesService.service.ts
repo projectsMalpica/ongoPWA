@@ -1,28 +1,66 @@
-// services/swipes.service.ts
 import { Injectable } from '@angular/core';
-import PocketBase from 'pocketbase';
 import { GlobalService } from './global.service';
 import { AuthPocketbaseService } from './authPocketbase.service';
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'root'
 })
 export class SwipesService {
-  pb: PocketBase;
-
   constructor(
-    public global: GlobalService,
-    public authPocketbaseService: AuthPocketbaseService
-  ) {
-    this.pb = global.pb;
+    private global: GlobalService,
+    private auth: AuthPocketbaseService
+  ) {}
+
+ async registerSwipe(clientId: string, action: 'like' | 'dislike' | 'superlike') {
+  const pb = this.global.pb;
+  const currentUser = pb.authStore.model;
+
+  if (!currentUser?.id) {
+    throw new Error('No hay usuario autenticado');
   }
 
-  async registerSwipe(clientId: string, action: 'like' | 'dislike' | 'superlike') {
-    return this.pb.collection('swipes').create({
-      userId: this.authPocketbaseService.getCurrentUser()?.id,
-      clientId,
-      action,
-    });
+  if (!clientId) {
+    throw new Error('No hay clientId');
   }
-  
+
+  const userId = this.global.profileData?.id;
+
+  if (!userId) {
+    throw new Error('No existe global.profileData.id. Debes cargar el perfil antes de hacer swipe.');
+  }
+
+  console.log('Creando swipe:', {
+    action,
+    userId,
+    clientId,
+    currentUserId: currentUser.id,
+    currentUserCollection: currentUser.collectionName,
+    profileData: this.global.profileData
+  });
+
+  try {
+    const swipe = await pb.collection('swipes').create({
+      action,
+      userId,
+      clientId
+    });
+
+    return {
+      swipe,
+      match: null,
+      notification: null
+    };
+
+  } catch (error: any) {
+    console.error('Error completo PocketBase:', error);
+    console.error('Detalles PocketBase:', error?.data);
+    console.error('Data enviada:', {
+      action,
+      userId,
+      clientId
+    });
+
+    throw error;
+  }
+}
 }

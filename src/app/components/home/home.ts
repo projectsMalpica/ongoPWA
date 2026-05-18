@@ -117,23 +117,56 @@ resetCard() {
 }
 
 async like(cliente: any) {
-  await this.registerSwipe(cliente, 'like');
-  this.nextCard();
+  await this.handleSwipeAction(cliente, 'like');
 }
 
 async dislike(cliente: any) {
-  await this.registerSwipe(cliente, 'dislike');
-  this.nextCard();
+  await this.handleSwipeAction(cliente, 'dislike');
 }
 
 async superLike(cliente: any) {
-  await this.registerSwipe(cliente, 'superlike');
-  this.nextCard();
+  await this.handleSwipeAction(cliente, 'superlike');
+}
+async handleSwipeAction(
+  cliente: any,
+  action: 'like' | 'dislike' | 'superlike'
+) {
+  if (!cliente?.id) return;
+
+  try {
+    await this.registerSwipe(cliente, action);
+
+    if (action === 'like') {
+      this.transform = 'translateX(420px) rotate(18deg)';
+    }
+
+    if (action === 'dislike') {
+      this.transform = 'translateX(-420px) rotate(-18deg)';
+    }
+
+    if (action === 'superlike') {
+      this.transform = 'translateY(-520px) rotate(0deg)';
+    }
+
+    setTimeout(() => {
+      this.nextCard();
+    }, 250);
+
+  } catch (error) {
+    console.error('Error registrando swipe:', error);
+    this.resetCard();
+    alert('No se pudo registrar la interacción');
+  }
 }
 
-openProfile(cliente: any) {
-  this.global.previewClient(cliente);
-  if (this.hasDragged) return;
+openProfile(event: Event, cliente: any) {
+  event.stopPropagation();
+
+  if (!cliente?.id) return;
+
+  this.global.selectedClient = cliente;
+
+  this.router.navigate(['/detailprofile', cliente.id]);
 }
 get likeOpacity() {
   return Math.max(0, this.deltaX / 120);
@@ -149,14 +182,16 @@ async openChat(cliente: any) {
 }
 
   async registerSwipe(cliente: any, action: 'like' | 'dislike' | 'superlike') {
-    await this.swipesService.registerSwipe(cliente.id, action);
+  const result = await this.swipesService.registerSwipe(cliente.id, action);
 
-    if (action === 'superlike') {
-      this.showSuperLikeNotification(cliente);
-    }
-
-    this.swipeHistory.push({ clientId: cliente.id, action });
+  if (result?.['match']) {
+    alert(`¡Hiciste match con ${cliente.name || 'este usuario'}!`);
+  } else if (action === 'superlike') {
+    this.showSuperLikeNotification(cliente);
   }
+
+  this.swipeHistory.push({ clientId: cliente.id, action });
+}
 
   nextCard() {
     this.transform = '';

@@ -1,71 +1,94 @@
-import { AfterViewInit, Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
-import { Observable } from 'rxjs';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  ViewChild
+} from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { ChatPocketbaseService } from '../../services/chat.service';
+
 @Component({
   selector: 'app-chat-detail',
-   standalone: true,
+  standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './chat-detail.html',
   styleUrl: './chat-detail.scss',
 })
-export class ChatDetail implements OnInit, AfterViewInit {
-  
-  @Input() user: any;
-  @Input() receiverId: string = '';
-  
+export class ChatDetail implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('scrollBottom') scrollBottom!: ElementRef;
 
   form: FormGroup;
   messages: any[] = [];
-  currentUserId: string = '';
-  
+  currentUserId = '';
+  receiverId = '';
+
+  private messagesSub?: Subscription;
+
   constructor(
     private chatService: ChatPocketbaseService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private route: ActivatedRoute
   ) {
-    this.form = this.fb.group({ message: [''] });
+    this.form = this.fb.group({
+      message: ['']
+    });
   }
 
-  
-    async ngOnInit() {
-      this.currentUserId = this.chatService.getCurrentUserId();
-      console.log('🔍 currentUserId:', this.currentUserId);
-    
-      this.chatService.chatReceiverId = this.receiverId;
-    
-      await this.chatService.loadMessages(this.receiverId);
-    
-      this.chatService.messages$.subscribe(messages => {
-        console.log('🟢 Mensajes actualizados:', messages);
-        this.messages = messages;
-        this.scrollToBottom();
-      });
+  async ngOnInit() {
+    this.currentUserId = this.chatService.getCurrentUserId();
+
+    this.receiverId =
+      this.route.snapshot.paramMap.get('id') ||
+      this.chatService.chatReceiverId ||
+      '';
+
+    console.log('currentUserId:', this.currentUserId);
+    console.log('receiverId:', this.receiverId);
+
+    if (!this.currentUserId || !this.receiverId) {
+      console.warn('Falta currentUserId o receiverId');
+      return;
     }
-    
-  
+
+    this.chatService.chatReceiverId = this.receiverId;
+
+    await this.chatService.loadMessages(this.receiverId);
+
+    this.messagesSub = this.chatService.messages$.subscribe(messages => {
+      this.messages = messages;
+      this.scrollToBottom();
+    });
+  }
+
   async send() {
-  const message = this.form.value.message?.trim();
+    const message = this.form.value.message?.trim();
 
-  if (!message) return;
+    if (!message || !this.receiverId) return;
 
-  await this.chatService.sendMessage(this.receiverId, message);
+    try {
+      await this.chatService.sendMessage(this.receiverId, message);
+      this.form.reset();
+    } catch (error) {
+      console.error('No se pudo enviar el mensaje:', error);
+    }
+  }
 
-  this.form.reset();
-}
-  
-    
   ngAfterViewInit() {
     this.scrollToBottom();
   }
 
-  scrollToBottom() {
-    setTimeout(() => {
-      this.scrollBottom?.nativeElement.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+  ngOnDestroy() {
+    this.messagesSub?.unsubscribe();
   }
 
- 
+  scrollToBottom() {
+    setTimeout(() => {
+      this.scrollBottom?.nativeElement?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  }
 }
-

@@ -14,7 +14,8 @@ export class ChatPocketbaseService {
   public conversationsSubject = new BehaviorSubject<any[]>([]);
   public conversations$ = this.conversationsSubject.asObservable();
 
-  chatReceiverId = '';
+  private userId = '';
+  chatReceiverId: string = '';
 
   constructor() {
     this.restoreSession();
@@ -22,33 +23,39 @@ export class ChatPocketbaseService {
 
   restoreSession() {
     const token = localStorage.getItem('accessToken');
-    const recordString = localStorage.getItem('record') || localStorage.getItem('user');
+    const recordString =
+      localStorage.getItem('record') ||
+      localStorage.getItem('user');
 
     if (token && recordString) {
       try {
         const record = JSON.parse(recordString);
         this.pb.authStore.save(token, record);
+        this.userId = record.id;
       } catch (error) {
-        console.warn('[Chat] No se pudo restaurar sesión:', error);
+        console.warn('[ChatPocketbaseService] No se pudo restaurar sesión:', error);
       }
+    }
+
+    if (this.pb.authStore.model?.id) {
+      this.userId = this.pb.authStore.model.id;
+    }
+
+    if (!this.userId) {
+      this.userId = localStorage.getItem('userId') || '';
     }
   }
 
   getCurrentUserId(): string {
     this.restoreSession();
-
-    return (
-      this.pb.authStore.record?.id ||
-      this.pb.authStore.model?.id ||
-      localStorage.getItem('userId') ||
-      ''
-    );
+    return this.userId;
   }
 
   async getUserById(userId: string) {
     try {
       return await this.pb.collection('users').getOne(userId);
-    } catch {
+    } catch (error) {
+      console.warn('[ChatPocketbaseService] No se pudo cargar usuario:', userId);
       return null;
     }
   }
@@ -57,14 +64,15 @@ export class ChatPocketbaseService {
     const currentUserId = this.getCurrentUserId();
 
     if (!currentUserId) {
+      console.warn('[ChatPocketbaseService] No hay usuario para cargar conversaciones');
       this.conversationsSubject.next([]);
       return;
     }
 
     try {
       const messages = await this.pb.collection('messages').getFullList({
-        sort: '-created',
-        filter: `sender="${currentUserId}" || receiver="${currentUserId}"`
+        filter: `sender="${currentUserId}" || receiver="${currentUserId}"`,
+        sort: '-created'
       });
 
       const map = new Map<string, any>();
@@ -72,7 +80,6 @@ export class ChatPocketbaseService {
       for (const msg of messages) {
         const senderId = msg['sender'];
         const receiverId = msg['receiver'];
-
         const otherUserId = senderId === currentUserId ? receiverId : senderId;
 
         if (!map.has(otherUserId)) {
@@ -87,9 +94,8 @@ export class ChatPocketbaseService {
       }
 
       this.conversationsSubject.next(Array.from(map.values()));
-
     } catch (error) {
-      console.error('[Chat] Error cargando conversaciones:', error);
+      console.error('[ChatPocketbaseService] Error cargando conversaciones:', error);
       this.conversationsSubject.next([]);
     }
   }
@@ -97,7 +103,7 @@ export class ChatPocketbaseService {
   async initRealtime(receiverId: string) {
     const currentUserId = this.getCurrentUserId();
 
-    if (!currentUserId || !receiverId) return;
+    if (!currentUserId) return;
 
     await this.pb.collection('messages').unsubscribe('*');
 
@@ -122,42 +128,11 @@ export class ChatPocketbaseService {
     });
   }
 
-  async loadMessages(receiverId: string) {
-    const currentUserId = this.getCurrentUserId();
-
-    if (!currentUserId || !receiverId) {
-      console.warn('[Chat] Falta currentUserId o receiverId', {
-        currentUserId,
-        receiverId
-      });
-
-      this.messagesSubject.next([]);
-      return;
-    }
-
-    try {
-      this.chatReceiverId = receiverId;
-
-      await this.initRealtime(receiverId);
-
-      const messages = await this.pb.collection('messages').getFullList({
-        filter: `(sender="${currentUserId}" && receiver="${receiverId}") || (sender="${receiverId}" && receiver="${currentUserId}")`,
-        sort: 'created'
-      });
-
-      this.messagesSubject.next(messages);
-
-    } catch (error) {
-      console.error('[Chat] Error cargando mensajes:', error);
-      this.messagesSubject.next([]);
-    }
-  }
-
   async sendMessage(receiverId: string, text: string) {
     const currentUserId = this.getCurrentUserId();
 
-    if (!currentUserId || !receiverId || !text.trim()) {
-      console.warn('[Chat] No se puede enviar mensaje', {
+    if (!currentUserId || !receiverId || !text?.trim()) {
+      console.warn('[ChatPocketbaseService] No se puede enviar mensaje', {
         currentUserId,
         receiverId,
         text
@@ -167,10 +142,7 @@ export class ChatPocketbaseService {
 
     try {
       const record = await this.pb.collection('messages').create({
-        idUser: currentUserId,
         text: text.trim(),
-        read: false,
-        chatRoomId: this.getChatRoomId(currentUserId, receiverId),
         sender: currentUserId,
         receiver: receiverId
       });
@@ -184,22 +156,75 @@ export class ChatPocketbaseService {
 
       await this.loadConversations();
 
-      return record;
+      console.log('[ChatPocketbaseService] Mensaje enviado:', record);
 
+      return record;
     } catch (error) {
-      console.error('[Chat] Error enviando mensaje:', error);
+      console.error('[ChatPocketbaseService] Error enviando mensaje:', error);
       throw error;
     }
   }
 
-  getChatRoomId(userA: string, userB: string): string {
-    return [userA, userB].sort().join('_');
+  async loadMessages(receiverId: string) {
+    const currentUserId = this.getCurrentUserId();
+
+    if (!currentUserId || !receiverId) {
+      console.warn('[ChatPocketbaseService] Falta currentUserId o receiverId', {
+        currentUserId,
+        receiverId
+      });
+
+      this.messagesSubject.next([]);
+      return;
+    }
+
+    try {
+      this.chatReceiverId = receiverId;
+
+      await this.initRealtime(receiverId);
+
+      const res = await this.pb.collection('messages').getFullList({
+        filter: `(sender="${currentUserId}" && receiver="${receiverId}") || (sender="${receiverId}" && receiver="${currentUserId}")`,
+        sort: 'created'
+      });
+
+      this.messagesSubject.next(res);
+
+      console.log(`[ChatPocketbaseService] Mensajes cargados (${res.length})`);
+    } catch (error) {
+      console.error('[ChatPocketbaseService] Error cargando mensajes:', error);
+      this.messagesSubject.next([]);
+    }
+  }
+
+  async login(email: string, password: string) {
+    try {
+      const authData = await this.pb.collection('users').authWithPassword(email, password);
+
+      this.userId = authData.record.id;
+
+      localStorage.setItem('accessToken', authData.token);
+      localStorage.setItem('record', JSON.stringify(authData.record));
+      localStorage.setItem('userId', authData.record.id);
+
+      console.log('[ChatPocketbaseService] Login exitoso:', authData);
+    } catch (error) {
+      console.error('[ChatPocketbaseService] Error al iniciar sesión:', error);
+    }
   }
 
   async logout() {
     await this.pb.collection('messages').unsubscribe('*');
     this.pb.authStore.clear();
+
+    this.userId = '';
     this.messagesSubject.next([]);
     this.conversationsSubject.next([]);
+
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('record');
+    localStorage.removeItem('userId');
+
+    console.log('[ChatPocketbaseService] Sesión cerrada');
   }
 }

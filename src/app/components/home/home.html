@@ -22,11 +22,8 @@
       <!-- Card siguiente -->
       <div class="dzSwipe_card dzSwipe_card--next" *ngIf="clientes.length > 1" style="height: 85%;">
         <div class="dz-media">
-          <img
-            [src]="clientes[(currentIndex + 1) % clientes.length]?.avatar || 'assets/images/hero-night.png'"
-            (error)="$any($event.target).src='assets/images/hero-night.png'"
-            alt=""
-          />
+          <img [src]="clientes[(currentIndex + 1) % clientes.length]?.avatar || 'assets/images/hero-night.png'"
+            (error)="$any($event.target).src='assets/images/hero-night.png'" alt="" />
         </div>
 
         <div class="dz-content">
@@ -67,50 +64,30 @@
       </div>
 
       <!-- Card activa -->
-      <div
-        class="dzSwipe_card dzSwipe_card--active"
-        [ngStyle]="{ transform: transform }"
-        (mousedown)="startDrag($event)"
-        (mousemove)="onDrag($event)"
-        (mouseup)="endDrag($event, clientes[currentIndex])"
-        (mouseleave)="endDrag($event, clientes[currentIndex])"
-        (touchstart)="startDrag($event)"
-        (touchmove)="onDrag($event)"
-        (touchend)="endDrag($event, clientes[currentIndex])"
-        (dblclick)="abrirChat(clientes[currentIndex])"
-      >
+      <div class="dzSwipe_card dzSwipe_card--active" [ngStyle]="{ transform: transform }"
+        (mousedown)="startDrag($event)" (mousemove)="onDrag($event)" (mouseup)="endDrag($event, clientes[currentIndex])"
+        (mouseleave)="endDrag($event, clientes[currentIndex])" (touchstart)="startDrag($event)"
+        (touchmove)="onDrag($event)" (touchend)="endDrag($event, clientes[currentIndex])"
+        (dblclick)="abrirChat(clientes[currentIndex])">
 
         <div class="dz-media">
-          <img
-            [src]="getCurrentPhoto(clientes[currentIndex])"
-            (error)="$any($event.target).src='assets/images/hero-night.png'"
-            alt=""
-          />
+          <img [src]="getCurrentPhoto(clientes[currentIndex])"
+            (error)="$any($event.target).src='assets/images/hero-night.png'" alt="" />
         </div>
 
         <!-- Indicadores de fotos -->
-        <div
-          class="photo-indicators"
-          *ngIf="clientes[currentIndex]?.photos?.length > 1"
-        >
-          <span
-            *ngFor="let photo of clientes[currentIndex]?.photos; let i = index"
+        <div class="photo-indicators" *ngIf="clientes[currentIndex]?.photos?.length > 1">
+          <span *ngFor="let photo of clientes[currentIndex]?.photos; let i = index"
             [class.active]="i === currentPhotoIndex">
           </span>
         </div>
 
         <!-- Zonas invisibles para cambiar foto -->
-        <button
-          type="button"
-          class="photo-nav photo-nav-left"
-          *ngIf="clientes[currentIndex]?.photos?.length > 1"
+        <button type="button" class="photo-nav photo-nav-left" *ngIf="clientes[currentIndex]?.photos?.length > 1"
           (click)="prevPhoto($event)">
         </button>
 
-        <button
-          type="button"
-          class="photo-nav photo-nav-right"
-          *ngIf="clientes[currentIndex]?.photos?.length > 1"
+        <button type="button" class="photo-nav photo-nav-right" *ngIf="clientes[currentIndex]?.photos?.length > 1"
           (click)="nextPhoto($event)">
         </button>
 
@@ -121,7 +98,7 @@
               Activo
             </span>
 
-            <h2 (click)="openProfile(clientes[currentIndex])">
+            <h2 (click)="openProfile($event, clientes[currentIndex])">
               {{ clientes[currentIndex]?.name || 'Usuario' }}
               <span *ngIf="clientes[currentIndex]?.age">
                 {{ clientes[currentIndex]?.age }}
@@ -132,30 +109,47 @@
               {{ clientes[currentIndex]?.Biography || clientes[currentIndex]?.bio || 'Sin biografía disponible.' }}
             </p>
 
-            <div class="profile-tags">
-              <span *ngIf="clientes[currentIndex]?.gender">
+            <div class="profile-summary">
+
+              <div class="summary-chip" *ngIf="clientes[currentIndex]?.gender">
                 <i class="icon feather icon-user"></i>
                 {{ clientes[currentIndex]?.gender }}
-              </span>
+              </div>
 
-              <span *ngIf="clientes[currentIndex]?.address">
+              <div class="summary-chip" *ngIf="clientes[currentIndex]?.orientation">
+                <i class="icon feather icon-heart"></i>
+                {{ clientes[currentIndex]?.orientation }}
+              </div>
+
+              <div class="summary-chip" *ngIf="clientes[currentIndex]?.interestedIn">
+                <i class="icon feather icon-search"></i>
+                Busca {{ clientes[currentIndex]?.interestedIn }}
+              </div>
+
+              <div class="summary-chip" *ngIf="clientes[currentIndex]?.lookingFor">
+                <i class="icon feather icon-star"></i>
+                {{ clientes[currentIndex]?.lookingFor }}
+              </div>
+
+              <div class="summary-chip" *ngIf="clientes[currentIndex]?.language">
+                <i class="icon feather icon-globe"></i>
+                {{ clientes[currentIndex]?.language }}
+              </div>
+
+              <div class="summary-chip" *ngIf="clientes[currentIndex]?.address">
                 <i class="icon feather icon-map-pin"></i>
                 {{ clientes[currentIndex]?.address }}
-              </span>
+              </div>
 
-              <span *ngIf="clientes[currentIndex]?.zodiac">
-                ♏ {{ clientes[currentIndex]?.zodiac }}
-              </span>
+              <div class="summary-chip" *ngIf="clientes[currentIndex]?.interests">
+                <i class="icon feather icon-plus"></i>
+                {{ clientes[currentIndex]?.interests }}
+              </div>
 
-              <span *ngIf="clientes[currentIndex]?.pets">
-                🐾 {{ clientes[currentIndex]?.pets }}
-              </span>
             </div>
-
-            <button
-              class="view-profile-btn"
-              type="button"
-              (click)="openProfile(clientes[currentIndex])">
+            <button class="view-profile-btn" type="button" (mousedown)="$event.stopPropagation()"
+              (mouseup)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()"
+              (touchend)="$event.stopPropagation()" (click)="openProfile($event, clientes[currentIndex])">
               Ver perfil completo
             </button>
 

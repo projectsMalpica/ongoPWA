@@ -11,9 +11,16 @@
                 </a>
             </div>
             <div class="right-content dz-meta">
-                <a class="filter-icon">
-                    <i class="flaticon flaticon-settings-sliders"></i>
+
+                <a class="filter-icon position-relative">
+<i class="fa-solid fa-bell"></i>
+                    <span *ngIf="unreadCount$ | async as count" class="notification-badge">
+                        <span *ngIf="count > 0">
+                            {{ count }}
+                        </span>
+                    </span>
                 </a>
+
             </div>
         </div>
     </div>

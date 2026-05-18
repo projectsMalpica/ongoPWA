@@ -78,6 +78,12 @@ export const routes: Routes = [
     title: 'Perfil'
   },
   {
+  path: 'detailprofile/:id',
+  loadComponent: () =>
+    import('./components/detailprofile/detailprofile').then(c => c.Detailprofile),
+  title: 'Perfil'
+},
+  {
     path: 'detailprofilelocal',
     loadComponent: () =>
       import('./components/detailprofilelocal/detailprofilelocal').then(c => c.Detailprofilelocal),
