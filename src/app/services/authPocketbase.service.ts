@@ -208,19 +208,34 @@ export class AuthPocketbaseService {
     return localStorage.getItem('isLoggedin');
   }
 
-  isAdmin() {
-    const userType = localStorage.getItem('type');
-    return userType === '"admin"';
-  }
-  isPartner() {
-    const userType = localStorage.getItem('type');
-    return userType === '"partner"';
+  isAdmin(): boolean {
+    const userType = this.getUserType();
+    return userType === 'admin';
   }
 
-  isClient() {
-    const userType = localStorage.getItem('type');
-    return userType === '"client"';
+  isPartner(): boolean {
+    const userType = this.getUserType();
+    return userType === 'partner';
   }
+
+  isClient(): boolean {
+    const userType = this.getUserType();
+    return userType === 'client';
+  }
+
+  getUserType(): string {
+    const raw =
+      localStorage.getItem('type') ||
+      sessionStorage.getItem('type') ||
+      '';
+
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return raw;
+    }
+  }
+
 
   async findClientByUserId(userId: string): Promise<any> {
     return await this.pb
@@ -346,8 +361,7 @@ export class AuthPocketbaseService {
         localStorage.setItem('accessToken', token);
         localStorage.setItem('userId', user.id);
         localStorage.setItem('user', JSON.stringify(user));
-        localStorage.setItem('type', JSON.stringify(user.type));
-
+        localStorage.setItem('type', user.type);
         console.log(`🔎 Login OK. Buscando perfil para tipo=${user.type}, userId=${user.id}`);
 
         // 🧩 Carga perfil asociado
@@ -458,11 +472,10 @@ export class AuthPocketbaseService {
   }
 
   setUser(user: UserInterface): void {
-    this.currentUser = user; // Almacenamos el usuario en la propiedad pública
-    let user_string = JSON.stringify(user);
-    let type = JSON.stringify(user.type);
-    localStorage.setItem('user', user_string);
-    localStorage.setItem('type', type);
+    this.currentUser = user;
+
+    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem('type', user.type); // sin JSON.stringify
   }
 
   getCurrentUser(): any {
@@ -552,7 +565,7 @@ export class AuthPocketbaseService {
     localStorage.setItem('userId', user.id);
     localStorage.setItem('user', JSON.stringify(user));
     localStorage.setItem('record', JSON.stringify(user));
-    localStorage.setItem('type', JSON.stringify(user['type'] || null));
+    localStorage.setItem('type', user['type'] || '');
     localStorage.setItem('isLoggedin', 'true');
 
     globalUser.set(user);
@@ -561,61 +574,62 @@ export class AuthPocketbaseService {
     return user;
   }
   async getRegistrationStatus(user: any): Promise<{
-  completed: boolean;
-  type: 'client' | 'partner' | 'admin' | null;
-  profile: any | null;
-}> {
-  const type = user?.type || this.pb.authStore.record?.['type'];
+    completed: boolean;
+    type: 'client' | 'partner' | 'admin' | null;
+    profile: any | null;
+  }> {
+    const type = user?.type || this.pb.authStore.record?.['type'];
 
-  if (type === 'admin') {
-    return { completed: true, type: 'admin', profile: null };
-  }
-
-  if (!type) {
-    return { completed: false, type: null, profile: null };
-  }
-
-  const collection = type === 'partner'
-    ? 'usuariosPartner'
-    : 'usuariosClient';
-
-  try {
-    const profile = await this.pb
-      .collection(collection)
-      .getFirstListItem(`userId="${user.id}"`);
-
-    let completed = false;
-
-    if (type === 'client') {
-      completed =
-        !!profile?.['name'] &&
-        !!profile?.['birthday'] &&
-        !!profile?.['gender'] &&
-        !!profile?.['interestedIn'] &&
-        !!profile?.['lookingFor'];
+    if (type === 'admin') {
+      return { completed: true, type: 'admin', profile: null };
     }
 
-    if (type === 'partner') {
-      completed =
-        !!profile?.['venueName'] &&
-        !!profile?.['address'] &&
-        !!profile?.['phone'];
+    if (!type) {
+      return { completed: false, type: null, profile: null };
     }
 
-    return {
-      completed,
-      type,
-      profile
-    };
+    const collection = type === 'partner'
+      ? 'usuariosPartner'
+      : 'usuariosClient';
 
-  } catch {
-    return {
-      completed: false,
-      type,
-      profile: null
-    };
+    try {
+      const profile = await this.pb
+        .collection(collection)
+        .getFirstListItem(`userId="${user.id}"`);
+
+      let completed = false;
+
+      if (type === 'client') {
+        completed =
+          !!profile?.['name'] &&
+          !!profile?.['birthday'] &&
+          !!profile?.['gender'] &&
+          !!profile?.['interestedIn'] &&
+          !!profile?.['lookingFor'];
+      }
+
+      if (type === 'partner') {
+        completed =
+          !!profile?.['venueName'] &&
+          !!profile?.['address'] &&
+          !!profile?.['phone'];
+      }
+
+      return {
+        completed,
+        type,
+        profile
+      };
+
+    } catch {
+      return {
+        completed: false,
+        type,
+        profile: null
+      };
+    }
   }
-}
+
   private mapPocketbaseError(err: unknown): Error {
     const e = err as any;
     const payload = (e?.data ?? e?.response ?? {}) as {

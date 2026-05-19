@@ -1,8 +1,6 @@
-<!-- Menubar Mejorado -->
-<div class="menubar-area footer-fixed">
+ <div class="menubar-area footer-fixed">
   <div class="toolbar-inner menubar-nav">
 
-    <!-- CLIENT: Mapa -->
     <a
       *ngIf="auth.isClient()"
       class="nav-link"
@@ -13,7 +11,6 @@
       <i class="fas fa-map-marker-alt"></i>
     </a>
 
-    <!-- PARTNER: Inicio local -->
     <a
       *ngIf="auth.isPartner()"
       class="nav-link"
@@ -24,7 +21,6 @@
       <i class="flaticon flaticon-dog-house"></i>
     </a>
 
-    <!-- CLIENT: Radar -->
     <a
       *ngIf="auth.isClient()"
       class="nav-link"
@@ -35,7 +31,6 @@
       <i class="fas fa-fire"></i>
     </a>
 
-    <!-- CLIENT: Chat -->
     <a
       *ngIf="auth.isClient()"
       class="nav-link"
@@ -46,7 +41,6 @@
       <i class="flaticon flaticon-chat-1"></i>
     </a>
 
-    <!-- PARTNER: Promociones / gestión -->
     <a
       *ngIf="auth.isPartner()"
       class="nav-link"
@@ -57,7 +51,6 @@
       <i class="flaticon flaticon-search"></i>
     </a>
 
-    <!-- CLIENT: Explorar -->
     <a
       *ngIf="auth.isClient()"
       class="nav-link"
@@ -68,7 +61,6 @@
       <i class="flaticon flaticon-search"></i>
     </a>
 
-    <!-- PARTNER: Perfil local -->
     <a
       *ngIf="auth.isPartner()"
       class="nav-link"
@@ -79,7 +71,6 @@
       <i class="flaticon flaticon-user"></i>
     </a>
 
-    <!-- CLIENT: Perfil -->
     <a
       *ngIf="auth.isClient()"
       class="nav-link"
@@ -91,4 +82,24 @@
     </a>
 
   </div>
-</div>
+</div> 
+
+<!-- <div class="menubar-area footer-fixed">
+  <div class="toolbar-inner menubar-nav">
+    <a class="nav-link" routerLink="/maps">
+      <i class="fas fa-map-marker-alt"></i>
+    </a>
+
+    <a class="nav-link" routerLink="/home">
+      <i class="fas fa-fire"></i>
+    </a>
+
+    <a class="nav-link" routerLink="/chat">
+      <i class="flaticon flaticon-chat-1"></i>
+    </a>
+
+    <a class="nav-link" routerLink="/profile">
+      <i class="flaticon flaticon-user"></i>
+    </a>
+  </div>
+</div> -->
