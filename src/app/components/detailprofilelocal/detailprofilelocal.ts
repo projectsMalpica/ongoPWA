@@ -364,10 +364,14 @@ normalizeClientAvatar(client: any): string {
 async sendGift(): Promise<void> {
   if (!this.selectedGiftProduct) return;
 
-  if (!this.selectedReceiverUserId) {
-    alert('Selecciona un usuario para enviar el regalo.');
-    return;
-  }
+  const buyerUserId = this.auth.currentUser?.id;
+
+if (!buyerUserId) {
+  this.toastService.show('Debes iniciar sesión.', 'error');
+  return;
+}
+
+const receiverUserId = this.selectedReceiverUserId || buyerUserId;
 
   if (this.giftPaymentMethod === 'wallet') {
     await this.sendGiftWithWallet();

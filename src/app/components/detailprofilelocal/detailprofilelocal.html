@@ -172,15 +172,44 @@
             </div>
         </div>
 
-        <label>¿Para quién es?</label>
+        <div class="gift-receiver-box">
+  <label>¿Para quién es?</label>
 
-        <select [(ngModel)]="selectedReceiverUserId">
-            <option value="">Para mí</option>
+  <div
+    class="receiver-option"
+    [class.active]="selectedReceiverUserId === ''"
+    (click)="selectedReceiverUserId = ''">
 
-            <option *ngFor="let user of giftReceivers" [value]="user.userId">
-                {{ user.name }} {{ user.email ? '- ' + user.email : '' }}
-            </option>
-        </select>
+    <img
+      [src]="auth.currentUser?.avatar || 'assets/images/user/pic1.jpg'"
+      alt="Yo">
+
+    <div>
+      <strong>Para mí</strong>
+      <small>Comprar para mi cuenta</small>
+    </div>
+
+    <i *ngIf="selectedReceiverUserId === ''" class="fa fa-check"></i>
+  </div>
+
+  <div
+    class="receiver-option"
+    *ngFor="let user of giftReceivers"
+    [class.active]="selectedReceiverUserId === user.userId"
+    (click)="selectedReceiverUserId = user.userId">
+
+    <img
+      [src]="user.avatar || 'assets/images/user/pic1.jpg'"
+      [alt]="user.name">
+
+    <div>
+      <strong>{{ user.name }}</strong>
+      <small>Enviar regalo</small>
+    </div>
+
+    <i *ngIf="selectedReceiverUserId === user.userId" class="fa fa-check"></i>
+  </div>
+</div>
 
         <div class="gift-field">
             <label>Mensaje opcional</label>

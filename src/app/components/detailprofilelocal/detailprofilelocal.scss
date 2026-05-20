@@ -529,3 +529,59 @@
 .maps {
   background: #00b894;
 }
+
+.gift-receiver-box {
+  margin: 14px 0;
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.85);
+  }
+}
+
+.receiver-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: 0.2s ease;
+
+  img {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  div {
+    flex: 1;
+
+    strong {
+      display: block;
+      font-size: 14px;
+      color: #fff;
+    }
+
+    small {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.55);
+    }
+  }
+
+  i {
+    color: #ff2fa0;
+    font-size: 16px;
+  }
+
+  &.active {
+    border-color: #ff2fa0;
+    background: rgba(255, 47, 160, 0.16);
+  }
+}
