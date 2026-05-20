@@ -119,59 +119,57 @@ export class LoginComponent {
   }
 
 
-  async handleGoogleLogin() {
-    try {
-      this.loading = true;
+ async handleGoogleLogin() {
+  this.loading = true;
 
-      const user = await this.auth.loginWithGoogle();
+  try {
 
-      if (!user?.id) {
-        throw new Error('No se pudo iniciar sesión con Google');
-      }
+    const result = await this.auth.loginWithGoogle();
 
-      const profileStatus = await this.auth.getRegistrationStatus(user);
+    console.log('Google result:', result);
 
-      if (!profileStatus.profile) {
-        await Swal.fire({
-          icon: 'info',
-          title: 'Completa tu registro',
-          text: 'Necesitamos algunos datos para terminar tu cuenta.'
-        });
+    if (result?.needsRegister) {
 
-        await this.router.navigate(['/register'], {
-          queryParams: {
-            google: 'true',
-            userId: user.id,
-            email: user.email,
-            type: user.type || ''
-          }
-        });
-
-        return;
-      }
-
-      await this.global.loadProfile();
-      await this.global.initClientesRealtime();
-      await this.global.initPartnersRealtime();
-
-      if (profileStatus.type === 'partner') {
-        await this.router.navigate(['/home-local']);
-      } else if (profileStatus.type === 'admin') {
-        await this.router.navigate(['/admin']);
-      } else {
-        await this.router.navigate(['/maps']);
-      }
-
-    } catch (error: any) {
-      console.error('Error Google Login:', error);
-
-      Swal.fire({
-        icon: 'error',
-        title: 'Error con Google',
-        text: error?.message || 'No se pudo iniciar sesión con Google'
-      });
-    } finally {
       this.loading = false;
+
+      await this.router.navigate(['/register'], {
+        queryParams: {
+          google: 'true',
+          userId: result.user.id,
+          email: result.user.email,
+          name: result.user.name,
+          type: result.user.type || ''
+        }
+      });
+
+      return;
     }
+
+    await this.global.loadProfile();
+
+    if (result.type === 'partner') {
+      await this.router.navigate(['/home-local']);
+
+    } else if (result.type === 'admin') {
+      await this.router.navigate(['/admin']);
+
+    } else {
+      await this.router.navigate(['/maps']);
+    }
+
+  } catch (error: any) {
+
+    console.error('Error Google Login:', error);
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Error con Google',
+      text: error?.message || 'No se pudo iniciar sesión con Google'
+    });
+
+  } finally {
+
+    this.loading = false;
   }
+}
 }

@@ -572,3 +572,11 @@
     </div>
   </div>
 </div>
+<div class="register-loading-overlay" *ngIf="registering || loadingGoogle">
+  <div class="register-loading-card">
+    <div class="loader-ring"></div>
+    <img src="assets/images/logo.png" alt="OnGo" class="loading-logo">
+    <h3>{{ registeringText }}</h3>
+    <p>Estamos preparando tu cuenta...</p>
+  </div>
+</div>

@@ -68,7 +68,7 @@
         (mousedown)="startDrag($event)" (mousemove)="onDrag($event)" (mouseup)="endDrag($event, clientes[currentIndex])"
         (mouseleave)="endDrag($event, clientes[currentIndex])" (touchstart)="startDrag($event)"
         (touchmove)="onDrag($event)" (touchend)="endDrag($event, clientes[currentIndex])"
-        (dblclick)="abrirChat(clientes[currentIndex])">
+        (click)="handleCardTap(clientes[currentIndex])">
 
         <div class="dz-media">
           <img [src]="getCurrentPhoto(clientes[currentIndex])"
@@ -76,8 +76,8 @@
         </div>
 
         <!-- Indicadores de fotos -->
-        <div class="photo-indicators" *ngIf="clientes[currentIndex]?.photos?.length > 1">
-          <span *ngFor="let photo of clientes[currentIndex]?.photos; let i = index"
+        <div class="photo-indicators" *ngIf="getTotalPhotos(clientes[currentIndex]) > 1">
+          <span *ngFor="let item of [].constructor(getTotalPhotos(clientes[currentIndex])); let i = index"
             [class.active]="i === currentPhotoIndex">
           </span>
         </div>

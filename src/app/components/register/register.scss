@@ -977,3 +977,49 @@ app-root {
     font-size: 1.45rem;
   }
 }
+
+.register-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(10, 10, 20, 0.75);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.register-loading-card {
+  width: 100%;
+  max-width: 320px;
+  padding: 32px 24px;
+  border-radius: 28px;
+  background: linear-gradient(145deg, #1b1029, #120818);
+  box-shadow: 0 25px 60px rgba(247, 1, 146, 0.35);
+  text-align: center;
+  color: #fff;
+}
+
+.loading-logo {
+  width: 72px;
+  margin: 18px auto 12px;
+  display: block;
+}
+
+.loader-ring {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #f70192;
+  border-right-color: #8e2de2;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

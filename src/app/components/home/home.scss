@@ -310,3 +310,25 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+.superlike-toast {
+  border-radius: 22px !important;
+  padding: 14px 18px !important;
+  box-shadow: 0 15px 40px rgba(247, 1, 146, 0.35) !important;
+  border: 1px solid rgba(255,255,255,0.08);
+
+  .swal2-title {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #fff !important;
+  }
+
+  .swal2-html-container {
+    color: rgba(255,255,255,0.75) !important;
+    font-size: 14px !important;
+  }
+
+  .swal2-timer-progress-bar {
+    background: linear-gradient(90deg, #f70192, #8e2de2);
+  }
+}

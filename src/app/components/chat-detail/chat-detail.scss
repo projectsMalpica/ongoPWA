@@ -22,3 +22,57 @@
     color: white;
   }
   
+  .page-content {
+  min-height: calc(100vh - 150px);
+  padding-bottom: 145px !important;
+}
+
+.chat-box-area {
+  padding: 20px 12px 120px;
+}
+
+.chat-input-footer {
+  position: fixed;
+  left: 50%;
+  bottom: 72px;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  z-index: 9999;
+  padding: 10px 14px;
+  background: #050b2b;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.chat-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chat-form input {
+  flex: 1;
+  height: 46px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  padding: 0 16px;
+  outline: none;
+}
+
+.chat-form input::placeholder {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.chat-form button {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #f70192, #8e2de2);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
