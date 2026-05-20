@@ -458,3 +458,74 @@
 .password-field input.is-invalid {
   padding-right: 3.2rem;
 }
+
+.login-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(10, 10, 20, 0.72);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.login-loading-card {
+  width: 100%;
+  max-width: 320px;
+  padding: 32px 24px;
+  border-radius: 28px;
+  background: linear-gradient(145deg, #1b1029, #120818);
+  box-shadow: 0 25px 60px rgba(247, 1, 146, 0.35);
+  text-align: center;
+  color: #fff;
+  animation: fadeUp 0.35s ease;
+}
+
+.loading-logo {
+  width: 72px;
+  margin: 18px auto 12px;
+  display: block;
+}
+
+.login-loading-card h3 {
+  margin: 8px 0 6px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.login-loading-card p {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.loader-ring {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #f70192;
+  border-right-color: #8e2de2;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
