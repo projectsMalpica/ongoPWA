@@ -15,66 +15,65 @@ export class NotificationsService {
   constructor(private global: GlobalService) {}
 
   async initRealtimeNotifications(userId: string) {
-    const pb = this.global.pb;
+  const pb = this.global.pb;
 
-    if (!userId) return;
+  if (!userId) return;
 
-    await this.loadNotifications(userId);
+  await this.loadNotifications(userId);
 
-    await pb.collection('notifications').unsubscribe('*');
+  await pb.collection('notifications').unsubscribe('*');
 
-    await pb.collection('notifications').subscribe('*', async (e) => {
-      const notification = e.record;
+  await pb.collection('notifications').subscribe('*', async (e) => {
+    const notification = e.record;
 
-      if (notification?.['user'] !== userId) return;
+    if (notification?.['user'] !== userId) return;
 
-      if (e.action === 'create') {
-        const current = this.notificationsSubject.value;
+    if (e.action === 'create') {
+      const current = this.notificationsSubject.value;
 
-        this.notificationsSubject.next([
-          notification,
-          ...current
-        ]);
+      this.notificationsSubject.next([
+        notification,
+        ...current
+      ]);
 
-        this.updateUnreadCount();
+      this.updateUnreadCount();
+      this.playNotificationSound();
 
-        this.playNotificationSound();
+      console.log('Nueva notificación:', notification);
+    }
 
-        console.log('Nueva notificación:', notification);
-      }
+    if (e.action === 'update') {
+      const updated = this.notificationsSubject.value.map((item) =>
+        item.id === notification.id ? notification : item
+      );
 
-      if (e.action === 'update') {
-        const updated = this.notificationsSubject.value.map((item) =>
-          item.id === notification.id ? notification : item
-        );
+      this.notificationsSubject.next(updated);
+      this.updateUnreadCount();
+    }
 
-        this.notificationsSubject.next(updated);
-        this.updateUnreadCount();
-      }
+    if (e.action === 'delete') {
+      const filtered = this.notificationsSubject.value.filter(
+        (item) => item.id !== notification.id
+      );
 
-      if (e.action === 'delete') {
-        const filtered = this.notificationsSubject.value.filter(
-          (item) => item.id !== notification.id
-        );
-
-        this.notificationsSubject.next(filtered);
-        this.updateUnreadCount();
-      }
-    });
-  }
+      this.notificationsSubject.next(filtered);
+      this.updateUnreadCount();
+    }
+  });
+}
 
   async loadNotifications(userId: string) {
-    const pb = this.global.pb;
+  const pb = this.global.pb;
 
-    const records = await pb.collection('notifications').getFullList({
-      filter: `user="${userId}"`,
-      sort: '-created',
-      expand: 'fromUser'
-    });
+  const records = await pb.collection('notifications').getFullList({
+    filter: `user="${userId}"`,
+    sort: '-created',
+    expand: 'fromUser'
+  });
 
-    this.notificationsSubject.next(records);
-    this.updateUnreadCount();
-  }
+  this.notificationsSubject.next(records);
+  this.updateUnreadCount();
+}
 
   async markAsRead(notificationId: string) {
     const pb = this.global.pb;

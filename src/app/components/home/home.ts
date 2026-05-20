@@ -42,7 +42,9 @@ export class Home implements OnInit {
   ) {
     this.pb = this.global.pb;
   }
-
+getReceiverUserId(cliente: any): string {
+  return cliente?.userId || cliente?.id || '';
+}
   async ngOnInit(): Promise<void> {
     this.loadingClients = true;
 
@@ -54,7 +56,7 @@ export class Home implements OnInit {
         this.currentIndex = 0;
       }
     });
-
+    await this.updateClientLocation();
     try {
       if (!this.global.getClientesSnapshot().length) {
         await this.global.initClientesRealtime();
@@ -205,16 +207,23 @@ export class Home implements OnInit {
     return Math.max(0, -this.deltaX / 120);
   }
   async openChat(cliente: any) {
-    this.global.selectedClient = cliente;
-    this.global.chatReceiverId = cliente.id;
-    await this.router.navigate(['/chat-detail', cliente.id]);
-  }
+  if (!cliente) return;
+
+  const receiverUserId = this.getReceiverUserId(cliente);
+
+  this.global.selectedClient = { ...cliente };
+  this.global.chatReceiverId = receiverUserId;
+
+  await this.router.navigate(['/chat-detail', receiverUserId]);
+}
 
   async registerSwipe(cliente: any, action: 'like' | 'dislike' | 'superlike') {
-    const result = await this.swipesService.registerSwipe(cliente.id, action);
+  const targetProfileId = cliente.id;
+
+  const result = await this.swipesService.registerSwipe(targetProfileId, action);
 
     if (result?.['match']) {
-      alert(`¡Hiciste match con ${cliente.name || 'este usuario'}!`);
+      alert(`¡Hici  ste match con ${cliente.name || 'este usuario'}!`);
     } else if (action === 'superlike') {
       this.showSuperLikeNotification(cliente);
     }
@@ -223,14 +232,34 @@ export class Home implements OnInit {
   }
 
   nextCard() {
-    this.transform = '';
-    this.deltaX = 0;
-    this.deltaY = 0;
-    this.currentPhotoIndex = 0;
-    if (!this.clientes.length) return;
+  this.transform = '';
+  this.deltaX = 0;
+  this.deltaY = 0;
+  this.currentPhotoIndex = 0;
 
-    this.currentIndex = (this.currentIndex + 1) % this.clientes.length;
+  if (!this.clientes.length) return;
+
+  this.clientes.splice(this.currentIndex, 1);
+
+  if (this.currentIndex >= this.clientes.length) {
+    this.currentIndex = 0;
   }
+}
+async updateClientLocation() {
+  if (!navigator.geolocation) return;
+
+  navigator.geolocation.getCurrentPosition(async position => {
+    const profile = this.authPocketbaseService.getCurrentProfile();
+
+    if (!profile?.id) return;
+
+    await this.pb.collection('usuariosClient').update(profile.id, {
+      lat: position.coords.latitude,
+      lng: position.coords.longitude,
+      locationUpdatedAt: new Date().toISOString()
+    });
+  });
+}
 
   undoLastSwipe() {
     if (this.swipeHistory.length === 0) return;
@@ -254,11 +283,17 @@ export class Home implements OnInit {
   }
 
   async abrirChat(cliente: any) {
-    await this.registerSwipe(cliente, 'superlike');
-    this.global.selectedClient = cliente;
-    this.global.chatReceiverId = cliente.id;
-    await this.router.navigate(['/chat-detail', cliente.id]);
-  }
+  if (!cliente) return;
+
+  const receiverUserId = this.getReceiverUserId(cliente);
+
+  await this.registerSwipe(cliente, 'superlike');
+
+  this.global.selectedClient = { ...cliente };
+  this.global.chatReceiverId = receiverUserId;
+
+  await this.router.navigate(['/chat-detail', receiverUserId]);
+}
 
   showSuperLikeNotification(cliente: any) {
     Swal.fire({

@@ -1,25 +1,45 @@
-
 <div class="page-content space-top p-b50">
-  <div class="container"> 
-    <div class="chat-box-area"> 
-      
-<div *ngFor="let msg of messages"
-     [ngClass]="{'chat-content': true, 'user': msg.sender === currentUserId}">
-  <div class="message-item">
-    <div class="bubble">
-      {{ msg.text }}
-    </div>    
-    <div class="message-time">
-      {{ msg.created | date:'HH:mm' }}
-    </div>    
-  </div>
-</div>
+  <div class="container">
+    <div class="chat-box-area">
 
+      <div class="chat-header-user" *ngIf="receiverProfile">
+        <img
+          [src]="receiverProfile.photos?.[0] || receiverProfile.avatar || '../assets/images/user/pic1.jpg'"
+          alt="avatar">
+
+        <div>
+          <h6>{{ receiverProfile.name || receiverProfile.venueName || receiverProfile.username || 'Usuario' }}</h6>
+          <small>En línea</small>
+        </div>
+      </div>
+
+      <div
+        *ngFor="let msg of messages"
+        class="chat-row"
+        [class.me]="msg.sender === currentUserId"
+        [class.other]="msg.sender !== currentUserId">
+
+        <div class="message-wrapper">
+          <small class="sender-name">
+            {{ msg.sender === currentUserId ? 'Tú' : (receiverProfile?.name || receiverProfile?.venueName || 'Usuario') }}
+          </small>
+
+          <div class="bubble">
+            {{ msg.text }}
+          </div>
+
+          <div class="message-time">
+
+  <span *ngIf="msg.sender === currentUserId && msg.read" class="seen">
+    · Visto
+  </span>
+</div>
+        </div>
+      </div>
 
       <div #scrollBottom></div>
-
     </div>
-  </div> 
+  </div>
 </div>
 
 <footer class="chat-input-footer">

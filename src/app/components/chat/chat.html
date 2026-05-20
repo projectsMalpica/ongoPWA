@@ -15,36 +15,38 @@
     </div>
 
     <ul class="message-list" *ngIf="conversations.length > 0; else emptyMessages">
-      <li *ngFor="let conversation of conversations">
-        <a (click)="openChat(conversation)">
-          <div class="media media-60">
-            <img src="../assets/images/user/pic1.jpg" alt="image">
+  <li *ngFor="let conversation of conversations">
+    <a (click)="openChat(conversation)">
+      <div class="media media-60">
+        <img
+          [src]="conversation.avatar || '../assets/images/user/pic1.jpg'"
+          alt="avatar">
+      </div>
+
+      <div class="media-content">
+        <div>
+          <h6 class="name">
+            {{ conversation.name || 'Usuario' }}
+          </h6>
+
+          <p class="last-msg">
+            {{ conversation.lastMessage?.text || 'Sin mensajes' }}
+          </p>
+        </div>
+
+        <div class="right-content">
+          <span class="date">
+            {{ conversation.lastMessage?.created | date:'shortTime' }}
+          </span>
+
+          <div class="seen-btn active dz-flex-box">
+            <i class="icon feather icon-check"></i>
           </div>
-
-          <div class="media-content">
-            <div>
-              <h6 class="name">
-                {{ conversation.user?.name || conversation.user?.username || 'Usuario' }}
-              </h6>
-
-              <p class="last-msg">
-                {{ conversation.lastMessage?.text }}
-              </p>
-            </div>
-
-            <div class="right-content">
-              <span class="date">
-                {{ conversation.lastMessage?.created | date:'shortTime' }}
-              </span>
-
-              <div class="seen-btn active dz-flex-box">
-                <i class="icon feather icon-check"></i>
-              </div>
-            </div>
-          </div>
-        </a>
-      </li>
-    </ul>
+        </div>
+      </div>
+    </a>
+  </li>
+</ul>
 
     <ng-template #emptyMessages>
       <div class="text-center p-4">

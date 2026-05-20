@@ -27,6 +27,14 @@ unreadCount$;
 
    }
 
+  async ngOnInit() {
+  const userId = this.auth.getUserId();
+
+  if (userId) {
+    await this.notificationsService.initRealtimeNotifications(userId);
+  }
+}
+
   goHome(): void {
     const route = this.auth.isPartner() ? '/home-local' : '/home';
     this.router.navigate([route]);
@@ -35,6 +43,7 @@ unreadCount$;
   goMenu(): void {
     this.router.navigate(['/sidebar']);
   }
+
   toggleSidebar() {
     this.sidebarService.toggle();
   }
