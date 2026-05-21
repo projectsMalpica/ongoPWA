@@ -38,31 +38,41 @@
       </div>
 
       <div class="hero-stats">
-        <div class="stat-card stat-profile">
-          <div class="stat-avatar">
-            <img src="https://images.pexels.com/photos/30743458/pexels-photo-30743458.jpeg" alt="Persona cerca">
-          </div>
-          <div class="stat-text">
-            <strong>Laura está en</strong>
-            <span>Sky Club</span>
-          </div>
-        </div>
 
-        <div class="stat-card stat-center">
-          <strong class="stat-number">27</strong>
-          <span>personas cerca de ti</span>
-        </div>
+  <div class="stat-card stat-profile" *ngIf="nearbyPerson">
+    <div class="stat-avatar">
+      <img
+        [src]="nearbyPerson.avatar || 'assets/images/avatar-placeholder.png'"
+        alt="Persona cerca"
+      >
+    </div>
 
-        <div class="stat-card stat-profile">
-          <div class="stat-avatar">
-            <img src="https://images.pexels.com/photos/23876/pexels-photo.jpg" alt="Match posible">
-          </div>
-          <div class="stat-text">
-            <strong>3 matches</strong>
-            <span>posibles</span>
-          </div>
-        </div>
-      </div>
+    <div class="stat-text">
+      <strong>{{ nearbyPerson.name || 'Alguien' }} está cerca</strong>
+      <span>{{ nearbyPerson.address || 'Zona activa' }}</span>
+    </div>
+  </div>
+
+  <div class="stat-card stat-center">
+    <strong class="stat-number">{{ nearbyCount }}</strong>
+    <span>personas cerca de ti</span>
+  </div>
+
+  <div class="stat-card stat-profile">
+    <div class="stat-avatar">
+      <img
+        [src]="nearbyPerson?.avatar || 'assets/images/hero-night.png'"
+        alt="Match posible"
+      >
+    </div>
+
+    <div class="stat-text">
+      <strong>{{ possibleMatches }} matches</strong>
+      <span>posibles</span>
+    </div>
+  </div>
+
+</div>
 
       <div class="register-link register-link-inline">
         <p>
