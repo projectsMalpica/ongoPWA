@@ -136,26 +136,35 @@ export class GlobalService {
 
 
   public async initClientesRealtime() {
-    try {
-      const result = await this.pb.collection('usuariosClient').getFullList();
-      console.log('✅ usuariosClient cargados:', result);
+  try {
 
-      const parsed = result.map((c: any) => ({
-        ...c,
-        avatar: c.avatar || null
-      }));
+    const myProfileId = this.profileData?.id;
 
-      this.clientesSubject.next(parsed);
+    const result = await this.pb.collection('usuariosClient').getFullList({
+      filter: myProfileId
+        ? `id != "${myProfileId}"`
+        : ''
+    });
 
-      if (!this.clientesSubscribed) {
-        this.subscribeRealtime('usuariosClient', this.clientesSubject, false);
-        this.clientesSubscribed = true;
-      }
-    } catch (error) {
-      console.error('❌ Error en initClientesRealtime:', error);
-      this.clientesSubject.next([]);
+    console.log('✅ usuariosClient cargados:', result);
+
+    const parsed = result.map((c: any) => ({
+      ...c,
+      avatar: c.avatar || null
+    }));
+
+    this.clientesSubject.next(parsed);
+
+    if (!this.clientesSubscribed) {
+      this.subscribeRealtime('usuariosClient', this.clientesSubject, false);
+      this.clientesSubscribed = true;
     }
+
+  } catch (error) {
+    console.error('❌ Error en initClientesRealtime:', error);
+    this.clientesSubject.next([]);
   }
+}
 
   public async initPartnersRealtime() {
     try {

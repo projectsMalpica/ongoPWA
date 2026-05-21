@@ -51,13 +51,20 @@ export class Home implements OnInit {
     this.loadingClients = true;
 
     this.global.clientes$.subscribe((clientes: any[]) => {
-      this.clientes = clientes || [];
-      this.loadingClients = false;
 
-      if (this.currentIndex >= this.clientes.length) {
-        this.currentIndex = 0;
-      }
-    });
+  const myProfileId = this.global.profileData?.id;
+
+  this.clientes = (clientes || []).filter(
+    c => c.id !== myProfileId
+  );
+
+  this.loadingClients = false;
+
+  if (this.currentIndex >= this.clientes.length) {
+    this.currentIndex = 0;
+  }
+});
+    
     await this.updateClientLocation();
     try {
       if (!this.global.getClientesSnapshot().length) {
@@ -160,37 +167,44 @@ export class Home implements OnInit {
   async superLike(cliente: any) {
     await this.handleSwipeAction(cliente, 'superlike');
   }
-  async handleSwipeAction(
-    cliente: any,
-    action: 'like' | 'dislike' | 'superlike'
-  ) {
-    if (!cliente?.id) return;
+ async handleSwipeAction(
+  cliente: any,
+  action: 'like' | 'dislike' | 'superlike'
+) {
 
-    try {
-      await this.registerSwipe(cliente, action);
-
-      if (action === 'like') {
-        this.transform = 'translateX(420px) rotate(18deg)';
-      }
-
-      if (action === 'dislike') {
-        this.transform = 'translateX(-420px) rotate(-18deg)';
-      }
-
-      if (action === 'superlike') {
-        this.transform = 'translateY(-520px) rotate(0deg)';
-      }
-
-      setTimeout(() => {
-        this.nextCard();
-      }, 250);
-
-    } catch (error) {
-      console.error('Error registrando swipe:', error);
-      this.resetCard();
-      alert('No se pudo registrar la interacción');
-    }
+  if (cliente.id === this.global.profileData?.id) {
+    console.warn('No puedes interactuar con tu propio perfil');
+    return;
   }
+
+  if (!cliente?.id) return;
+
+  try {
+
+    await this.registerSwipe(cliente, action);
+
+    if (action === 'like') {
+      this.transform = 'translateX(420px) rotate(18deg)';
+    }
+
+    if (action === 'dislike') {
+      this.transform = 'translateX(-420px) rotate(-18deg)';
+    }
+
+    if (action === 'superlike') {
+      this.transform = 'translateY(-520px) rotate(0deg)';
+    }
+
+    setTimeout(() => {
+      this.nextCard();
+    }, 250);
+
+  } catch (error) {
+    console.error('Error registrando swipe:', error);
+    this.resetCard();
+    alert('No se pudo registrar la interacción');
+  }
+}
 
   openProfile(event: Event, cliente: any) {
     event.stopPropagation();
@@ -219,21 +233,31 @@ export class Home implements OnInit {
     await this.router.navigate(['/chat-detail', receiverUserId]);
   }
 
-  async registerSwipe(cliente: any, action: 'like' | 'dislike' | 'superlike') {
-    const targetProfileId = cliente.id;
+async registerSwipe(cliente: any, action: 'like' | 'dislike' | 'superlike') {
+  const targetProfileId = cliente.id;
 
-    const result = await this.swipesService.registerSwipe(targetProfileId, action);
+  const result = await this.swipesService.registerSwipe(targetProfileId, action);
 
-    if (result?.['match']) {
+  console.log('RESULTADO SWIPE:', result);
+
+  const isMatch =
+  result?.match ||
+  result?.matched === true ||
+  result?.isMatch === true;
+
+if (isMatch) {
   this.showConnectionOverlay(cliente);
 } else if (action === 'superlike') {
   this.showSuperLikeNotification(cliente);
 
-    }
-
-    this.swipeHistory.push({ clientId: cliente.id, action });
   }
+
+  this.swipeHistory.push({ clientId: cliente.id, action });
+}
+
 showConnectionOverlay(cliente: any) {
+  console.log('MOSTRANDO OVERLAY MATCH:', cliente);
+
   this.matchedClient = cliente;
   this.matchDistanceText = this.getClientDistanceText(cliente);
   this.showMatchOverlay = true;
@@ -244,7 +268,6 @@ showConnectionOverlay(cliente: any) {
     this.showMatchOverlay = false;
   }, 4200);
 }
-
 closeMatchOverlay() {
   this.showMatchOverlay = false;
 }
@@ -321,6 +344,7 @@ calculateDistanceMeters(
       this.currentIndex = 0;
     }
   }
+  
   async updateClientLocation() {
     if (!navigator.geolocation) return;
 

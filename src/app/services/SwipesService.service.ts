@@ -11,7 +11,10 @@ export class SwipesService {
     private auth: AuthPocketbaseService
   ) {}
 
- async registerSwipe(clientId: string, action: 'like' | 'dislike' | 'superlike') {
+ async registerSwipe(
+  clientId: string,
+  action: 'like' | 'dislike' | 'superlike'
+) {
   const pb = this.global.pb;
   const currentUser = pb.authStore.model;
 
@@ -25,14 +28,14 @@ export class SwipesService {
 
   let userId = this.global.profileData?.id;
 
-if (!userId) {
-  const profile = await pb.collection('usuariosClient').getFirstListItem(
-    `userId="${currentUser.id}"`
-  );
+  if (!userId) {
+    const profile = await pb.collection('usuariosClient').getFirstListItem(
+      `userId="${currentUser.id}"`
+    );
 
-  userId = profile.id;
-  this.global.profileData = profile;
-}
+    userId = profile.id;
+    this.global.profileData = profile;
+  }
 
   console.log('Creando swipe:', {
     action,
@@ -50,9 +53,23 @@ if (!userId) {
       clientId
     });
 
+    let match = null;
+
+    if (action === 'like' || action === 'superlike') {
+      try {
+        match = await pb.collection('swipes').getFirstListItem(
+          `userId="${clientId}" && clientId="${userId}" && (action="like" || action="superlike")`
+        );
+      } catch {
+        match = null;
+      }
+    }
+
     return {
       swipe,
-      match: null,
+      match,
+      matched: !!match,
+      isMatch: !!match,
       notification: null
     };
 
