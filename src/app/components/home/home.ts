@@ -33,7 +33,9 @@ export class Home implements OnInit {
   lastTapTime = 0;
   tapDelay = 300;
   currentPhotoIndex = 0;
-
+  showMatchOverlay = false;
+  matchedClient: any = null;
+  matchDistanceText = '';
   constructor(
     public global: GlobalService,
     public authPocketbaseService: AuthPocketbaseService,
@@ -42,9 +44,9 @@ export class Home implements OnInit {
   ) {
     this.pb = this.global.pb;
   }
-getReceiverUserId(cliente: any): string {
-  return cliente?.userId || cliente?.id || '';
-}
+  getReceiverUserId(cliente: any): string {
+    return cliente?.userId || cliente?.id || '';
+  }
   async ngOnInit(): Promise<void> {
     this.loadingClients = true;
 
@@ -207,59 +209,133 @@ getReceiverUserId(cliente: any): string {
     return Math.max(0, -this.deltaX / 120);
   }
   async openChat(cliente: any) {
-  if (!cliente) return;
+    if (!cliente) return;
 
-  const receiverUserId = this.getReceiverUserId(cliente);
+    const receiverUserId = this.getReceiverUserId(cliente);
 
-  this.global.selectedClient = { ...cliente };
-  this.global.chatReceiverId = receiverUserId;
+    this.global.selectedClient = { ...cliente };
+    this.global.chatReceiverId = receiverUserId;
 
-  await this.router.navigate(['/chat-detail', receiverUserId]);
-}
+    await this.router.navigate(['/chat-detail', receiverUserId]);
+  }
 
   async registerSwipe(cliente: any, action: 'like' | 'dislike' | 'superlike') {
-  const targetProfileId = cliente.id;
+    const targetProfileId = cliente.id;
 
-  const result = await this.swipesService.registerSwipe(targetProfileId, action);
+    const result = await this.swipesService.registerSwipe(targetProfileId, action);
 
     if (result?.['match']) {
-      alert(`¡Hici  ste match con ${cliente.name || 'este usuario'}!`);
-    } else if (action === 'superlike') {
-      this.showSuperLikeNotification(cliente);
+  this.showConnectionOverlay(cliente);
+} else if (action === 'superlike') {
+  this.showSuperLikeNotification(cliente);
+
     }
 
     this.swipeHistory.push({ clientId: cliente.id, action });
   }
+showConnectionOverlay(cliente: any) {
+  this.matchedClient = cliente;
+  this.matchDistanceText = this.getClientDistanceText(cliente);
+  this.showMatchOverlay = true;
 
-  nextCard() {
-  this.transform = '';
-  this.deltaX = 0;
-  this.deltaY = 0;
-  this.currentPhotoIndex = 0;
+  navigator.vibrate?.([80, 40, 120]);
 
-  if (!this.clientes.length) return;
+  setTimeout(() => {
+    this.showMatchOverlay = false;
+  }, 4200);
+}
 
-  this.clientes.splice(this.currentIndex, 1);
+closeMatchOverlay() {
+  this.showMatchOverlay = false;
+}
 
-  if (this.currentIndex >= this.clientes.length) {
-    this.currentIndex = 0;
+openMatchedChat() {
+  if (!this.matchedClient) return;
+
+  const receiverUserId = this.getReceiverUserId(this.matchedClient);
+
+  this.showMatchOverlay = false;
+
+  this.global.selectedClient = { ...this.matchedClient };
+  this.global.chatReceiverId = receiverUserId;
+
+  this.router.navigate(['/chat-detail', receiverUserId]);
+}
+
+getClientDistanceText(cliente: any): string {
+  const myProfile = this.authPocketbaseService.getCurrentProfile();
+
+  const myLat = Number(myProfile?.lat);
+  const myLng = Number(myProfile?.lng);
+  const clientLat = Number(cliente?.lat);
+  const clientLng = Number(cliente?.lng);
+
+  if (!myLat || !myLng || !clientLat || !clientLng) {
+    return 'Cerca de ti';
   }
+
+  const meters = this.calculateDistanceMeters(myLat, myLng, clientLat, clientLng);
+
+  if (meters < 1000) {
+    return `A ${Math.round(meters)} metros de ti`;
+  }
+
+  return `A ${(meters / 1000).toFixed(1)} km de ti`;
 }
-async updateClientLocation() {
-  if (!navigator.geolocation) return;
 
-  navigator.geolocation.getCurrentPosition(async position => {
-    const profile = this.authPocketbaseService.getCurrentProfile();
+calculateDistanceMeters(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number
+): number {
+  const earthRadius = 6371000;
 
-    if (!profile?.id) return;
+  const toRad = (value: number) => value * Math.PI / 180;
 
-    await this.pb.collection('usuariosClient').update(profile.id, {
-      lat: position.coords.latitude,
-      lng: position.coords.longitude,
-      locationUpdatedAt: new Date().toISOString()
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+    Math.cos(toRad(lat2)) *
+    Math.sin(dLng / 2) *
+    Math.sin(dLng / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return earthRadius * c;
+}
+  nextCard() {
+    this.transform = '';
+    this.deltaX = 0;
+    this.deltaY = 0;
+    this.currentPhotoIndex = 0;
+
+    if (!this.clientes.length) return;
+
+    this.clientes.splice(this.currentIndex, 1);
+
+    if (this.currentIndex >= this.clientes.length) {
+      this.currentIndex = 0;
+    }
+  }
+  async updateClientLocation() {
+    if (!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(async position => {
+      const profile = this.authPocketbaseService.getCurrentProfile();
+
+      if (!profile?.id) return;
+
+      await this.pb.collection('usuariosClient').update(profile.id, {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        locationUpdatedAt: new Date().toISOString()
+      });
     });
-  });
-}
+  }
 
   undoLastSwipe() {
     if (this.swipeHistory.length === 0) return;
@@ -283,17 +359,17 @@ async updateClientLocation() {
   }
 
   async abrirChat(cliente: any) {
-  if (!cliente) return;
+    if (!cliente) return;
 
-  const receiverUserId = this.getReceiverUserId(cliente);
+    const receiverUserId = this.getReceiverUserId(cliente);
 
-  await this.registerSwipe(cliente, 'superlike');
+    await this.registerSwipe(cliente, 'superlike');
 
-  this.global.selectedClient = { ...cliente };
-  this.global.chatReceiverId = receiverUserId;
+    this.global.selectedClient = { ...cliente };
+    this.global.chatReceiverId = receiverUserId;
 
-  await this.router.navigate(['/chat-detail', receiverUserId]);
-}
+    await this.router.navigate(['/chat-detail', receiverUserId]);
+  }
 
   showSuperLikeNotification(cliente: any) {
     Swal.fire({

@@ -172,32 +172,92 @@
       </div>
 
       <!-- Botones flotantes fuera de la card -->
-      <div class="swipe-actions" *ngIf="clientes[currentIndex]">
-        <button type="button" class="action-btn undo" (click)="undoLastSwipe()">
-          <i class="fa-solid fa-rotate-left"></i>
-        </button>
+      <div class="ongo-actions-bar" *ngIf="clientes[currentIndex]">
 
-        <button type="button" class="action-btn dislike" (click)="dislike(clientes[currentIndex])">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
+  <button type="button" class="ongo-action ghost" (click)="undoLastSwipe()">
+    <i class="fa-solid fa-rotate-left"></i>
+    <span>Volver</span>
+  </button>
 
-        <button type="button" class="action-btn superlike" (click)="superLike(clientes[currentIndex])">
-          <i class="fa-solid fa-star"></i>
-        </button>
+  <button type="button" class="ongo-action danger" (click)="dislike(clientes[currentIndex])">
+    <i class="fa-solid fa-xmark"></i>
+    <span>Pasar</span>
+  </button>
 
-        <button type="button" class="action-btn like" (click)="like(clientes[currentIndex])">
-          <i class="fa-solid fa-heart"></i>
-        </button>
+  <button type="button" class="ongo-action main" (click)="like(clientes[currentIndex])">
+    <span class="pulse-ring"></span>
+    <i class="fa-solid fa-bolt"></i>
+    <span>Conectar</span>
+  </button>
 
-        <button type="button" class="action-btn chat" (click)="openChat(clientes[currentIndex])">
-          <i class="fa-solid fa-paper-plane"></i>
-        </button>
-      </div>
+  <button type="button" class="ongo-action boost" (click)="superLike(clientes[currentIndex])">
+    <i class="fa-solid fa-fire"></i>
+    <span>Intensificar</span>
+  </button>
+
+  <button type="button" class="ongo-action radar" (click)="openChat(clientes[currentIndex])">
+    <i class="fa-solid fa-paper-plane"></i>
+    <span>Chat</span>
+  </button>
+
+</div>
 
     </div>
 
     <div *ngIf="!loadingClients && clientes.length === 0" class="empty-state">
       No hay perfiles cerca por ahora.
+    </div>
+
+  </div>
+</div>
+<div class="ongo-match-overlay" *ngIf="showMatchOverlay">
+
+  <div class="match-particles">
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+
+  <button type="button" class="match-close" (click)="closeMatchOverlay()">
+    <i class="fa-solid fa-xmark"></i>
+  </button>
+
+  <div class="match-card">
+
+    <div class="match-glow"></div>
+
+    <div class="match-avatar-wrap">
+      <img
+        [src]="matchedClient?.avatar || 'assets/images/hero-night.png'"
+        alt="perfil conectado"
+      />
+    </div>
+
+    <span class="match-kicker">ONGO LIVE</span>
+
+    <h2>⚡ CONEXIÓN EN TIEMPO REAL</h2>
+
+    <p class="match-name">
+      {{ matchedClient?.name || 'Alguien cerca de ti' }}
+      <span *ngIf="matchedClient?.age">{{ matchedClient?.age }}</span>
+    </p>
+
+    <p class="match-distance">
+      <i class="fa-solid fa-location-dot"></i>
+      {{ matchDistanceText }}
+    </p>
+
+    <div class="match-actions">
+      <button type="button" class="match-secondary" (click)="closeMatchOverlay()">
+        Seguir explorando
+      </button>
+
+      <button type="button" class="match-primary" (click)="openMatchedChat()">
+        Abrir chat
+      </button>
     </div>
 
   </div>
