@@ -777,3 +777,257 @@
     transform: translateY(-120px) scale(1.6);
   }
 }
+.live-distance-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
+  margin-bottom: 8px;
+  padding: 7px 12px;
+
+  border-radius: 999px;
+
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+
+  background: rgba(0, 212, 255, .16);
+  border: 1px solid rgba(0, 212, 255, .35);
+
+  box-shadow:
+    0 0 18px rgba(0, 212, 255, .26),
+    inset 0 1px 0 rgba(255,255,255,.08);
+
+  backdrop-filter: blur(12px);
+}
+
+.live-distance-chip i {
+  color: #00d4ff;
+  font-size: 13px;
+}
+.ongo-presence {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 6px 12px;
+  border-radius: 999px;
+
+  font-size: 12px;
+  font-weight: 800;
+
+  color: #fff;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  animation: presencePulse 2.2s infinite ease-in-out;
+}
+
+.ongo-presence.arrived {
+  background: rgba(255, 47, 179, .18);
+  border: 1px solid rgba(255, 47, 179, .45);
+  box-shadow: 0 0 20px rgba(255, 47, 179, .28);
+}
+
+.ongo-presence.active {
+  background: rgba(0, 255, 140, .16);
+  border: 1px solid rgba(0, 255, 140, .42);
+  box-shadow: 0 0 20px rgba(0, 255, 140, .22);
+}
+
+.ongo-presence.recent {
+  background: rgba(0, 212, 255, .14);
+  border: 1px solid rgba(0, 212, 255, .36);
+  box-shadow: 0 0 18px rgba(0, 212, 255, .2);
+}
+
+.ongo-presence.available {
+  background: rgba(255, 255, 255, .13);
+  border: 1px solid rgba(255, 255, 255, .18);
+  box-shadow: 0 0 14px rgba(255,255,255,.08);
+}
+
+@keyframes presencePulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  50% {
+    transform: scale(1.035);
+    filter: brightness(1.18);
+  }
+}
+.connection-cinematic::before {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  background:
+    conic-gradient(
+      from 180deg,
+      transparent,
+      rgba(255, 47, 179, .22),
+      transparent,
+      rgba(0, 212, 255, .18),
+      transparent
+    );
+  animation: cinematicRotate 7s linear infinite;
+  z-index: 0;
+}
+
+.connection-cinematic::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at center, transparent 35%, rgba(0,0,0,.38) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.connection-cinematic > * {
+  position: relative;
+  z-index: 2;
+}
+
+.match-avatar-wrap {
+  isolation: isolate;
+}
+
+.energy-orbit {
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 47, 179, .5);
+  z-index: -1;
+}
+
+.orbit-one {
+  animation: orbitPulseOne 1.8s infinite ease-in-out;
+}
+
+.orbit-two {
+  inset: -22px;
+  border-color: rgba(0, 212, 255, .35);
+  animation: orbitPulseTwo 2.4s infinite ease-in-out;
+}
+
+.connection-signal {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 2px 0 14px;
+}
+
+.connection-signal span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #00d4ff;
+  box-shadow: 0 0 14px rgba(0, 212, 255, .85);
+  animation: signalBlink 1.1s infinite ease-in-out;
+}
+
+.connection-signal span:nth-child(2) {
+  animation-delay: .16s;
+}
+
+.connection-signal span:nth-child(3) {
+  animation-delay: .32s;
+}
+
+.match-card h2 {
+  animation: titleImpact .65s ease both;
+}
+
+.match-distance {
+  animation: chipReveal .8s .25s ease both;
+}
+
+.match-actions {
+  animation: actionsReveal .8s .42s ease both;
+}
+
+@keyframes cinematicRotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes orbitPulseOne {
+  0%, 100% {
+    opacity: .4;
+    transform: scale(.92);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+
+@keyframes orbitPulseTwo {
+  0%, 100% {
+    opacity: .2;
+    transform: scale(.86);
+  }
+
+  50% {
+    opacity: .9;
+    transform: scale(1.18);
+  }
+}
+
+@keyframes signalBlink {
+  0%, 100% {
+    opacity: .35;
+    transform: translateY(0) scale(.85);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1.2);
+  }
+}
+
+@keyframes titleImpact {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(.92);
+    filter: blur(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes chipReveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes actionsReveal {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

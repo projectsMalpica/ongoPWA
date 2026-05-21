@@ -93,9 +93,12 @@
 
         <div class="profile-overlay">
           <div class="profile-info">
-
-            <span class="status-badge">
-              Activo
+            <div class="live-distance-chip">
+              <i class="fa-solid fa-location-crosshairs"></i>
+              {{ getDistanceLabel(clientes[currentIndex]) }}
+            </div>
+            <span class="status-badge ongo-presence" [ngClass]="getPresenceClass(clientes[currentIndex])">
+              {{ getPresenceLabel(clientes[currentIndex]) }}
             </span>
 
             <h2 (click)="openProfile($event, clientes[currentIndex])">
@@ -174,33 +177,33 @@
       <!-- Botones flotantes fuera de la card -->
       <div class="ongo-actions-bar" *ngIf="clientes[currentIndex]">
 
-  <button type="button" class="ongo-action ghost" (click)="undoLastSwipe()">
-    <i class="fa-solid fa-rotate-left"></i>
-    <span>Volver</span>
-  </button>
+        <button type="button" class="ongo-action ghost" (click)="undoLastSwipe()">
+          <i class="fa-solid fa-rotate-left"></i>
+          <span>Volver</span>
+        </button>
 
-  <button type="button" class="ongo-action danger" (click)="dislike(clientes[currentIndex])">
-    <i class="fa-solid fa-xmark"></i>
-    <span>Pasar</span>
-  </button>
+        <button type="button" class="ongo-action danger" (click)="dislike(clientes[currentIndex])">
+          <i class="fa-solid fa-xmark"></i>
+          <span>Pasar</span>
+        </button>
 
-  <button type="button" class="ongo-action main" (click)="like(clientes[currentIndex])">
-    <span class="pulse-ring"></span>
-    <i class="fa-solid fa-bolt"></i>
-    <span>Conectar</span>
-  </button>
+        <button type="button" class="ongo-action main" (click)="like(clientes[currentIndex])">
+          <span class="pulse-ring"></span>
+          <i class="fa-solid fa-bolt"></i>
+          <span>Conectar</span>
+        </button>
 
-  <button type="button" class="ongo-action boost" (click)="superLike(clientes[currentIndex])">
-    <i class="fa-solid fa-fire"></i>
-    <span>Intensificar</span>
-  </button>
+        <button type="button" class="ongo-action boost" (click)="superLike(clientes[currentIndex])">
+          <i class="fa-solid fa-fire"></i>
+          <span>Intensificar</span>
+        </button>
 
-  <button type="button" class="ongo-action radar" (click)="openChat(clientes[currentIndex])">
-    <i class="fa-solid fa-paper-plane"></i>
-    <span>Chat</span>
-  </button>
+        <button type="button" class="ongo-action radar" (click)="openChat(clientes[currentIndex])">
+          <i class="fa-solid fa-paper-plane"></i>
+          <span>Chat</span>
+        </button>
 
-</div>
+      </div>
 
     </div>
 
@@ -225,19 +228,22 @@
     <i class="fa-solid fa-xmark"></i>
   </button>
 
-  <div class="match-card">
-
+  <div class="match-card connection-cinematic">
     <div class="match-glow"></div>
 
     <div class="match-avatar-wrap">
-      <img
-        [src]="matchedClient?.avatar || 'assets/images/hero-night.png'"
-        alt="perfil conectado"
-      />
+      <span class="energy-orbit orbit-one"></span>
+      <span class="energy-orbit orbit-two"></span>
+
+      <img [src]="matchedClient?.avatar || 'assets/images/hero-night.png'" alt="perfil conectado" />
     </div>
 
     <span class="match-kicker">ONGO LIVE</span>
-
+    <div class="connection-signal">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
     <h2>⚡ CONEXIÓN EN TIEMPO REAL</h2>
 
     <p class="match-name">

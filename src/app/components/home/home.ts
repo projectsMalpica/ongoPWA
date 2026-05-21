@@ -205,6 +205,44 @@ export class Home implements OnInit {
     alert('No se pudo registrar la interacción');
   }
 }
+getDistanceLabel(cliente: any): string {
+  return this.getClientDistanceText(cliente);
+}
+getPresenceLabel(cliente: any): string {
+  if (!cliente?.locationUpdatedAt && !cliente?.updated) {
+    return 'Disponible para conectar';
+  }
+
+  const dateValue = cliente.locationUpdatedAt || cliente.updated;
+  const lastSeen = new Date(dateValue).getTime();
+  const now = Date.now();
+
+  const diffMinutes = Math.floor((now - lastSeen) / 1000 / 60);
+
+  if (diffMinutes <= 3) {
+    return '🔥 Acaba de llegar';
+  }
+
+  if (diffMinutes <= 10) {
+    return '🟢 Activo ahora';
+  }
+
+  if (diffMinutes <= 30) {
+    return '⚡ Cerca recientemente';
+  }
+
+  return '🌙 Disponible para conectar';
+}
+
+getPresenceClass(cliente: any): string {
+  const label = this.getPresenceLabel(cliente);
+
+  if (label.includes('Acaba')) return 'arrived';
+  if (label.includes('Activo')) return 'active';
+  if (label.includes('Cerca')) return 'recent';
+
+  return 'available';
+}
 
   openProfile(event: Event, cliente: any) {
     event.stopPropagation();
@@ -262,11 +300,11 @@ showConnectionOverlay(cliente: any) {
   this.matchDistanceText = this.getClientDistanceText(cliente);
   this.showMatchOverlay = true;
 
-  navigator.vibrate?.([80, 40, 120]);
+  navigator.vibrate?.([60, 40, 90, 40, 140]);
 
   setTimeout(() => {
     this.showMatchOverlay = false;
-  }, 4200);
+  }, 5200);
 }
 closeMatchOverlay() {
   this.showMatchOverlay = false;
