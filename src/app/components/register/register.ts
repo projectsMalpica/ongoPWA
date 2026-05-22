@@ -399,7 +399,44 @@ export class RegisterComponent {
       const pendingGoogleUserRaw = sessionStorage.getItem('pendingGoogleUser');
       const pendingGoogleToken = sessionStorage.getItem('pendingGoogleToken');
       const pendingGoogleUser = pendingGoogleUserRaw ? JSON.parse(pendingGoogleUserRaw) : null;
+      if (pendingGoogleUser?.id && pendingGoogleToken) {
+  const orientationGroup = formData.orientation || {};
+  const selectedOrientation = Object.keys(orientationGroup).filter(
+    key => orientationGroup[key]
+  );
 
+  const clientData = {
+    name: formData.name,
+    address: formData.address,
+    birthday: new Date(formData.birthday).toISOString(),
+    gender: formData.gender,
+    orientation: selectedOrientation,
+    interestedIn: formData.interestedIn,
+    lookingFor: formData.lookingFor,
+    email: pendingGoogleUser.email || formData.email || '',
+    status: 'pending',
+    profileComplete: true,
+    plan: 'free',
+    photos: []
+  };
+
+  const profile = await this.auth.completeGoogleRegister('client', clientData);
+
+  await this.global.loadProfile();
+  await this.global.initClientesRealtime();
+  await this.global.initPartnersRealtime();
+
+  await this.router.navigate(['/profile']);
+
+  Swal.fire({
+    title: 'Registro exitoso',
+    text: `¡Bienvenido/a, ${formData.name}! Tu perfil ha sido creado exitosamente.`,
+    icon: 'success',
+    confirmButtonText: 'Continuar'
+  });
+
+  return;
+}
       let userId: string;
       let isGoogleFlow = false;
 
