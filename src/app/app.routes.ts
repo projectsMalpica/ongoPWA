@@ -101,12 +101,7 @@ export const routes: Routes = [
       import('./components/favorites/favorites').then(c => c.Favorites),
     title: 'Favoritos'
   },
-  {
-  path: 'oauth2-redirect',
-  loadComponent: () =>
-    import('./components/oauth2-redirect/oauth2-redirect').then(c => c.Oauth2Redirect),
-  title: 'Google'
-},
+ 
   {
     path: 'chat',
     loadComponent: () =>
