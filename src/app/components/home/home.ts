@@ -6,10 +6,12 @@ import { AuthPocketbaseService } from '../../services/authPocketbase.service';
 import { SwipesService } from '../../services/SwipesService.service';
 import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
+import { ToastService } from '../../services/ToastService.service';
+import { FormsModule } from '@angular/forms';
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './home.html',
   styleUrl: './home.scss',
 })
@@ -36,11 +38,20 @@ export class Home implements OnInit {
   showMatchOverlay = false;
   matchedClient: any = null;
   matchDistanceText = '';
+  showGiftModal = false;
+  giftReceiver: any = null;
+  partnerProducts: any[] = [];
+  selectedGiftProduct: any = null;
+  giftMessage = '';
+  walletBalance = 0;
+  currentWallet: any = null;
+  isSendingGift = false;
   constructor(
     public global: GlobalService,
     public authPocketbaseService: AuthPocketbaseService,
     public swipesService: SwipesService,
-    private router: Router
+    private router: Router,
+    private toastService: ToastService
   ) {
     this.pb = this.global.pb;
   }
@@ -52,19 +63,19 @@ export class Home implements OnInit {
 
     this.global.clientes$.subscribe((clientes: any[]) => {
 
-  const myProfileId = this.global.profileData?.id;
+      const myProfileId = this.global.profileData?.id;
 
-  this.clientes = (clientes || []).filter(
-    c => c.id !== myProfileId
-  );
+      this.clientes = (clientes || []).filter(
+        c => c.id !== myProfileId
+      );
 
-  this.loadingClients = false;
+      this.loadingClients = false;
 
-  if (this.currentIndex >= this.clientes.length) {
-    this.currentIndex = 0;
-  }
-});
-    
+      if (this.currentIndex >= this.clientes.length) {
+        this.currentIndex = 0;
+      }
+    });
+
     await this.updateClientLocation();
     try {
       if (!this.global.getClientesSnapshot().length) {
@@ -150,6 +161,117 @@ export class Home implements OnInit {
 
     this.lastTapTime = now;
   }
+  async loadWallet(): Promise<void> {
+  const userId = this.authPocketbaseService.currentUser?.id;
+
+  if (!userId) return;
+
+  try {
+    const wallet = await this.pb.collection('wallet').getFirstListItem(
+      `userId="${userId}"`,
+      { requestKey: null }
+    );
+
+    this.currentWallet = wallet;
+    this.walletBalance = Number(wallet['balance'] || 0);
+
+  } catch {
+    const wallet = await this.pb.collection('wallet').create({
+      userId,
+      balance: 0,
+      currency: 'COP',
+      status: 'active'
+    });
+
+    this.currentWallet = wallet;
+    this.walletBalance = 0;
+  }
+}
+async sendGiftFromHome(): Promise<void> {
+  if (!this.selectedGiftProduct || !this.giftReceiver) return;
+
+  try {
+    this.isSendingGift = true;
+
+    const buyerUserId = this.authPocketbaseService.currentUser?.id;
+
+    if (!buyerUserId) {
+      this.toastService.show('Debes iniciar sesión.', 'error');
+      return;
+    }
+
+    await this.loadWallet();
+
+    const product = this.selectedGiftProduct;
+    const amount = Number(product.price || 0);
+    const receiverUserId = this.giftReceiver.userId;
+
+    const balanceBefore = Number(this.currentWallet?.balance || 0);
+
+    if (balanceBefore < amount) {
+      this.toastService.show(
+        'Saldo insuficiente. Recarga tu wallet para enviar este regalo 🎁',
+        'error'
+      );
+
+      this.router.navigate(['/wallet']);
+      return;
+    }
+
+    const balanceAfter = balanceBefore - amount;
+
+    await this.pb.collection('wallet').update(this.currentWallet.id, {
+      balance: balanceAfter
+    }, { requestKey: null });
+
+    const order = await this.pb.collection('product_orders').create({
+      buyerUserId,
+      receiverUserId,
+      partnerId: product.partnerId || this.giftReceiver.currentPartnerId,
+      productId: product.id,
+      productName: product.name,
+      productImage: product.image || '',
+      amount,
+      paymentMethod: 'wallet',
+      status: 'paid',
+      message: this.giftMessage || ''
+    }, { requestKey: null });
+
+    await this.pb.collection('wallet_transactions').create({
+      walletId: this.currentWallet.id,
+      userId: buyerUserId,
+      type: 'purchase',
+      amount,
+      direction: 'debit',
+      balanceBefore,
+      balanceAfter,
+      referenceType: 'product_order',
+      referenceId: order.id,
+      status: 'approved',
+      description: `Regalo enviado: ${product.name}`
+    }, { requestKey: null });
+
+    this.walletBalance = balanceAfter;
+    this.closeGiftModal();
+
+    this.toastService.show('Regalo enviado correctamente 🎁', 'success');
+
+  } catch (error) {
+    console.error('Error enviando regalo desde Home:', error);
+    this.toastService.show('No se pudo enviar el regalo.', 'error');
+  } finally {
+    this.isSendingGift = false;
+  }
+}
+closeGiftModal(): void {
+  if (this.isSendingGift) return;
+
+  this.showGiftModal = false;
+  this.giftReceiver = null;
+  this.partnerProducts = [];
+  this.selectedGiftProduct = null;
+  this.giftMessage = '';
+}
   resetCard() {
     this.transform = '';
     this.deltaX = 0;
@@ -167,82 +289,82 @@ export class Home implements OnInit {
   async superLike(cliente: any) {
     await this.handleSwipeAction(cliente, 'superlike');
   }
- async handleSwipeAction(
-  cliente: any,
-  action: 'like' | 'dislike' | 'superlike'
-) {
+  async handleSwipeAction(
+    cliente: any,
+    action: 'like' | 'dislike' | 'superlike'
+  ) {
 
-  if (cliente.id === this.global.profileData?.id) {
-    console.warn('No puedes interactuar con tu propio perfil');
-    return;
-  }
-
-  if (!cliente?.id) return;
-
-  try {
-
-    await this.registerSwipe(cliente, action);
-
-    if (action === 'like') {
-      this.transform = 'translateX(420px) rotate(18deg)';
+    if (cliente.id === this.global.profileData?.id) {
+      console.warn('No puedes interactuar con tu propio perfil');
+      return;
     }
 
-    if (action === 'dislike') {
-      this.transform = 'translateX(-420px) rotate(-18deg)';
+    if (!cliente?.id) return;
+
+    try {
+
+      await this.registerSwipe(cliente, action);
+
+      if (action === 'like') {
+        this.transform = 'translateX(420px) rotate(18deg)';
+      }
+
+      if (action === 'dislike') {
+        this.transform = 'translateX(-420px) rotate(-18deg)';
+      }
+
+      if (action === 'superlike') {
+        this.transform = 'translateY(-520px) rotate(0deg)';
+      }
+
+      setTimeout(() => {
+        this.nextCard();
+      }, 250);
+
+    } catch (error) {
+      console.error('Error registrando swipe:', error);
+      this.resetCard();
+      alert('No se pudo registrar la interacción');
+    }
+  }
+  getDistanceLabel(cliente: any): string {
+    return this.getClientDistanceText(cliente);
+  }
+  getPresenceLabel(cliente: any): string {
+    if (!cliente?.locationUpdatedAt && !cliente?.updated) {
+      return 'Disponible para conectar';
     }
 
-    if (action === 'superlike') {
-      this.transform = 'translateY(-520px) rotate(0deg)';
+    const dateValue = cliente.locationUpdatedAt || cliente.updated;
+    const lastSeen = new Date(dateValue).getTime();
+    const now = Date.now();
+
+    const diffMinutes = Math.floor((now - lastSeen) / 1000 / 60);
+
+    if (diffMinutes <= 3) {
+      return '🔥 Acaba de llegar';
     }
 
-    setTimeout(() => {
-      this.nextCard();
-    }, 250);
+    if (diffMinutes <= 10) {
+      return '🟢 Activo ahora';
+    }
 
-  } catch (error) {
-    console.error('Error registrando swipe:', error);
-    this.resetCard();
-    alert('No se pudo registrar la interacción');
-  }
-}
-getDistanceLabel(cliente: any): string {
-  return this.getClientDistanceText(cliente);
-}
-getPresenceLabel(cliente: any): string {
-  if (!cliente?.locationUpdatedAt && !cliente?.updated) {
-    return 'Disponible para conectar';
+    if (diffMinutes <= 30) {
+      return '⚡ Cerca recientemente';
+    }
+
+    return '🌙 Disponible para conectar';
   }
 
-  const dateValue = cliente.locationUpdatedAt || cliente.updated;
-  const lastSeen = new Date(dateValue).getTime();
-  const now = Date.now();
+  getPresenceClass(cliente: any): string {
+    const label = this.getPresenceLabel(cliente);
 
-  const diffMinutes = Math.floor((now - lastSeen) / 1000 / 60);
+    if (label.includes('Acaba')) return 'arrived';
+    if (label.includes('Activo')) return 'active';
+    if (label.includes('Cerca')) return 'recent';
 
-  if (diffMinutes <= 3) {
-    return '🔥 Acaba de llegar';
+    return 'available';
   }
-
-  if (diffMinutes <= 10) {
-    return '🟢 Activo ahora';
-  }
-
-  if (diffMinutes <= 30) {
-    return '⚡ Cerca recientemente';
-  }
-
-  return '🌙 Disponible para conectar';
-}
-
-getPresenceClass(cliente: any): string {
-  const label = this.getPresenceLabel(cliente);
-
-  if (label.includes('Acaba')) return 'arrived';
-  if (label.includes('Activo')) return 'active';
-  if (label.includes('Cerca')) return 'recent';
-
-  return 'available';
-}
 
   openProfile(event: Event, cliente: any) {
     event.stopPropagation();
@@ -271,103 +393,164 @@ getPresenceClass(cliente: any): string {
     await this.router.navigate(['/chat-detail', receiverUserId]);
   }
 
-async registerSwipe(cliente: any, action: 'like' | 'dislike' | 'superlike') {
-  const targetProfileId = cliente.id;
+  async registerSwipe(cliente: any, action: 'like' | 'dislike' | 'superlike') {
+    const targetProfileId = cliente.id;
 
-  const result = await this.swipesService.registerSwipe(targetProfileId, action);
+    const result = await this.swipesService.registerSwipe(targetProfileId, action);
 
-  console.log('RESULTADO SWIPE:', result);
+    console.log('RESULTADO SWIPE:', result);
 
-  const isMatch =
-  result?.match ||
-  result?.matched === true ||
-  result?.isMatch === true;
+    const isMatch =
+      result?.match ||
+      result?.matched === true ||
+      result?.isMatch === true;
 
-if (isMatch) {
-  this.showConnectionOverlay(cliente);
-} else if (action === 'superlike') {
-  this.showSuperLikeNotification(cliente);
+    if (isMatch) {
+      this.showConnectionOverlay(cliente);
+    } else if (action === 'superlike') {
+      this.showSuperLikeNotification(cliente);
 
+    }
+
+    this.swipeHistory.push({ clientId: cliente.id, action });
   }
 
-  this.swipeHistory.push({ clientId: cliente.id, action });
-}
+  showConnectionOverlay(cliente: any) {
+    console.log('MOSTRANDO OVERLAY MATCH:', cliente);
 
-showConnectionOverlay(cliente: any) {
-  console.log('MOSTRANDO OVERLAY MATCH:', cliente);
+    this.matchedClient = cliente;
+    this.matchDistanceText = this.getClientDistanceText(cliente);
+    this.showMatchOverlay = true;
 
-  this.matchedClient = cliente;
-  this.matchDistanceText = this.getClientDistanceText(cliente);
-  this.showMatchOverlay = true;
+    navigator.vibrate?.([60, 40, 90, 40, 140]);
 
-  navigator.vibrate?.([60, 40, 90, 40, 140]);
-
-  setTimeout(() => {
+    setTimeout(() => {
+      this.showMatchOverlay = false;
+    }, 5200);
+  }
+  closeMatchOverlay() {
     this.showMatchOverlay = false;
-  }, 5200);
-}
-closeMatchOverlay() {
-  this.showMatchOverlay = false;
-}
+  }
+  canSendGiftTo(cliente: any): boolean {
+    const myProfile = this.global.profileData;
 
-openMatchedChat() {
-  if (!this.matchedClient) return;
+    if (!myProfile || !cliente) return false;
 
-  const receiverUserId = this.getReceiverUserId(this.matchedClient);
+    const myPlan = myProfile.plan || 'free';
 
-  this.showMatchOverlay = false;
+    const sameLocal =
+      myProfile.currentPartnerId &&
+      cliente.currentPartnerId &&
+      myProfile.currentPartnerId === cliente.currentPartnerId;
 
-  this.global.selectedClient = { ...this.matchedClient };
-  this.global.chatReceiverId = receiverUserId;
+    if (myPlan === 'free') {
+      return sameLocal;
+    }
 
-  this.router.navigate(['/chat-detail', receiverUserId]);
-}
+    return !!cliente.currentPartnerId;
+  }
+  async openGiftFromHome(cliente: any) {
+    if (!cliente?.id) return;
 
-getClientDistanceText(cliente: any): string {
-  const myProfile = this.authPocketbaseService.getCurrentProfile();
+    if (!this.canSendGiftTo(cliente)) {
+      this.toastService.show(
+        'En plan free solo puedes enviar regalos a personas que estén en tu mismo local.',
+        'error'
+      );
+      return;
+    }
 
-  const myLat = Number(myProfile?.lat);
-  const myLng = Number(myProfile?.lng);
-  const clientLat = Number(cliente?.lat);
-  const clientLng = Number(cliente?.lng);
+    if (!cliente.currentPartnerId) {
+      this.toastService.show(
+        'Este usuario no está asociado a un local activo.',
+        'error'
+      );
+      return;
+    }
 
-  if (!myLat || !myLng || !clientLat || !clientLng) {
-    return 'Cerca de ti';
+    this.giftReceiver = cliente;
+
+    await this.loadProductsForPartner(cliente.currentPartnerId);
+    await this.loadWallet();
+
+    this.showGiftModal = true;
+  }
+  async loadProductsForPartner(partnerId: string) {
+    const records = await this.pb.collection('partnerProducts').getFullList({
+      filter: `partnerId="${partnerId}" && isAvailable=true`,
+      sort: '-created',
+      requestKey: null
+    });
+
+    this.partnerProducts = records.map((item: any) => ({
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      category: item.category,
+      price: item.price,
+      partnerId: item.partnerId,
+      image: item.image ? this.pb.files.getUrl(item, item.image) : ''
+    }));
   }
 
-  const meters = this.calculateDistanceMeters(myLat, myLng, clientLat, clientLng);
+  openMatchedChat() {
+    if (!this.matchedClient) return;
 
-  if (meters < 1000) {
-    return `A ${Math.round(meters)} metros de ti`;
+    const receiverUserId = this.getReceiverUserId(this.matchedClient);
+
+    this.showMatchOverlay = false;
+
+    this.global.selectedClient = { ...this.matchedClient };
+    this.global.chatReceiverId = receiverUserId;
+
+    this.router.navigate(['/chat-detail', receiverUserId]);
   }
 
-  return `A ${(meters / 1000).toFixed(1)} km de ti`;
-}
+  getClientDistanceText(cliente: any): string {
+    const myProfile = this.authPocketbaseService.getCurrentProfile();
 
-calculateDistanceMeters(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number
-): number {
-  const earthRadius = 6371000;
+    const myLat = Number(myProfile?.lat);
+    const myLng = Number(myProfile?.lng);
+    const clientLat = Number(cliente?.lat);
+    const clientLng = Number(cliente?.lng);
 
-  const toRad = (value: number) => value * Math.PI / 180;
+    if (!myLat || !myLng || !clientLat || !clientLng) {
+      return 'Cerca de ti';
+    }
 
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
+    const meters = this.calculateDistanceMeters(myLat, myLng, clientLat, clientLng);
 
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) *
-    Math.cos(toRad(lat2)) *
-    Math.sin(dLng / 2) *
-    Math.sin(dLng / 2);
+    if (meters < 1000) {
+      return `A ${Math.round(meters)} metros de ti`;
+    }
 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return `A ${(meters / 1000).toFixed(1)} km de ti`;
+  }
 
-  return earthRadius * c;
-}
+  calculateDistanceMeters(
+    lat1: number,
+    lng1: number,
+    lat2: number,
+    lng2: number
+  ): number {
+    const earthRadius = 6371000;
+
+    const toRad = (value: number) => value * Math.PI / 180;
+
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return earthRadius * c;
+  }
   nextCard() {
     this.transform = '';
     this.deltaX = 0;
@@ -382,7 +565,7 @@ calculateDistanceMeters(
       this.currentIndex = 0;
     }
   }
-  
+
   async updateClientLocation() {
     if (!navigator.geolocation) return;
 

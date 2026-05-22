@@ -66,7 +66,7 @@ export class RegisterComponent {
     this.partnerForm = this.fb.group({
       // Paso 1
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(8)]],
+      password: ['', [Validators.required, this.strongPasswordValidator]],
       confirmPassword: ['', Validators.required],
 
       // Paso 2
@@ -87,7 +87,7 @@ export class RegisterComponent {
     // Formulario para clientes
     this.clientForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(8)]],
+      password: ['', [Validators.required, this.strongPasswordValidator]],
       confirmPassword: ['', Validators.required],
       address: ['', [Validators.required, Validators.maxLength(200)]],
       name: ['', Validators.required],
@@ -163,46 +163,70 @@ export class RegisterComponent {
         }
       }
     });
-     this.loadHeroStats();
+    this.loadHeroStats();
   }
   async loadHeroStats() {
-  const pb = this.global.pb;
+    const pb = this.global.pb;
 
-  try {
-    const users = await pb.collection('usuariosClient').getFullList({
-      sort: '-locationUpdatedAt',
-      filter: 'lat != null && lng != null',
-    });
-
-    this.nearbyCount = users.length;
-
-    this.nearbyPerson = users.find((u: any) => u.avatar) || users[0] || null;
-
-    if (this.global.profileData?.id) {
-      const myProfileId = this.global.profileData.id;
-
-      const receivedSwipes = await pb.collection('swipes').getFullList({
-        filter: `clientId="${myProfileId}" && (action="like" || action="superlike")`,
+    try {
+      const users = await pb.collection('usuariosClient').getFullList({
+        sort: '-locationUpdatedAt',
+        filter: 'lat != null && lng != null',
       });
 
-      this.possibleMatches = receivedSwipes.length;
-    } else {
-      this.possibleMatches = 3;
+      this.nearbyCount = users.length;
+
+      this.nearbyPerson = users.find((u: any) => u.avatar) || users[0] || null;
+
+      if (this.global.profileData?.id) {
+        const myProfileId = this.global.profileData.id;
+
+        const receivedSwipes = await pb.collection('swipes').getFullList({
+          filter: `clientId="${myProfileId}" && (action="like" || action="superlike")`,
+        });
+
+        this.possibleMatches = receivedSwipes.length;
+      } else {
+        this.possibleMatches = 3;
+      }
+
+    } catch (error) {
+      console.error('Error cargando hero stats:', error);
+
+      this.nearbyCount = 0;
+      this.possibleMatches = 0;
+      this.nearbyPerson = null;
     }
-
-  } catch (error) {
-    console.error('Error cargando hero stats:', error);
-
-    this.nearbyCount = 0;
-    this.possibleMatches = 0;
-    this.nearbyPerson = null;
   }
-}
   validateOpeningHours(control: AbstractControl): ValidationErrors | null {
     const hours = control.get('openingHours')?.value;
     if (hours && !/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]\s*-\s*([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(hours)) {
       return { invalidHours: true };
     }
+    return null;
+  }
+  strongPasswordValidator(control: AbstractControl): ValidationErrors | null {
+    const value = control.value || '';
+
+    const hasUpperCase = /[A-Z]/.test(value);
+    const hasLowerCase = /[a-z]/.test(value);
+    const hasNumber = /[0-9]/.test(value);
+    const hasSpecial = /[^A-Za-z0-9]/.test(value);
+    const hasMinLength = value.length >= 6;
+
+    const valid =
+      hasUpperCase &&
+      hasLowerCase &&
+      hasNumber &&
+      hasSpecial &&
+      hasMinLength;
+
+    if (!valid) {
+      return {
+        strongPassword: true
+      };
+    }
+
     return null;
   }
   togglePassword(): void {
@@ -319,10 +343,31 @@ export class RegisterComponent {
         error?.data?.message ||
         error?.message ||
         'Hubo un problema al registrar tu cuenta.';
+      let translatedMessage = errorMessage;
 
+      if (
+        translatedMessage.includes('Failed to update record')
+      ) {
+        translatedMessage =
+          'No fue posible completar el registro. Verifica los datos e inténtalo nuevamente.';
+      }
+
+      if (
+        translatedMessage.includes('email')
+      ) {
+        translatedMessage =
+          'Este correo ya está registrado.';
+      }
+
+      if (
+        translatedMessage.includes('password')
+      ) {
+        translatedMessage =
+          'La contraseña no cumple los requisitos de seguridad.';
+      }
       Swal.fire({
         title: 'Error',
-        text: errorMessage,
+        text: translatedMessage,
         icon: 'error',
         confirmButtonText: 'Entendido'
       });
@@ -720,7 +765,7 @@ export class RegisterComponent {
 
     if (step === 1) {
       controls['email'].setValidators([Validators.required, Validators.email]);
-      controls['password'].setValidators([Validators.required, Validators.minLength(8)]);
+      controls['password'].setValidators([Validators.required, this.strongPasswordValidator]);
       controls['confirmPassword'].setValidators([Validators.required]);
     } else if (step === 2) {
       controls['name'].setValidators([Validators.required]);
@@ -843,7 +888,7 @@ export class RegisterComponent {
 
     if (step === 1) {
       controls['email'].setValidators([Validators.required, Validators.email]);
-      controls['password'].setValidators([Validators.required, Validators.minLength(8)]);
+      controls['password'].setValidators([Validators.required, this.strongPasswordValidator]);
       controls['confirmPassword'].setValidators([Validators.required]);
     } else if (step === 2) {
       controls['venueName'].setValidators([Validators.required, Validators.maxLength(100)]);

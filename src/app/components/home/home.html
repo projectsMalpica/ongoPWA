@@ -111,7 +111,20 @@
             <p class="bio-preview">
               {{ clientes[currentIndex]?.Biography || clientes[currentIndex]?.bio || 'Sin biografía disponible.' }}
             </p>
+            <button
+  class="gift-floating-btn"
+  type="button"
+  (click)="openGiftFromHome(clientes[currentIndex]); $event.stopPropagation()"
+>
+  <i class="fa-solid fa-martini-glass-citrus"></i>
 
+  <div class="gift-btn-text">
+    <strong>Invitar un trago</strong>
+    <span>Enviar regalo</span>
+  </div>
+
+  <div class="gift-glow"></div>
+</button>
             <div class="profile-summary">
 
               <div class="summary-chip" *ngIf="clientes[currentIndex]?.gender">

@@ -39,40 +39,34 @@
 
       <div class="hero-stats">
 
-  <div class="stat-card stat-profile" *ngIf="nearbyPerson">
-    <div class="stat-avatar">
-      <img
-        [src]="nearbyPerson.avatar || 'assets/images/avatar-placeholder.png'"
-        alt="Persona cerca"
-      >
-    </div>
+        <div class="stat-card stat-profile" *ngIf="nearbyPerson">
+          <div class="stat-avatar">
+            <img [src]="nearbyPerson.avatar || 'assets/images/avatar-placeholder.png'" alt="Persona cerca">
+          </div>
 
-    <div class="stat-text">
-      <strong>{{ nearbyPerson.name || 'Alguien' }} está cerca</strong>
-      <span>{{ nearbyPerson.address || 'Zona activa' }}</span>
-    </div>
-  </div>
+          <div class="stat-text">
+            <strong>{{ nearbyPerson.name || 'Alguien' }} está cerca</strong>
+            <span>{{ nearbyPerson.address || 'Zona activa' }}</span>
+          </div>
+        </div>
 
-  <div class="stat-card stat-center">
-    <strong class="stat-number">{{ nearbyCount }}</strong>
-    <span>personas cerca de ti</span>
-  </div>
+        <div class="stat-card stat-center">
+          <strong class="stat-number">{{ nearbyCount }}</strong>
+          <span>personas cerca de ti</span>
+        </div>
 
-  <div class="stat-card stat-profile">
-    <div class="stat-avatar">
-      <img
-        [src]="nearbyPerson?.avatar || 'assets/images/hero-night.png'"
-        alt="Match posible"
-      >
-    </div>
+        <div class="stat-card stat-profile">
+          <div class="stat-avatar">
+            <img [src]="nearbyPerson?.avatar || 'assets/images/hero-night.png'" alt="Match posible">
+          </div>
 
-    <div class="stat-text">
-      <strong>{{ possibleMatches }} matches</strong>
-      <span>posibles</span>
-    </div>
-  </div>
+          <div class="stat-text">
+            <strong>{{ possibleMatches }} matches</strong>
+            <span>posibles</span>
+          </div>
+        </div>
 
-</div>
+      </div>
 
       <div class="register-link register-link-inline">
         <p>
@@ -132,9 +126,15 @@
               </button>
             </div>
 
+            <small class="password-help">
+              Usa mínimo 6 caracteres, una mayúscula, una minúscula, un número y un símbolo.
+            </small>
+
             <div *ngIf="pf['password'].touched && pf['password'].invalid" class="invalid-feedback">
               <span *ngIf="pf['password'].errors?.['required']">La contraseña es requerida</span>
-              <span *ngIf="pf['password'].errors?.['minlength']">Mínimo 8 caracteres</span>
+              <span *ngIf="pf['password'].errors?.['strongPassword']">
+                La contraseña no cumple los requisitos.
+              </span>
             </div>
           </div>
 
@@ -293,9 +293,19 @@
               </button>
             </div>
 
+            <small class="password-help">
+              Usa mínimo 6 caracteres, una mayúscula, una minúscula, un número y un símbolo.
+            </small>
+
             <div *ngIf="f['password'].touched && f['password'].invalid" class="invalid-feedback">
               <span *ngIf="f['password'].errors?.['required']">La contraseña es requerida</span>
-              <span *ngIf="f['password'].errors?.['minlength']">Mínimo 8 caracteres</span>
+              <span *ngIf="f['password'].errors?.['strongPassword']"> Debe tener:
+                6+ caracteres,
+                mayúscula,
+                minúscula,
+                número
+                y símbolo.
+              </span>
             </div>
           </div>
 
