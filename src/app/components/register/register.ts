@@ -396,47 +396,15 @@ export class RegisterComponent {
       const formData = this.partnerForm.getRawValue();
 
       const authRecord = this.auth.pb.authStore.record;
-      const pendingGoogleUserRaw = sessionStorage.getItem('pendingGoogleUser');
-      const pendingGoogleToken = sessionStorage.getItem('pendingGoogleToken');
+      const pendingGoogleUserRaw =
+  sessionStorage.getItem('pendingGoogleUser') ||
+  localStorage.getItem('pendingGoogleUser');
+
+const pendingGoogleToken =
+  sessionStorage.getItem('pendingGoogleToken') ||
+  localStorage.getItem('pendingGoogleToken');
       const pendingGoogleUser = pendingGoogleUserRaw ? JSON.parse(pendingGoogleUserRaw) : null;
-      if (pendingGoogleUser?.id && pendingGoogleToken) {
-  const orientationGroup = formData.orientation || {};
-  const selectedOrientation = Object.keys(orientationGroup).filter(
-    key => orientationGroup[key]
-  );
-
-  const clientData = {
-    name: formData.name,
-    address: formData.address,
-    birthday: new Date(formData.birthday).toISOString(),
-    gender: formData.gender,
-    orientation: selectedOrientation,
-    interestedIn: formData.interestedIn,
-    lookingFor: formData.lookingFor,
-    email: pendingGoogleUser.email || formData.email || '',
-    status: 'pending',
-    profileComplete: true,
-    plan: 'free',
-    photos: []
-  };
-
-  const profile = await this.auth.completeGoogleRegister('client', clientData);
-
-  await this.global.loadProfile();
-  await this.global.initClientesRealtime();
-  await this.global.initPartnersRealtime();
-
-  await this.router.navigate(['/profile']);
-
-  Swal.fire({
-    title: 'Registro exitoso',
-    text: `¡Bienvenido/a, ${formData.name}! Tu perfil ha sido creado exitosamente.`,
-    icon: 'success',
-    confirmButtonText: 'Continuar'
-  });
-
-  return;
-}
+   
       let userId: string;
       let isGoogleFlow = false;
 
@@ -521,7 +489,9 @@ export class RegisterComponent {
       localStorage.setItem('profilePartner', JSON.stringify(partnerData));
 
       sessionStorage.removeItem('pendingGoogleUser');
-      sessionStorage.removeItem('pendingGoogleToken');
+sessionStorage.removeItem('pendingGoogleToken');
+localStorage.removeItem('pendingGoogleUser');
+localStorage.removeItem('pendingGoogleToken');
 
       if (!isGoogleFlow) {
         this.emailService.sendWelcome({
@@ -566,10 +536,52 @@ export class RegisterComponent {
       const formData = this.clientForm.getRawValue();
 
       const authRecord = this.auth.pb.authStore.record;
-      const pendingGoogleUserRaw = sessionStorage.getItem('pendingGoogleUser');
-      const pendingGoogleToken = sessionStorage.getItem('pendingGoogleToken');
-      const pendingGoogleUser = pendingGoogleUserRaw ? JSON.parse(pendingGoogleUserRaw) : null;
+      const pendingGoogleUserRaw =
+  sessionStorage.getItem('pendingGoogleUser') ||
+  localStorage.getItem('pendingGoogleUser');
 
+const pendingGoogleToken =
+  sessionStorage.getItem('pendingGoogleToken') ||
+  localStorage.getItem('pendingGoogleToken');
+      const pendingGoogleUser = pendingGoogleUserRaw ? JSON.parse(pendingGoogleUserRaw) : null;
+      if (pendingGoogleUser?.id && pendingGoogleToken) {
+  const orientationGroup = formData.orientation || {};
+  const selectedOrientation = Object.keys(orientationGroup).filter(
+    key => orientationGroup[key]
+  );
+
+  const clientData = {
+    name: formData.name,
+    address: formData.address,
+    birthday: new Date(formData.birthday).toISOString(),
+    gender: formData.gender,
+    orientation: selectedOrientation,
+    interestedIn: formData.interestedIn,
+    lookingFor: formData.lookingFor,
+    email: pendingGoogleUser.email || formData.email || '',
+    status: 'pending',
+    profileComplete: true,
+    plan: 'free',
+    photos: []
+  };
+
+  await this.auth.completeGoogleRegister('client', clientData);
+
+  await this.global.loadProfile();
+  await this.global.initClientesRealtime();
+  await this.global.initPartnersRealtime();
+
+  await this.router.navigate(['/profile']);
+
+  Swal.fire({
+    title: 'Registro exitoso',
+    text: `¡Bienvenido/a, ${formData.name}! Tu perfil ha sido creado exitosamente.`,
+    icon: 'success',
+    confirmButtonText: 'Continuar'
+  });
+
+  return;
+}
       let userId: string;
       let isGoogleFlow = false;
 
@@ -675,7 +687,9 @@ export class RegisterComponent {
       localStorage.setItem('profile', JSON.stringify(clientData));
 
       sessionStorage.removeItem('pendingGoogleUser');
-      sessionStorage.removeItem('pendingGoogleToken');
+sessionStorage.removeItem('pendingGoogleToken');
+localStorage.removeItem('pendingGoogleUser');
+localStorage.removeItem('pendingGoogleToken');
 
       if (!isGoogleFlow) {
         this.emailService.sendWelcome({
@@ -1048,7 +1062,23 @@ export class RegisterComponent {
     const hasSelected = Object.values(group).some(value => value);
     return hasSelected ? null : { required: true };
   }
+clearAuthResidues() {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('userId');
+  localStorage.removeItem('user');
+  localStorage.removeItem('record');
+  localStorage.removeItem('type');
+  localStorage.removeItem('isLoggedin');
+  localStorage.removeItem('profile');
+  localStorage.removeItem('profilePartner');
 
+ sessionStorage.removeItem('pendingGoogleUser');
+sessionStorage.removeItem('pendingGoogleToken');
+localStorage.removeItem('pendingGoogleUser');
+localStorage.removeItem('pendingGoogleToken');
+
+  this.auth.pb.authStore.clear();
+}
   async registerWithGoogle(type: 'client' | 'partner') {
     try {
       this.loadingGoogle = true;
@@ -1056,8 +1086,13 @@ export class RegisterComponent {
 
       let result = await this.auth.loginWithGoogle();
 
-      const token = sessionStorage.getItem('pendingGoogleToken');
-      const rawUser = sessionStorage.getItem('pendingGoogleUser');
+      const token =
+  sessionStorage.getItem('pendingGoogleToken') ||
+  localStorage.getItem('pendingGoogleToken');
+
+const rawUser =
+  sessionStorage.getItem('pendingGoogleUser') ||
+  localStorage.getItem('pendingGoogleUser');
 
       if (!token || !rawUser) {
         throw new Error('No se pudo recuperar la sesión de Google.');

@@ -668,8 +668,8 @@ isClient() {
     type: type || null,
   };
 
-  sessionStorage.setItem('pendingGoogleToken', token);
-  sessionStorage.setItem('pendingGoogleUser', JSON.stringify(cleanUser));
+  localStorage.setItem('pendingGoogleToken', token);
+localStorage.setItem('pendingGoogleUser', JSON.stringify(cleanUser));
 
   if (!type) {
     this.pb.authStore.clear();
