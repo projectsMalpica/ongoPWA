@@ -56,31 +56,18 @@
       this.pb = this.global.pb;
     }
     async openGiftFromHome(cliente: any) {
-      if (!cliente?.id) return;
+  if (!cliente?.id) return;
 
-      if (!this.canSendGiftTo(cliente)) {
-        this.toastService.show(
-          'En plan free solo puedes enviar regalos a personas que estén en tu mismo local.',
-          'error'
-        );
-        return;
-      }
+  this.giftReceiver = cliente;
+  this.showGiftModal = true;
 
-      if (!cliente.currentPartnerId) {
-        this.toastService.show(
-          'Este usuario no está asociado a un local activo.',
-          'error'
-        );
-        return;
-      }
+  const partnerId = cliente.currentPartnerId;
 
-      this.giftReceiver = cliente;
+  // Modo prueba: si no tiene local activo, carga todos los productos
+  await this.loadProductsForPartner(partnerId || undefined);
 
-      await this.loadProductsForPartner(cliente.currentPartnerId);
-      await this.loadWallet();
-
-      this.showGiftModal = true;
-    }
+  await this.loadWallet();
+}
     getReceiverUserId(cliente: any): string {
       return cliente?.userId || cliente?.id || '';
     }
@@ -476,23 +463,34 @@
       return !!cliente.currentPartnerId;
     }
     
-    async loadProductsForPartner(partnerId: string) {
-      const records = await this.pb.collection('partnerProducts').getFullList({
-        filter: `partnerId="${partnerId}" && isAvailable=true`,
-        sort: '-created',
-        requestKey: null
-      });
+    async loadProductsForPartner(partnerId?: string) {
+  let filter = 'isAvailable=true';
 
-      this.partnerProducts = records.map((item: any) => ({
-        id: item.id,
-        name: item.name,
-        description: item.description,
-        category: item.category,
-        price: item.price,
-        partnerId: item.partnerId,
-        image: item.image ? this.pb.files.getUrl(item, item.image) : ''
-      }));
-    }
+  if (partnerId) {
+    filter = `partnerId="${partnerId}" && isAvailable=true`;
+  }
+
+  const records = await this.pb.collection('partnerProducts').getFullList({
+    filter,
+    sort: '-created',
+    expand: 'partnerId',
+    requestKey: null
+  });
+
+  this.partnerProducts = records.map((item: any) => ({
+    id: item.id,
+    name: item.name,
+    description: item.description,
+    category: item.category,
+    price: item.price,
+    partnerId: item.partnerId,
+    partnerName:
+      item.expand?.partnerId?.venueName ||
+      item.expand?.partnerId?.name ||
+      'Local',
+    image: item.image ? this.pb.files.getUrl(item, item.image) : ''
+  }));
+}
 
     openMatchedChat() {
       if (!this.matchedClient) return;

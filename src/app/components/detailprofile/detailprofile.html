@@ -4,85 +4,139 @@
         <div class="detail-area" style="margin-bottom: 36px;">
             <div class="dz-media-card style-2">
                 <div class="dz-media">
-                    <img [src]="global.selectedClient?.avatar || 'assets/images/w3tinder/liked/pic4.png'" alt="">                </div>
+                    <img [src]="global.selectedClient?.avatar || 'assets/images/w3tinder/liked/pic4.png'" alt="">
+                </div>
                 <div class="dz-content">
                     <div class="left-content">
-                        <h4 class="title">{{global.selectedClient?.name}}, {{global.selectedClient?.age}} </h4>
+                        <h4 class="title">{{global.selectedClient?.name}}, {{global.selectedClient?.age}} años </h4>
                         <p class="mb-0"><i class="icon feather icon-map-pin"></i> {{global.selectedClient?.address}}</p>
                     </div>
                     <a href="javascript:void(0);" class="dz-icon"><i class="flaticon flaticon-star-1"></i></a>
                 </div>
             </div>
-            <div class="detail-bottom-area" >
+            <div class="detail-bottom-area">
                 <div class="about" style="margin-bottom: 1rem;">
                     <h6 class="title">Soy {{global.selectedClient?.name}}</h6>
-                    <p class="para-text">{{global.selectedClient?.about}}</p>					
+                    <p class="para-text">{{global.selectedClient?.about}}</p>
                 </div>
                 <div class="about" style="margin-bottom: 1rem;">
                     <h6 class="title">Mi orientación sexual es</h6>
                     <ul class="dz-tag-list">
-                        <li> 
+                        <li>
                             <div class="dz-tag">
                                 <i class="icon feather icon-user"></i>
                                 <span style="color: #FF50A2;">{{global.selectedClient?.orientation}}</span>
                             </div>
                         </li>
-                       
-                    </ul>                
+
+                    </ul>
                 </div>
                 <div class="about" style="margin-bottom: 1rem;">
                     <h6 class="title">Estoy interesad&#64; en</h6>
                     <ul class="dz-tag-list">
-                        <li> 
+                        <li>
                             <div class="dz-tag">
                                 <i class="icon feather icon-heart"></i>
                                 <span style="color: #FF50A2;">{{global.selectedClient?.interestedIn}}</span>
                             </div>
                         </li>
-                       
+
                     </ul>
                 </div>
                 <div class="about" style="margin-bottom: 1rem;">
                     <h6 class="title">En búsqueda de </h6>
                     <ul class="dz-tag-list">
-                        <li> 
+                        <li>
                             <div class="dz-tag">
                                 <i class="icon feather icon-search"></i>
                                 <span style="color: #FF50A2;">{{global.selectedClient?.lookingFor}}</span>
                             </div>
-                        </li>                       
+                        </li>
                     </ul>
                 </div>
                 <div class="about" style="margin-bottom: 1rem;">
                     <h6 class="title">Hablo </h6>
                     <ul class="dz-tag-list">
-                        <li> 
+                        <li>
                             <div class="dz-tag">
                                 <i class="icon feather icon-globe"></i>
                                 <span style="color: #FF50A2;">{{global.selectedClient?.language}}</span>
                             </div>
-                        </li>                       
+                        </li>
                     </ul>
                 </div>
                 <div class="about" style="margin-bottom: 2rem;">
                     <h6 class="title">Me gusta </h6>
-                    <ul class="dz-tag-list">
-                        <li> 
+                    <ul class="dz-tag-list single">
+                        <li *ngFor="let interest of getInterests(global.selectedClient?.interests)">
                             <div class="dz-tag">
                                 <i class="icon feather icon-plus"></i>
-                                <span style="color: #FF50A2;">{{global.selectedClient?.interests}}</span>
+
+                                <span style="color: #FF50A2;">
+                                    {{ interest }}
+                                </span>
                             </div>
-                        </li>                       
+                        </li>
                     </ul>
                 </div>
-              
-                 <div class="about" style="margin-bottom: 2rem;">
-                    <button class="btn btn-gradient-pink" (click)="abrirChat(global.selectedClient)">
-                        <i class="icon feather icon-message-circle"></i> Chatear ahora
+
+                <div class="profile-actions">
+                    <button class="profile-action-btn chat" (click)="abrirChat(global.selectedClient)">
+                        <i class="icon feather icon-message-circle"></i>
+                        <span>Chatear</span>
+                    </button>
+
+                    <button class="profile-action-btn gift" type="button"
+                        (click)="onGiftClick($event, global.selectedClient)">
+                        <i class="fa-solid fa-martini-glass-citrus"></i>
+                        <span>Invitar un trago</span>
                     </button>
                 </div>
-                
+
             </div>
         </div>
     </div>
+</div>
+<div class="gift-modal-overlay" *ngIf="showGiftModal" (click)="closeGiftModal()">
+  <div class="gift-modal-card" (click)="$event.stopPropagation()">
+
+    <button type="button" class="gift-close" (click)="closeGiftModal()">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+
+    <h3>Invitar un trago 🍸</h3>
+    <p>Para: <strong>{{ giftReceiver?.name }}</strong></p>
+
+    <span class="wallet-balance">
+      Saldo: {{ walletBalance | currency:'COP':'symbol':'1.0-0' }}
+    </span>
+
+    <div class="gift-products">
+      <button
+        type="button"
+        class="gift-product"
+        *ngFor="let product of partnerProducts"
+        [class.active]="selectedGiftProduct?.id === product.id"
+        (click)="selectedGiftProduct = product">
+
+        <img *ngIf="product.image" [src]="product.image" alt="gift">
+
+        <div class="gift-info">
+          <strong>{{ product.name }}</strong>
+          <small>{{ product.partnerName }}</small>
+          <span>{{ product.price | currency:'COP':'symbol':'1.0-0' }}</span>
+        </div>
+      </button>
+    </div>
+
+    <textarea [(ngModel)]="giftMessage" placeholder="Mensaje opcional..."></textarea>
+
+    <button
+      type="button"
+      class="send-gift-btn"
+      [disabled]="!selectedGiftProduct || isSendingGift">
+      {{ isSendingGift ? 'Enviando...' : 'Enviar regalo 🎁' }}
+    </button>
+
+  </div>
 </div>

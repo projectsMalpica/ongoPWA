@@ -2,11 +2,7 @@
   display: block;
 }
 
-.dzSwipe_card-cont {
-  height: calc(100vh - 220px);
-  padding-bottom: 95px;
-  overflow: visible;
-}
+
 
 .dzSwipe_card {
   height: 100%;
@@ -93,7 +89,7 @@
 .dzSwipe_card-cont {
   position: relative;
   height: calc(100vh - 155px);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .dzSwipe_card {
@@ -1129,4 +1125,127 @@
   100% {
     transform: translateX(-10px);
   }
+}
+.gift-modal-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+
+  z-index: 999999999 !important;
+
+  background: rgba(0, 0, 0, 0.85);
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  padding: 16px !important;
+  box-sizing: border-box !important;
+
+  overflow-y: auto !important;
+}
+
+.gift-modal-card {
+  position: relative !important;
+  z-index: 1000000000 !important;
+
+  width: 100% !important;
+  max-width: 420px !important;
+
+  max-height: 88vh !important;
+  max-height: 88dvh !important;
+
+  overflow-y: auto !important;
+
+  background: #111 !important;
+  color: #fff !important;
+
+  border-radius: 24px !important;
+  padding: 20px !important;
+
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.9) !important;
+}
+
+.gift-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+
+  background: transparent;
+  border: 0;
+  color: #fff;
+  font-size: 22px;
+}
+
+.gift-products {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.gift-product {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  background: #1d1d1d;
+  color: #fff;
+
+  border: 2px solid transparent;
+  border-radius: 16px;
+
+  padding: 12px;
+}
+
+.gift-product.active {
+  border-color: #ff4d8d;
+}
+
+.gift-product img {
+  width: 58px;
+  height: 58px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.gift-info {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.gift-modal-card textarea {
+  width: 100%;
+  min-height: 80px;
+
+  margin-top: 16px;
+  padding: 12px;
+
+  border: 0;
+  border-radius: 14px;
+
+  background: #222;
+  color: #fff;
+
+  resize: none;
+}
+
+.send-gift-btn {
+  width: 100%;
+  margin-top: 16px;
+
+  border: 0;
+  border-radius: 18px;
+
+  padding: 15px;
+
+  font-weight: 800;
+
+  background: linear-gradient(135deg, #ff4d8d, #ff7a00);
+  color: #fff;
 }
