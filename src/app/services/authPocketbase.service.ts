@@ -42,7 +42,7 @@ export class AuthPocketbaseService {
     public router: Router
   ) {
     this.pb = new PocketBase('https://db.ongomatch.com:8090');
- 
+
     const token = localStorage.getItem('accessToken');
     const userString = localStorage.getItem('user');
 
@@ -100,93 +100,99 @@ export class AuthPocketbaseService {
 
     return data;
   }
-async completeGoogleRegister(type: 'client' | 'partner', data: any) {
-  const token = sessionStorage.getItem('pendingGoogleToken');
-  const rawUser = sessionStorage.getItem('pendingGoogleUser');
+  async completeGoogleRegister(type: 'client' | 'partner', data: any) {
+    const token =
+      sessionStorage.getItem('pendingGoogleToken') ||
+      localStorage.getItem('pendingGoogleToken');
 
-  if (!token || !rawUser) {
-    throw new Error('No hay sesión temporal de Google.');
-  }
+    const rawUser =
+      sessionStorage.getItem('pendingGoogleUser') ||
+      localStorage.getItem('pendingGoogleUser');
 
-  const googleUser = JSON.parse(rawUser);
-
-  this.pb.authStore.save(token, googleUser);
-
-  const name =
-    data.name ||
-    data.venueName ||
-    googleUser.name ||
-    googleUser.email?.split('@')[0] ||
-    'Usuario';
-
-  const email = googleUser.email;
-
-  if (!email) {
-    throw new Error('Google no devolvió un correo válido.');
-  }
-
-  const updatedUser = await this.pb.collection('users').update(googleUser.id, {
-    email,
-    type,
-    name,
-    username: name
-  });
-
-  const profileData = {
-    ...data,
-    userId: googleUser.id,
-    email,
-    name,
-    profileComplete: true,
-    status: 'pending',
-  };
-
-  const collection = type === 'partner'
-    ? 'usuariosPartner'
-    : 'usuariosClient';
-
-  let profile: any;
-
-  try {
-    const existing = await this.pb
-      .collection(collection)
-      .getFirstListItem(`userId="${googleUser.id}"`);
-
-    profile = await this.pb.collection(collection).update(existing.id, profileData);
-
-  } catch (error: any) {
-    if (error?.status === 404) {
-      profile = await this.pb.collection(collection).create(profileData);
-    } else {
-      throw error;
+    if (!token || !rawUser) {
+      throw new Error('No hay sesión temporal de Google.');
     }
+
+    const googleUser = JSON.parse(rawUser);
+
+    this.pb.authStore.save(token, googleUser);
+
+    const name =
+      data.name ||
+      data.venueName ||
+      googleUser.name ||
+      googleUser.email?.split('@')[0] ||
+      'Usuario';
+
+    const email = googleUser.email;
+
+    if (!email) {
+      throw new Error('Google no devolvió un correo válido.');
+    }
+
+    const updatedUser = await this.pb.collection('users').update(googleUser.id, {
+      email,
+      type,
+      name,
+      username: name
+    });
+
+    const profileData = {
+      ...data,
+      userId: googleUser.id,
+      email,
+      name,
+      profileComplete: true,
+      status: 'pending',
+    };
+
+    const collection = type === 'partner'
+      ? 'usuariosPartner'
+      : 'usuariosClient';
+
+    let profile: any;
+
+    try {
+      const existing = await this.pb
+        .collection(collection)
+        .getFirstListItem(`userId="${googleUser.id}"`);
+
+      profile = await this.pb.collection(collection).update(existing.id, profileData);
+
+    } catch (error: any) {
+      if (error?.status === 404) {
+        profile = await this.pb.collection(collection).create(profileData);
+      } else {
+        throw error;
+      }
+    }
+
+    const finalUser = {
+      ...updatedUser,
+      email,
+      name,
+      type
+    };
+
+    this.currentUser = finalUser;
+
+    localStorage.setItem('accessToken', token);
+    localStorage.setItem('userId', googleUser.id);
+    localStorage.setItem('user', JSON.stringify(finalUser));
+    localStorage.setItem('record', JSON.stringify(updatedUser));
+    localStorage.setItem('type', JSON.stringify(type));
+    localStorage.setItem('isLoggedin', 'true');
+    localStorage.setItem(
+      type === 'partner' ? 'profilePartner' : 'profile',
+      JSON.stringify(profile)
+    );
+
+    sessionStorage.removeItem('pendingGoogleToken');
+    sessionStorage.removeItem('pendingGoogleUser');
+    localStorage.removeItem('pendingGoogleToken');
+    localStorage.removeItem('pendingGoogleUser');
+    return profile;
   }
-
-  const finalUser = {
-    ...updatedUser,
-    email,
-    name,
-    type
-  };
-
-  this.currentUser = finalUser;
-
-  localStorage.setItem('accessToken', token);
-  localStorage.setItem('userId', googleUser.id);
-  localStorage.setItem('user', JSON.stringify(finalUser));
-  localStorage.setItem('record', JSON.stringify(updatedUser));
-  localStorage.setItem('type', JSON.stringify(type));
-  localStorage.setItem('isLoggedin', 'true');
-  localStorage.setItem(
-    type === 'partner' ? 'profilePartner' : 'profile',
-    JSON.stringify(profile)
-  );
-
-  sessionStorage.removeItem('pendingGoogleToken');
-  sessionStorage.removeItem('pendingGoogleUser');
-
-  return profile;
-}
   /** Obtiene el perfil extendido según el type del user */
   async fetchProfileByType(userId: string, type: UserType, token?: string): Promise<any | null> {
     const authToken = token ?? this.getToken();
@@ -279,47 +285,47 @@ async completeGoogleRegister(type: 'client' | 'partner', data: any) {
     return localStorage.getItem('isLoggedin');
   }
 
-isAdmin() {
-  const userType = localStorage.getItem('type');
+  isAdmin() {
+    const userType = localStorage.getItem('type');
 
-  if (!userType || userType === 'undefined') {
-    return false;
+    if (!userType || userType === 'undefined') {
+      return false;
+    }
+
+    try {
+      return JSON.parse(userType) === 'admin';
+    } catch {
+      return false;
+    }
   }
 
-  try {
-    return JSON.parse(userType) === 'admin';
-  } catch {
-    return false;
-  }
-}
+  isPartner() {
+    const userType = localStorage.getItem('type');
 
-isPartner() {
-  const userType = localStorage.getItem('type');
+    if (!userType || userType === 'undefined') {
+      return false;
+    }
 
-  if (!userType || userType === 'undefined') {
-    return false;
-  }
-
-  try {
-    return JSON.parse(userType) === 'partner';
-  } catch {
-    return false;
-  }
-}
-
-isClient() {
-  const userType = localStorage.getItem('type');
-
-  if (!userType || userType === 'undefined') {
-    return false;
+    try {
+      return JSON.parse(userType) === 'partner';
+    } catch {
+      return false;
+    }
   }
 
-  try {
-    return JSON.parse(userType) === 'client';
-  } catch {
-    return false;
+  isClient() {
+    const userType = localStorage.getItem('type');
+
+    if (!userType || userType === 'undefined') {
+      return false;
+    }
+
+    try {
+      return JSON.parse(userType) === 'client';
+    } catch {
+      return false;
+    }
   }
-}
 
   async findClientByUserId(userId: string): Promise<any> {
     return await this.pb
@@ -629,167 +635,167 @@ isClient() {
       throw error;
     }
   }
- async loginWithGoogle(): Promise<any> {
-  const authData = await this.pb.collection('users').authWithOAuth2({
-    provider: 'google',
-  });
+  async loginWithGoogle(): Promise<any> {
+    const authData = await this.pb.collection('users').authWithOAuth2({
+      provider: 'google',
+    });
 
-  const record = authData.record;
-  const token = authData.token;
-  const meta: any = authData.meta || {};
+    const record = authData.record;
+    const token = authData.token;
+    const meta: any = authData.meta || {};
 
-  if (!record?.id || !token) {
-    throw new Error('Google autenticó, pero no devolvió usuario válido.');
-  }
+    if (!record?.id || !token) {
+      throw new Error('Google autenticó, pero no devolvió usuario válido.');
+    }
 
-  const rawType = record['type'];
-  const type = Array.isArray(rawType) ? rawType[0] : rawType;
+    const rawType = record['type'];
+    const type = Array.isArray(rawType) ? rawType[0] : rawType;
 
-  const googleEmail =
-    meta?.email ||
-    meta?.rawUser?.email ||
-    record['email'] ||
-    '';
+    const googleEmail =
+      meta?.email ||
+      meta?.rawUser?.email ||
+      record['email'] ||
+      '';
 
-  const googleName =
-    meta?.name ||
-    meta?.rawUser?.name ||
-    record['name'] ||
-    record['username'] ||
-    googleEmail?.split('@')[0] ||
-    'Usuario';
+    const googleName =
+      meta?.name ||
+      meta?.rawUser?.name ||
+      record['name'] ||
+      record['username'] ||
+      googleEmail?.split('@')[0] ||
+      'Usuario';
 
-  const cleanUser = {
-    id: record.id,
-    email: googleEmail,
-    name: googleName,
-    username: record['username'],
-    avatarUrl: meta?.avatarUrl || record['avatarUrl'] || '',
-    type: type || null,
-  };
+    const cleanUser = {
+      id: record.id,
+      email: googleEmail,
+      name: googleName,
+      username: record['username'],
+      avatarUrl: meta?.avatarUrl || record['avatarUrl'] || '',
+      type: type || null,
+    };
 
-  localStorage.setItem('pendingGoogleToken', token);
-localStorage.setItem('pendingGoogleUser', JSON.stringify(cleanUser));
+    localStorage.setItem('pendingGoogleToken', token);
+    localStorage.setItem('pendingGoogleUser', JSON.stringify(cleanUser));
 
-  if (!type) {
-    this.pb.authStore.clear();
+    if (!type) {
+      this.pb.authStore.clear();
 
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('user');
-    localStorage.removeItem('record');
-    localStorage.removeItem('type');
-    localStorage.removeItem('isLoggedin');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('user');
+      localStorage.removeItem('record');
+      localStorage.removeItem('type');
+      localStorage.removeItem('isLoggedin');
+
+      return {
+        needsRegister: true,
+        reason: 'missing_type',
+        user: cleanUser
+      };
+    }
+
+    const profileStatus = await this.getRegistrationStatus({
+      ...record,
+      type
+    });
+
+    if (!profileStatus.profile) {
+      this.pb.authStore.clear();
+
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('user');
+      localStorage.removeItem('record');
+      localStorage.removeItem('type');
+      localStorage.removeItem('isLoggedin');
+
+      return {
+        needsRegister: true,
+        reason: 'missing_profile',
+        user: cleanUser
+      };
+    }
+
+    const finalUser = {
+      ...record,
+      email: googleEmail,
+      name: googleName,
+      type
+    };
+
+    this.pb.authStore.save(token, record);
+    this.currentUser = finalUser;
+
+    localStorage.setItem('accessToken', token);
+    localStorage.setItem('userId', record.id);
+    localStorage.setItem('user', JSON.stringify(finalUser));
+    localStorage.setItem('record', JSON.stringify(record));
+    localStorage.setItem('type', JSON.stringify(type));
+    localStorage.setItem('isLoggedin', 'true');
 
     return {
-      needsRegister: true,
-      reason: 'missing_type',
-      user: cleanUser
+      needsRegister: false,
+      user: finalUser,
+      profile: profileStatus.profile,
+      type
     };
   }
-
-  const profileStatus = await this.getRegistrationStatus({
-    ...record,
-    type
-  });
-
-  if (!profileStatus.profile) {
-    this.pb.authStore.clear();
-
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('user');
-    localStorage.removeItem('record');
-    localStorage.removeItem('type');
-    localStorage.removeItem('isLoggedin');
-
-    return {
-      needsRegister: true,
-      reason: 'missing_profile',
-      user: cleanUser
-    };
-  }
-
-  const finalUser = {
-    ...record,
-    email: googleEmail,
-    name: googleName,
-    type
-  };
-
-  this.pb.authStore.save(token, record);
-  this.currentUser = finalUser;
-
-  localStorage.setItem('accessToken', token);
-  localStorage.setItem('userId', record.id);
-  localStorage.setItem('user', JSON.stringify(finalUser));
-  localStorage.setItem('record', JSON.stringify(record));
-  localStorage.setItem('type', JSON.stringify(type));
-  localStorage.setItem('isLoggedin', 'true');
-
-  return {
-    needsRegister: false,
-    user: finalUser,
-    profile: profileStatus.profile,
-    type
-  };
-}
   async getRegistrationStatus(user: any): Promise<{
-  completed: boolean;
-  type: 'client' | 'partner' | 'admin' | null;
-  profile: any | null;
-}> {
-  const type = user?.type || this.pb.authStore.record?.['type'];
+    completed: boolean;
+    type: 'client' | 'partner' | 'admin' | null;
+    profile: any | null;
+  }> {
+    const type = user?.type || this.pb.authStore.record?.['type'];
 
-  if (type === 'admin') {
-    return { completed: true, type: 'admin', profile: null };
-  }
-
-  if (!type) {
-    return { completed: false, type: null, profile: null };
-  }
-
-  const collection = type === 'partner'
-    ? 'usuariosPartner'
-    : 'usuariosClient';
-
-  try {
-    const profile = await this.pb
-      .collection(collection)
-      .getFirstListItem(`userId="${user.id}"`);
-
-    let completed = false;
-
-    if (type === 'client') {
-      completed =
-        !!profile?.['name'] &&
-        !!profile?.['birthday'] &&
-        !!profile?.['gender'] &&
-        !!profile?.['interestedIn'] &&
-        !!profile?.['lookingFor'];
+    if (type === 'admin') {
+      return { completed: true, type: 'admin', profile: null };
     }
 
-    if (type === 'partner') {
-      completed =
-        !!profile?.['venueName'] &&
-        !!profile?.['address'] &&
-        !!profile?.['phone'];
+    if (!type) {
+      return { completed: false, type: null, profile: null };
     }
 
-    return {
-      completed,
-      type,
-      profile
-    };
+    const collection = type === 'partner'
+      ? 'usuariosPartner'
+      : 'usuariosClient';
 
-  } catch {
-    return {
-      completed: false,
-      type,
-      profile: null
-    };
+    try {
+      const profile = await this.pb
+        .collection(collection)
+        .getFirstListItem(`userId="${user.id}"`);
+
+      let completed = false;
+
+      if (type === 'client') {
+        completed =
+          !!profile?.['name'] &&
+          !!profile?.['birthday'] &&
+          !!profile?.['gender'] &&
+          !!profile?.['interestedIn'] &&
+          !!profile?.['lookingFor'];
+      }
+
+      if (type === 'partner') {
+        completed =
+          !!profile?.['venueName'] &&
+          !!profile?.['address'] &&
+          !!profile?.['phone'];
+      }
+
+      return {
+        completed,
+        type,
+        profile
+      };
+
+    } catch {
+      return {
+        completed: false,
+        type,
+        profile: null
+      };
+    }
   }
-}
   private mapPocketbaseError(err: unknown): Error {
     const e = err as any;
     const payload = (e?.data ?? e?.response ?? {}) as {

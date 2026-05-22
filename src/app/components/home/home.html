@@ -114,8 +114,7 @@
             <button
   class="gift-floating-btn"
   type="button"
-  (click)="openGiftFromHome(clientes[currentIndex]); $event.stopPropagation()"
->
+(click)="onGiftClick($event, clientes[currentIndex])">
   <i class="fa-solid fa-martini-glass-citrus"></i>
 
   <div class="gift-btn-text">
@@ -278,6 +277,74 @@
         Abrir chat
       </button>
     </div>
+
+  </div>
+</div>
+<!-- GIFT MODAL -->
+<div class="gift-modal-overlay"
+     *ngIf="showGiftModal"
+     (click)="closeGiftModal()">
+
+  <div class="gift-modal-card"
+       (click)="$event.stopPropagation()">
+
+    <button
+      type="button"
+      class="gift-close"
+      (click)="closeGiftModal()">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+
+    <div class="gift-header">
+      <h3>Invitar un trago 🍸</h3>
+
+      <p>
+        Para:
+        <strong>{{ giftReceiver?.name }}</strong>
+      </p>
+
+      <span class="wallet-balance">
+        Saldo: {{ walletBalance | currency:'COP':'symbol':'1.0-0' }}
+      </span>
+    </div>
+
+    <div class="gift-products">
+
+      <button
+        type="button"
+        class="gift-product"
+        *ngFor="let product of partnerProducts"
+        [class.active]="selectedGiftProduct?.id === product.id"
+        (click)="selectedGiftProduct = product">
+
+        <img
+          *ngIf="product.image"
+          [src]="product.image"
+          alt="gift">
+
+        <div class="gift-info">
+          <strong>{{ product.name }}</strong>
+          <span>{{ product.price | currency:'COP':'symbol':'1.0-0' }}</span>
+        </div>
+
+      </button>
+
+    </div>
+
+    <textarea
+      [(ngModel)]="giftMessage"
+      placeholder="Mensaje opcional...">
+    </textarea>
+
+    <button
+      type="button"
+      class="send-gift-btn"
+      [disabled]="!selectedGiftProduct || isSendingGift"
+      (click)="sendGiftFromHome()">
+
+      {{ isSendingGift ? 'Enviando...' : 'Enviar regalo 🎁' }}
+
+    </button>
 
   </div>
 </div>

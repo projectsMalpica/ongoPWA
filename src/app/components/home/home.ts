@@ -55,6 +55,32 @@
     ) {
       this.pb = this.global.pb;
     }
+    async openGiftFromHome(cliente: any) {
+      if (!cliente?.id) return;
+
+      if (!this.canSendGiftTo(cliente)) {
+        this.toastService.show(
+          'En plan free solo puedes enviar regalos a personas que estén en tu mismo local.',
+          'error'
+        );
+        return;
+      }
+
+      if (!cliente.currentPartnerId) {
+        this.toastService.show(
+          'Este usuario no está asociado a un local activo.',
+          'error'
+        );
+        return;
+      }
+
+      this.giftReceiver = cliente;
+
+      await this.loadProductsForPartner(cliente.currentPartnerId);
+      await this.loadWallet();
+
+      this.showGiftModal = true;
+    }
     getReceiverUserId(cliente: any): string {
       return cliente?.userId || cliente?.id || '';
     }
@@ -449,32 +475,7 @@
 
       return !!cliente.currentPartnerId;
     }
-    async openGiftFromHome(cliente: any) {
-      if (!cliente?.id) return;
-
-      if (!this.canSendGiftTo(cliente)) {
-        this.toastService.show(
-          'En plan free solo puedes enviar regalos a personas que estén en tu mismo local.',
-          'error'
-        );
-        return;
-      }
-
-      if (!cliente.currentPartnerId) {
-        this.toastService.show(
-          'Este usuario no está asociado a un local activo.',
-          'error'
-        );
-        return;
-      }
-
-      this.giftReceiver = cliente;
-
-      await this.loadProductsForPartner(cliente.currentPartnerId);
-      await this.loadWallet();
-
-      this.showGiftModal = true;
-    }
+    
     async loadProductsForPartner(partnerId: string) {
       const records = await this.pb.collection('partnerProducts').getFullList({
         filter: `partnerId="${partnerId}" && isAvailable=true`,
@@ -660,7 +661,12 @@
 
       this.currentPhotoIndex = (this.currentPhotoIndex + 1) % total;
     }
+onGiftClick(event: Event, cliente: any) {
+  event.stopPropagation();
+  event.preventDefault();
 
+  this.openGiftFromHome(cliente);
+}
     prevPhoto(event?: Event) {
       event?.stopPropagation();
 
