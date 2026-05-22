@@ -140,15 +140,15 @@ export class RegisterComponent {
         this.clientForm.patchValue({
           email,
           name,
-          password: 'GoogleAuth123',
-          confirmPassword: 'GoogleAuth123'
+          password: 'GoogleAuth123!',
+          confirmPassword: 'GoogleAuth123!'
         });
 
         this.partnerForm.patchValue({
           email,
           venueName: name || '',
-          password: 'GoogleAuth123',
-          confirmPassword: 'GoogleAuth123'
+          password: 'GoogleAuth123!',
+          confirmPassword: 'GoogleAuth123!'
         });
 
         this.clientForm.get('email')?.disable();
@@ -1013,135 +1013,137 @@ export class RegisterComponent {
   }
 
   async registerWithGoogle(type: 'client' | 'partner') {
-    try {
-      this.loadingGoogle = true;
-      this.userType = type;
+  try {
+    this.loadingGoogle = true;
+    this.userType = type;
 
-      const pendingGoogleUserRaw = sessionStorage.getItem('pendingGoogleUser');
-      const pendingGoogleToken = sessionStorage.getItem('pendingGoogleToken');
+    const pendingGoogleUserRaw = sessionStorage.getItem('pendingGoogleUser');
+    const pendingGoogleToken = sessionStorage.getItem('pendingGoogleToken');
 
-      let authUser: any = null;
+    let authUser: any = null;
 
-      if (pendingGoogleUserRaw && pendingGoogleToken) {
-        authUser = JSON.parse(pendingGoogleUserRaw);
-        this.auth.pb.authStore.save(pendingGoogleToken, authUser);
-      } else {
-        const result = await this.auth.loginWithGoogle();
-        authUser = result?.user || result;
-      }
+    if (pendingGoogleUserRaw && pendingGoogleToken) {
+      authUser = JSON.parse(pendingGoogleUserRaw);
+      this.auth.pb.authStore.save(pendingGoogleToken, authUser);
+    } else {
+      const result = await this.auth.loginWithGoogle();
+      authUser = result?.user || result;
+    }
 
-      if (!authUser?.id) {
-        throw new Error('No se pudo autenticar con Google.');
-      }
+    if (!authUser?.id) {
+      throw new Error('No se pudo autenticar con Google.');
+    }
 
-      // Solo intentamos actualizar users si realmente tenemos authStore válido
-      if (this.auth.pb.authStore.isValid) {
-        try {
-          await this.auth.pb.collection('users').update(authUser.id, {
-            type
-          });
-        } catch (err: any) {
-          console.warn('No se pudo actualizar type todavía. Se hará al completar registro.', err);
-        }
-      }
+    if (this.auth.pb.authStore.isValid) {
+      await this.auth.pb.collection('users').update(authUser.id, {
+        type,
+        name: authUser.name || authUser.username || '',
+        username: authUser.username || authUser.name || authUser.email?.split('@')[0] || ''
+      });
+    }
 
-      if (type === 'client') {
-        this.clientForm.patchValue({
-          email: authUser.email || '',
-          name: authUser.name || authUser.username || '',
-          password: 'GoogleAuth123',
-          confirmPassword: 'GoogleAuth123'
-        });
-
-        this.clientForm.get('email')?.disable();
-        this.currentStep = 2;
-        this.setClientStepValidators(2);
-
-      } else {
-        this.partnerForm.patchValue({
-          email: authUser.email || '',
-          venueName: authUser.name || authUser.username || '',
-          password: 'GoogleAuth123',
-          confirmPassword: 'GoogleAuth123'
-        });
-
-        this.partnerForm.get('email')?.disable();
-        this.currentStep = 2;
-        this.setPartnerStepValidators(2);
-      }
-
-    } catch (error: any) {
-      console.error('Error en registro con Google:', error);
-
-      Swal.fire({
-        title: 'Error',
-        text: error?.message || 'No fue posible continuar con Google.',
-        icon: 'error',
-        confirmButtonText: 'Entendido'
+    if (type === 'client') {
+      this.clientForm.patchValue({
+        email: authUser.email || '',
+        name: authUser.name || authUser.username || '',
+        password: 'GoogleAuth123!',
+        confirmPassword: 'GoogleAuth123!'
       });
 
-    } finally {
-      this.loadingGoogle = false;
+      this.clientForm.get('email')?.disable();
+
+      await this.ensureClientProfile(authUser);
+
+      this.currentStep = 2;
+      this.setClientStepValidators(2);
+      return;
     }
+
+    this.partnerForm.patchValue({
+      email: authUser.email || '',
+      venueName: authUser.name || authUser.username || '',
+      password: 'GoogleAuth123!',
+      confirmPassword: 'GoogleAuth123!'
+    });
+
+    this.partnerForm.get('email')?.disable();
+
+    await this.ensurePartnerProfile(authUser);
+
+    this.currentStep = 2;
+    this.setPartnerStepValidators(2);
+
+  } catch (error: any) {
+    console.error('Error en registro con Google:', error);
+
+    Swal.fire({
+      title: 'Error',
+      text: error?.message || 'No fue posible continuar con Google.',
+      icon: 'error',
+      confirmButtonText: 'Entendido'
+    });
+
+  } finally {
+    this.loadingGoogle = false;
   }
+}
   async ensureClientProfile(authUser: any) {
-    try {
-      const existing = await this.auth.pb
-        .collection('usuariosClient')
-        .getFirstListItem(`userId="${authUser.id}"`);
+  try {
+    const existing = await this.auth.pb
+      .collection('usuariosClient')
+      .getFirstListItem(`userId="${authUser.id}"`);
 
-      // Ya existe perfil: decidir si está completo o no
-      const isComplete =
-        !!existing['name'] &&
-        !!existing['birthday'] &&
-        !!existing['gender'] &&
-        !!existing['interestedIn'] &&
-        !!existing['lookingFor'];
+    const isComplete =
+      !!existing['name'] &&
+      !!existing['birthday'] &&
+      !!existing['gender'] &&
+      !!existing['interestedIn'] &&
+      !!existing['lookingFor'];
 
-      if (isComplete) {
-        await this.global.loadProfile();
-        await this.global.initClientesRealtime();
-        await this.global.initPartnersRealtime();
-        await this.router.navigate(['/home']);
-        return;
-      }
+    this.clientForm.patchValue({
+      email: authUser.email || existing['email'] || '',
+      name: existing['name'] || authUser.name || authUser.username || '',
+      address: existing['address'] || '',
+      gender: existing['gender'] || '',
+      interestedIn: existing['interestedIn'] || '',
+      lookingFor: existing['lookingFor'] || '',
+      terms: !!existing['terms']
+    });
 
-      // Precargar formulario y continuar onboarding
+    if (isComplete) {
+      await this.global.loadProfile();
+      await this.global.initClientesRealtime();
+      await this.global.initPartnersRealtime();
+      await this.router.navigate(['/home']);
+      return;
+    }
+
+    this.currentStep = 2;
+
+  } catch (error: any) {
+    if (error?.status === 404) {
+      const newClient = await this.auth.pb.collection('usuariosClient').create({
+        userId: authUser.id,
+        email: authUser.email || '',
+        name: authUser.name || authUser.username || '',
+        status: 'pending',
+        profileComplete: false,
+        photos: [],
+        plan: 'free'
+      });
+
       this.clientForm.patchValue({
-        email: authUser.email || existing['email'] || '',
-        name: existing['name'] || authUser['name'] || authUser['username'] || '',
-        address: existing['address'] || '',
-        gender: existing['gender'] || '',
-        interestedIn: existing['interestedIn'] || '',
-        lookingFor: existing['lookingFor'] || '',
-        terms: !!existing['terms']
+        email: authUser.email || '',
+        name: newClient['name'] || authUser.name || authUser.username || '',
       });
 
       this.currentStep = 2;
-    } catch (error: any) {
-      // Si no existe, crearlo parcial
-      if (error?.status === 404) {
-        const newClient = await this.auth.pb.collection('usuariosClient').create({
-          userId: authUser.id,
-          email: authUser.email || '',
-          name: authUser.name || authUser['username'] || '',
-          status: 'pending',
-          profileComplete: false,
-          photos: []
-        });
-
-        this.clientForm.patchValue({
-          email: authUser.email || '',
-          name: newClient['name'] || authUser['name'] || '',
-        });
-
-        this.currentStep = 2;
-        return;
-      }
-
-      throw error;
+      return;
     }
+
+    throw error;
   }
+}
   async ensurePartnerProfile(authUser: any) {
     try {
       const existing = await this.auth.pb
