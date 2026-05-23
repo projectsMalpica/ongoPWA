@@ -149,27 +149,16 @@
 }
 
 .offcanvas-body {
-  padding-bottom: 2rem;
+  padding-bottom: 9rem;
 }
 
-/* Asegurar que los botones de acción estén siempre visibles */
-/* .action-buttons {
-  position: sticky;
-  bottom: 0;
-  padding: 1rem 0;
-  box-shadow: 0 -5px 15px rgba(0,0,0,0.05);
-  z-index: 1000;
-} */
 
 /* Ajustes para móviles */
 @media (max-width: 767.98px) {
   .page-content {
     height: calc(100vh - 56px); /* Ajustar para móviles */
   }
-  
-  /* .edit-profile-container {
-    max-height: calc(100vh - 100px);
-  } */
+
 }
 
 /* Estilos para los elementos de la galería */

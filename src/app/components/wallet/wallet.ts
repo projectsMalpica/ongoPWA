@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { GlobalService } from '../../services/global.service';
@@ -21,10 +21,11 @@ interface WalletPackage {
   templateUrl: './wallet.html',
   styleUrl: './wallet.scss',
 })
-export class Wallet {
+export class Wallet implements OnInit {
 activePackageId: string = 'basic';
 
-  currentBalance = 12500;
+  currentBalance = 0;
+currentWallet: any = null;
   currencySymbol = '$';
   showRechargeModal = false;
   selectedRechargePackage: WalletPackage | null = null;
@@ -55,6 +56,7 @@ activePackageId: string = 'basic';
       theme: 'platinum'
     }
   ];
+ 
 
   packageBenefits: Record<string, string[]> = {
     basic: [
@@ -83,9 +85,41 @@ activePackageId: string = 'basic';
   constructor(private router: Router, 
     private global: GlobalService,
     private wompiService: WompiService,
-   public auth: AuthPocketbaseService
-  ) {}
+   public auth: AuthPocketbaseService,
+       private cdr: ChangeDetectorRef
 
+  ) {}
+async ngOnInit(): Promise<void> {
+  await this.loadWallet();
+  this.cdr;
+}
+
+async loadWallet(): Promise<void> {
+  const userId = this.auth.currentUser?.id;
+
+  if (!userId) return;
+
+  try {
+    const wallet = await this.global.pb.collection('wallet').getFirstListItem(
+      `userId="${userId}"`,
+      { requestKey: null }
+    );
+
+    this.currentWallet = wallet;
+    this.currentBalance = Number(wallet['balance'] || 0);
+
+  } catch {
+    const wallet = await this.global.pb.collection('wallet').create({
+      userId,
+      balance: 0,
+      currency: 'COP',
+      status: 'active'
+    });
+
+    this.currentWallet = wallet;
+    this.currentBalance = 0;
+  }
+}
   get activePackage(): WalletPackage | undefined {
     return this.packages.find(pkg => pkg.id === this.activePackageId);
   }
@@ -124,38 +158,65 @@ activePackageId: string = 'basic';
     return `wallet_${pkg.id}_${timestamp}`;
   }
 
-  async confirmRecharge() {
+ async confirmRecharge() {
   if (!this.selectedRechargePackage || this.isProcessingRecharge) return;
 
   try {
     this.isProcessingRecharge = true;
 
     const pkg = this.selectedRechargePackage;
-    const reference = this.generateReference(pkg);
-
-    // Cerrar tu modal ANTES de abrir Wompi
     this.showRechargeModal = false;
 
-    // pequeño delay para que Angular pinte bien
-    await new Promise(resolve => setTimeout(resolve, 150));
-
-    const result = await this.wompiService.openCheckout({
-      amountInCents: pkg.price * 100,
-      reference,
-      currency: 'COP',
-      customerEmail: this.auth.currentUser.email,
-      // signature: '...', // solo si la generas desde backend
-      // redirectUrl: 'http://localhost:4200/wallet/resultado'
+    const intentRes = await fetch('http://localhost:5055/wallet/recharge-intent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: this.auth.currentUser.id,
+        customerEmail: this.auth.currentUser.email,
+        packageId: pkg.id,
+        credits: pkg.credits,
+        bonus: pkg.bonus || 0,
+        price: pkg.price
+      })
     });
 
-    console.log('Resultado de Wompi:', result);
-    this.selectedRechargePackage = null;
+    const intent = await intentRes.json();
+    console.log('Intent response:', intent);
+    const result = await this.wompiService.openCheckout({
+  amountInCents: intent.amountInCents,
+  reference: intent.reference,
+  currency: 'COP',
+  publicKey: intent.publicKey,
+  signature: intent.signature,
+  customerEmail: this.auth.currentUser.email,
+  // redirectUrl: intent.redirectUrl
+});
 
-  } catch (error) {
-    console.error('Error al iniciar recarga con Wompi:', error);
-    alert('No se pudo iniciar el pago con Wompi.');
+console.log('Resultado Wompi:', result);
+
+const transaction = result?.transaction;
+
+if (transaction?.reference && transaction?.status) {
+  const confirmRes = await fetch('http://localhost:5055/wallet/confirm-recharge', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      reference: transaction.reference,
+      status: transaction.status
+    })
+  });
+
+  const confirmData = await confirmRes.json();
+
+  console.log('Confirmación backend:', confirmData);
+
+  await this.loadWallet();
+}} catch (error) {
+    console.error('Error al iniciar recarga:', error);
+    alert('No se pudo iniciar el pago.');
   } finally {
     this.isProcessingRecharge = false;
+    this.selectedRechargePackage = null;
   }
 }
 }

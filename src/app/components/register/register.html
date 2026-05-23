@@ -251,7 +251,7 @@
   <!-- Paso 1: Correo y Contraseña -->
   <div class="page-content" *ngIf="currentStep === 1">
     <div class="container">
-      <div class="account-area">
+      <div class="account-area" style= "padding-top: 30px;">
         <a (click)="userType = null; currentStep = 1" class="back-btn dz-flex-box">
           <i class="icon feather icon-chevron-left"></i>
         </a>
@@ -538,7 +538,7 @@
 <!-- Footer de navegación -->
 <div class="footer fixed bg-transparent" *ngIf="userType && currentStep < (userType === 'partner' ? 3 : 4)">
   <div class="container">
-    <div class="row g-2">
+    <div class="row g-2" style="    padding-bottom: 25px; ">
       <div class="col-6" *ngIf="currentStep > 1">
         <button (click)="prevStep()" class="btn btn-outline-secondary w-100">
           Anterior
