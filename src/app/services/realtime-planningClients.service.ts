@@ -35,7 +35,7 @@ export class RealtimePlanningClientsService implements OnDestroy {
       // (Optional) Authentication
       await this.pb
         .collection('users')
-        .authWithPassword('admin@email.com', 'admin1234');
+        .authWithPassword('admin@ongomatch.com', 'adminOngo');
 
       // Subscribe to changes in any record of the 'professionals' collection
       this.pb.collection('planningClients').subscribe('*', (e : any) => {

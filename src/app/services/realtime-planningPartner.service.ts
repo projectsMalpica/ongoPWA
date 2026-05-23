@@ -4,13 +4,14 @@ import PocketBase from 'pocketbase';
 import { BehaviorSubject, Observable } from 'rxjs';
 
 export interface PlanningPartner {
+  id?: string;
   name: string;
-  images?: string[]; // JSON array
+  files?: string[];
   status?: string;
   description?: string;
   items?: string[];
   priceCOP?: number;
-  priceUSD?: number;
+  PriceUSD?: number;
 }
 
 
@@ -36,7 +37,7 @@ export class RealtimePlanningPartnerService implements OnDestroy {
       // (Optional) Authentication
       await this.pb
         .collection('users')
-        .authWithPassword('admin@email.com', 'admin1234');
+        .authWithPassword('admin@ongomatch.com', 'adminOngo');
 
       // Subscribe to changes in any record of the 'professionals' collection
       this.pb.collection('planningPartners').subscribe('*', (e : any) => {
@@ -67,10 +68,12 @@ export class RealtimePlanningPartnerService implements OnDestroy {
 
       // Ensures each record conforms to Partner structure
       const planningPartner = records.map((record: any) => ({
-        ...record,
-        images: Array.isArray(record.images) ? record.images : [],
-        items: Array.isArray(record.items) ? record.items : [],
-      })) as PlanningPartner[];
+  ...record,
+  files: Array.isArray(record.files) ? record.files : [],
+  items: Array.isArray(record.items) ? record.items : [],
+  priceCOP: Number(record.priceCOP || 0),
+  PriceUSD: Number(record.PriceUSD || 0),
+})) as PlanningPartner[];
 
       this.planningPartnerSubject.next(planningPartner);
     } catch (error) {

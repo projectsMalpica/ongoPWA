@@ -35,7 +35,7 @@ export class EmailService {
       }
     };
 
-    // ejemplo: http://localhost:5542/email/welcome
+    
     return firstValueFrom(this.http.post(`${this.baseUrl}/email/welcome`, body));
   }
 }

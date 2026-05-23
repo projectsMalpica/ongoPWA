@@ -19,6 +19,7 @@ import Swiper from 'swiper';
 import { Pagination, Autoplay } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
+import { RealtimePlanningPartnerService } from '../../services/realtime-planningPartner.service';
 @Component({
   selector: 'app-profile-local',
   standalone: true,
@@ -105,27 +106,167 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
   promosByPartner: any[] = [];
   seleccionMarker!: mapboxgl.Marker;
   selectedMarker!: mapboxgl.Marker;
+  redeemCodeInput = '';
+  redeemOrder: any = null;
+  redeemLoading = false;
+  redeemMessage = '';
+  redeemError = '';
+  peopleInside = 0;
+  ambientLevel = 'Chill';
+  giftOrders: any[] = [];
+  loadingGiftOrders = false;
+  subscriptionPlans: any[] = [];
+  planningSubscription: any;
 
   constructor(
     public global: GlobalService,
     public auth: AuthPocketbaseService,
     public modalService: ModalService,
     public http: HttpClient,
-    public wompi: WompiService
+    public wompi: WompiService,
+      private planningPartnerService: RealtimePlanningPartnerService
   ) {
     this.loadPromotionsForPartner();
     this.pb.autoCancellation(false);
   }
 
   async ngOnInit() {
-    this.fetchPartnerData();
+  this.fetchPartnerData();
 
-    await this.loadProfileDataPartner();
-    await this.loadPartnerProducts();
-    this.global.initPlanningPartnersRealtime();
-    this.initMapIfReady();
+  this.planningSubscription =
+    this.planningPartnerService.planningPartner$.subscribe((plans) => {
+      this.subscriptionPlans = plans || [];
+      console.log('Planes cargados:', this.subscriptionPlans);
+    });
+
+  await this.loadProfileDataPartner();
+  await this.loadPartnerProducts();
+
+  this.global.initPlanningPartnersRealtime();
+  this.initMapIfReady();
+}
+  async searchGiftByCode(): Promise<void> {
+    const partnerId = this.global.profileDataPartner?.id;
+    const code = this.redeemCodeInput.trim();
+
+    this.redeemOrder = null;
+    this.redeemMessage = '';
+    this.redeemError = '';
+
+    if (!partnerId) {
+      this.redeemError = 'No se encontró el local.';
+      return;
+    }
+
+    if (!code) {
+      this.redeemError = 'Ingresa el código del regalo.';
+      return;
+    }
+
+    this.redeemLoading = true;
+
+    try {
+      const order = await this.pb.collection('product_orders').getFirstListItem(
+        `partnerId="${partnerId}" && redeemCode="${code}" && orderType="gift"`,
+        { requestKey: null }
+      );
+
+      this.redeemOrder = order;
+
+      if (order['orderStatus'] === 'redeemed') {
+        this.redeemError = 'Este regalo ya fue reclamado.';
+      } else {
+        this.redeemMessage = 'Regalo encontrado. Puedes entregarlo.';
+      }
+
+    } catch (error) {
+      this.redeemError = 'No encontramos un regalo con ese código para este local.';
+    } finally {
+      this.redeemLoading = false;
+    }
   }
+  async loadGiftOrders(): Promise<void> {
+    const partnerId = this.global.profileDataPartner?.id;
 
+    if (!partnerId) {
+      console.warn('No hay partnerId para cargar regalos');
+      return;
+    }
+
+    this.loadingGiftOrders = true;
+
+    try {
+      this.giftOrders = await this.global.pb.collection('product_orders').getFullList({
+        filter: `partnerId="${partnerId}" && orderType="gift" && orderStatus="pending_redeem"`,
+        sort: '-created',
+        expand: 'receiverUserId,buyerUserId',
+        requestKey: null
+      });
+    } catch (error) {
+      console.error('Error cargando regalos pendientes:', error);
+    } finally {
+      this.loadingGiftOrders = false;
+    }
+  }
+  async markGiftAsRedeemed(order: any): Promise<void> {
+    if (!order?.id) return;
+
+    const confirm = window.confirm(
+      `¿Confirmas que entregaste "${order.productName}" con el código ${order.redeemCode}?`
+    );
+
+    if (!confirm) return;
+
+    try {
+      await this.global.pb.collection('product_orders').update(order.id, {
+        orderStatus: 'redeemed',
+        status: 'completed',
+        redeemedAt: new Date().toISOString()
+      }, { requestKey: null });
+
+      this.giftOrders = this.giftOrders.filter(item => item.id !== order.id);
+    } catch (error) {
+      console.error('Error reclamando regalo:', error);
+    }
+  }
+  async confirmRedeemGift(): Promise<void> {
+    if (!this.redeemOrder?.id) return;
+
+    const result = await Swal.fire({
+      icon: 'question',
+      title: '¿Entregar regalo?',
+      text: `Confirma que vas a entregar: ${this.redeemOrder.productName}`,
+      confirmButtonText: 'Sí, entregar',
+      cancelButtonText: 'Cancelar',
+      showCancelButton: true
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await this.pb.collection('product_orders').update(this.redeemOrder.id, {
+        orderStatus: 'redeemed',
+        status: 'completed',
+        redeemedAt: new Date().toISOString()
+      }, { requestKey: null });
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Regalo entregado',
+        text: 'El regalo fue marcado como reclamado correctamente.',
+        confirmButtonText: 'Aceptar'
+      });
+
+      this.redeemCodeInput = '';
+      this.redeemOrder = null;
+      this.redeemMessage = '';
+      this.redeemError = '';
+
+    } catch (error) {
+      console.error('Error validando regalo:', error);
+      this.redeemError = 'No se pudo marcar el regalo como reclamado.';
+    }
+  }
   ngAfterViewInit() {
     ['promoModal', 'promoListModal', 'promoOptionsModal', 'productModal', 'productListModal', 'productOptionsModal'].forEach(id => {
       const modalEl = document.getElementById(id);
@@ -1168,53 +1309,7 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
     this.isEditingProduct = false;
     this.editingProductId = null;
   }
-  /* <-- async subscribeToPlan(plan: any) {
-    const amount = Number(plan.priceCOP || 0) * 100;
-    const userEmail = this.global.profileDataPartner.email || this.auth.currentUser?.email;
-  
-    const body = {
-      amountInCents: amount,
-      currency: 'COP',
-      customerEmail: userEmail,
-      reference: `partner_${Date.now()}`,
-      paymentMethod: { type: 'CARD' } // puedes omitir si quieres mostrar opciones
-    };
-  
-    try {
-      const res: any = await firstValueFrom(this.http.post('http://localhost:3000/api/pago', body));
-      if (res.checkout_url) {
-        window.location.href = res.checkout_url;
-      } else {
-        console.warn('No se recibió checkout_url:', res);
-      }
-    } catch (err) {
-      console.error('Error creando sesión de pago:', err);
-    }
-  }--> */
 
-  /* async subscribeToPlan(plan: any) {
-    const amountInCents = Number(plan.priceCOP || 0) * 100;
-    const userEmail = this.global.profileDataPartner?.email || this.auth.currentUser?.email;
-  
-    const body = {
-      amountInCents: Number(plan.priceCOP || 0) * 100,
-      currency: 'COP',
-      customerEmail: userEmail,
-      reference: `partner_${Date.now()}`
-    };
-    
-  
-    try {
-      const res: any = await firstValueFrom(this.http.post('http://localhost:3000/api/pago', body));
-      if (res.checkout_url) {
-        window.location.href = res.checkout_url;
-      } else {
-        console.warn('No se recibió checkout_url:', res);
-      }
-    } catch (err) {
-      console.error('Error creando sesión de pago:', err);
-    }
-  } */
 
   private toAmountInCents(priceCOP: string | number): number {
     if (typeof priceCOP === 'number') return Math.round(priceCOP * 100);
@@ -1241,7 +1336,6 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
         reference,
         redirectUrl,
         customerEmail,
-        // publicKey: environment.WOMPI_PUBLIC_KEY // opcional, ya lo usa el servicio
       });
 
       // result.transaction: { id, status, reference, ... }

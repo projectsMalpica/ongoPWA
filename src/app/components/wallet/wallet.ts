@@ -167,7 +167,7 @@ async loadWallet(): Promise<void> {
     const pkg = this.selectedRechargePackage;
     this.showRechargeModal = false;
 
-    const intentRes = await fetch('http://localhost:5055/wallet/recharge-intent', {
+    const intentRes = await fetch('https://db.ongomatch.com:5055/wallet/recharge-intent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -197,7 +197,7 @@ console.log('Resultado Wompi:', result);
 const transaction = result?.transaction;
 
 if (transaction?.reference && transaction?.status) {
-  const confirmRes = await fetch('http://localhost:5055/wallet/confirm-recharge', {
+  const confirmRes = await fetch('https://db.ongomatch.com:5055/wallet/confirm-recharge', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
