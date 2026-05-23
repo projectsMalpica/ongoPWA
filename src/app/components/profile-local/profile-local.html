@@ -814,7 +814,7 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
 
-      <div class="modal-body">
+      <div class="modal-body" style="padding-bottom: 3rem;">
 
         <!-- <div class="empty-neon" *ngIf="!subscriptionPlans.length">
           No hay planes disponibles por ahora.
@@ -833,10 +833,11 @@
           </div>
 
           <div class="modal-plan-price">
-            {{ plan.priceCOP | currency:'COP':'symbol':'1.0-0' }}
+            {{ plan.priceCOP | currency:'COP':'symbol':'1.0-0' }} o
+                                    {{ plan.PriceUSD | currency:'USD':'symbol':'1.0-0' }}
+
 
             <small>/mes</small>
-                        {{ plan.priceUSD | currency:'USD':'symbol':'1.0-0' }}
 
           </div>
 

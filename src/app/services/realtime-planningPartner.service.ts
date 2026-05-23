@@ -70,7 +70,22 @@ export class RealtimePlanningPartnerService implements OnDestroy {
       const planningPartner = records.map((record: any) => ({
   ...record,
   files: Array.isArray(record.files) ? record.files : [],
-  items: Array.isArray(record.items) ? record.items : [],
+
+  items: (() => {
+    if (Array.isArray(record.items)) {
+      return record.items;
+    }
+
+    if (typeof record.items === 'string' && record.items.trim()) {
+      return record.items
+        .split(',')
+        .map((item: string) => item.trim())
+        .filter((item: string) => item.length > 0);
+    }
+
+    return [];
+  })(),
+
   priceCOP: Number(record.priceCOP || 0),
   PriceUSD: Number(record.PriceUSD || 0),
 })) as PlanningPartner[];
