@@ -21,10 +21,7 @@
       </div>
 
       <div class="history-list" *ngIf="transactions.length > 0; else emptyState">
-        <div
-          class="history-item"
-          *ngFor="let item of transactions"
-        >
+        <div class="history-item" *ngFor="let item of transactions">
           <div class="history-icon" [ngClass]="item.direction">
             <i class="icon feather" [ngClass]="{
               'icon-arrow-down-left': item.direction === 'credit',
@@ -35,10 +32,7 @@
           <div class="history-info">
             <div class="history-top">
               <h4>{{ getTypeLabel(item.type) }}</h4>
-              <span
-                class="history-amount"
-                [ngClass]="item.direction"
-              >
+              <span class="history-amount" [ngClass]="item.direction">
                 {{ getAmountPrefix(item.direction) }} $ {{ item.amount | number:'1.0-0' }}
               </span>
             </div>
@@ -47,7 +41,7 @@
 
             <div class="history-meta">
               <span class="status" [ngClass]="item.status">
-                {{ item.status === 'completed' ? 'Completado' : item.status === 'pending' ? 'Pendiente' : 'Fallido' }}
+                {{ getStatusLabel(item.status) }}
               </span>
               <span class="date">
                 {{ item.created | date:'short' }}

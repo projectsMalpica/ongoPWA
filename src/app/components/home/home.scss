@@ -112,13 +112,26 @@
     object-fit: cover;
   }
 }
+.profile-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
+  margin-top: 12px;
+}
 
+
+
+.gift-floating-btn {
+  flex: 1.4;
+  min-width: 0;
+}
 .profile-overlay {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 85px;
-  padding: 24px 18px 8px;
+  padding: 18px 10px 10px;
   background: linear-gradient(to top, rgb(0 0 0 / 74%), rgba(0, 0, 0, 0.55), transparent);
   color: #fff;
   z-index: 5;
@@ -164,17 +177,7 @@
   }
 }
 
-.view-profile-btn {
-  margin-top: 5px;
-  border: none;
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
-  border-radius: 22px;
-  padding: 9px 15px;
-  font-size: 14px;
-  font-weight: 600;
-  backdrop-filter: blur(10px);
-}
+
 
 .swipe-actions {
   position: fixed;
@@ -259,6 +262,38 @@
   position: relative;
   z-index: 30;
   pointer-events: auto;
+
+  flex: 1;
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-top: 5px;
+  padding: 14px 16px;
+
+  border: none;
+  border-radius: 22px;
+
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  backdrop-filter: blur(10px);
+
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.view-profile-btn:active {
+  transform: scale(0.97);
+}
+
+.view-profile-btn:hover {
+  background: rgba(255, 255, 255, 0.24);
 }
 
 .photo-nav {
@@ -1041,7 +1076,7 @@
 
   display: flex;
   align-items: center;
-  gap: 14px;
+ /*  gap: 14px; */
 
   color: #fff;
   text-align: left;
@@ -1248,4 +1283,54 @@
 
   background: linear-gradient(135deg, #ff4d8d, #ff7a00);
   color: #fff;
+}
+
+.gift-success-card {
+  text-align: center;
+  padding: 24px 8px;
+  color: #fff;
+}
+
+.gift-success-icon {
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 22px;
+  border-radius: 50%;
+  border: 4px solid rgba(132, 255, 132, .35);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #91ff7d;
+  font-size: 42px;
+}
+
+.gift-success-card h3 {
+  font-size: 28px;
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.gift-success-card p {
+  color: rgba(255,255,255,.78);
+}
+
+.redeem-code-box {
+  margin: 22px 0;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.1);
+}
+
+.redeem-code-box small {
+  display: block;
+  color: rgba(255,255,255,.65);
+  margin-bottom: 8px;
+}
+
+.redeem-code-box strong {
+  font-size: 15px;
+  word-break: break-all;
 }

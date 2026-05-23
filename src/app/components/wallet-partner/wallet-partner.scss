@@ -1,0 +1,237 @@
+.partner-wallet-page {
+  min-height: 100vh;
+  padding: 20px;
+  padding-bottom: 90px;
+  color: #fff;
+  background:
+    radial-gradient(circle at top left, rgba(255, 0, 200, .22), transparent 28%),
+    radial-gradient(circle at top right, rgba(0, 204, 255, .18), transparent 30%),
+    linear-gradient(180deg, #05071f 0%, #090018 100%);
+        margin-top: 15%;
+}
+
+.wallet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+
+  .eyebrow {
+    margin: 0 0 4px;
+    color: #ff38d4;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 800;
+  }
+
+  span {
+    color: #a8a5c8;
+    font-size: 13px;
+  }
+}
+
+.refresh-btn {
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 56, 212, .7);
+  border-radius: 14px;
+  color: #fff;
+  background: rgba(255, 255, 255, .06);
+  box-shadow: 0 0 18px rgba(255, 0, 200, .35);
+}
+
+.balance-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 56, 212, .7);
+  border-radius: 26px;
+  padding: 22px;
+  background:
+    linear-gradient(135deg, rgba(128, 0, 255, .35), rgba(255, 0, 170, .22)),
+    rgba(255, 255, 255, .05);
+  box-shadow:
+    0 0 22px rgba(255, 0, 200, .35),
+    inset 0 0 25px rgba(0, 204, 255, .08);
+
+  span {
+    color: #bab6df;
+    font-size: 13px;
+  }
+
+  h1 {
+    margin: 8px 0;
+    font-size: 32px;
+    font-weight: 900;
+    color: #fff;
+  }
+
+  p {
+    margin: 0;
+    color: #b8b3da;
+    font-size: 13px;
+  }
+}
+
+.wallet-glow-icon {
+  position: absolute;
+  right: 20px;
+  top: 25px;
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
+  font-size: 30px;
+  background: rgba(255, 255, 255, .08);
+  box-shadow: 0 0 25px rgba(255, 0, 200, .45);
+}
+
+.mini-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.mini-card {
+  border-radius: 22px;
+  padding: 16px;
+  background: rgba(255, 255, 255, .055);
+
+  span {
+    display: block;
+    color: #a9a5ca;
+    font-size: 12px;
+  }
+
+  strong {
+    display: block;
+    margin: 8px 0 3px;
+    font-size: 20px;
+  }
+
+  small {
+    color: #8985ad;
+    font-size: 11px;
+  }
+
+  &.pink {
+    border: 1px solid rgba(255, 0, 180, .55);
+    box-shadow: 0 0 18px rgba(255, 0, 180, .22);
+  }
+
+  &.cyan {
+    border: 1px solid rgba(0, 210, 255, .55);
+    box-shadow: 0 0 18px rgba(0, 210, 255, .2);
+  }
+}
+
+.transactions-card {
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 26px;
+  border: 1px solid rgba(137, 67, 255, .6);
+  background: rgba(255, 255, 255, .045);
+  box-shadow: 0 0 20px rgba(137, 67, 255, .22);
+}
+
+.section-title {
+  margin-bottom: 12px;
+
+  h3 {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  span {
+    color: #9d98bf;
+    font-size: 12px;
+  }
+}
+
+.transaction-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.tx-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  strong {
+    display: block;
+    font-size: 14px;
+  }
+
+  p {
+    margin: 3px 0;
+    color: #9e9abd;
+    font-size: 12px;
+  }
+
+  small {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 999px;
+    color: #00d8ff;
+    background: rgba(0, 216, 255, .12);
+    font-size: 11px;
+  }
+}
+
+.tx-icon {
+  min-width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  color: #0cffc9;
+  font-size: 24px;
+  font-weight: 900;
+  background: rgba(12, 255, 201, .1);
+  box-shadow: 0 0 18px rgba(12, 255, 201, .28);
+
+  &.debit {
+    color: #ff4fc3;
+    background: rgba(255, 79, 195, .1);
+    box-shadow: 0 0 18px rgba(255, 79, 195, .28);
+  }
+}
+
+.tx-amount {
+  white-space: nowrap;
+  color: #0cffc9;
+  font-weight: 800;
+
+  &.debit {
+    color: #ff4fc3;
+  }
+}
+
+.loading-box,
+.error-box,
+.empty-state {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 18px;
+  text-align: center;
+  color: #c9c4ee;
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .12);
+}

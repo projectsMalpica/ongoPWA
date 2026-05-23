@@ -1,103 +1,150 @@
 <div class="page-content space-top p-b60">
-    <div class="container pt-0">
-        <div class="profile-area style-2">
-            <div class="main-profile">
-                <div class="about-profile">
-                    <div class="media-rect position-relative">
-                        <img [src]="global.profileDataPartner.avatar" alt="profile-image" class="profile-avatar-rect">
-                    </div>
-                </div>
-                <div class="profile-detail">
-                    <h4 class="name">{{global.profileDataPartner.venueName}}</h4>
-                    <p>{{global.profileDataPartner.description}}</p>
-                    <a class="chat-bubble" (click)="global.setRoute('profile-local')" style="cursor: pointer;"> <i
-                            class="fa-solid fa-comment"></i>Configurar perfil</a>
-                </div>
-            </div>
-            <div class="row g-2 mb-2">
-                <div class="col-6">
-                    <div class="card card-bx">
-                        <div class="card-body">
-                            <div class="media">
-                                <div class="media-35 m-r10">
-                                    <img src="../assets/images/w3badoo/icon/meter.png" alt="">
-                                </div>
-                                <div>
-                                    <span class="heading font-15">Actividad</span>
-                                    <h6 class="mb-0 title font-15">{{global.profileDataPartner.activity}}</h6>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="card card-bx">
-                        <div class="card-body">
-                            <div class="media">
-                                <div class="media-35 m-r10">
-                                    <img src="../assets/images/w3badoo/icon/coin.png" alt="">
-                                </div>
-                                <div>
-                                    <span class="heading font-15">Creditos</span>
-                                    <h6 class="mb-0 title font-15">{{global.profileDataPartner.credits}}</h6>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="card card-bx">
-                        <div class="card-body">
-                            <div class="media">
-                                <div class="media-35 m-r10">
-                                    <img src="{{global.profileDataPartner.avatar}}" alt="">
-                                </div>
-                                <div>
-                                    <span class="heading font-15">Visitas</span>
-                                    <h6 class="mb-0 title font-15">{{global.profileDataPartner.visits}}</h6>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="dz-subscribe-area">
-                <div class="subscribe-area-top">
-                    <div class="swiper subscription-swiper2" #partnerPlansSwiper>
-                        <div class="swiper-wrapper">
-                            <div class="swiper-slide" data-card="premium-plus"
-                                *ngFor="let planning of global.planningPartners$ | async">
-                                <div class="subscribe-box style-2 premium-plus">
-                                    <h5 class="title">
-                                        <img [src]="planning.subscription" alt="">
-                                        {{ planning.name }}
-                                    </h5>
+    <div class="local-dashboard">
 
-                                    <ul>
-                                        <li *ngFor="let item of planning.items.split(',')" style="text-align: left;">
-                                            <span class="star">★</span> {{ item.trim() }}
-                                        </li>
-                                    </ul>
+  <!-- HERO PERFIL -->
+  <section class="local-hero">
+    <div class="hero-glow"></div>
 
-                                    <div class="plan-price">{{ planning.priceCOP }} <span>COP/mes</span></div>
-                                    <div class="plan-price">{{ planning.PriceUSD }} <span>USD/mes</span></div>
+    <div class="local-profile">
+      <div class="local-avatar">
+        <img
+          *ngIf="global.profileDataPartner?.avatar"
+          [src]="global.profileDataPartner?.avatar"
+          alt="local"
+        />
+        <i *ngIf="!global.profileDataPartner?.avatar" class="fa-solid fa-store"></i>
+      </div>
 
-                                    <button class="btn btn-primary mt-2"
-                                        (click)="selectPlan({ id: planning.id, name: planning.name, priceCOP: planning.priceCOP, role: 'partner' })">
-                                        Suscribirme
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+      <div class="local-info">
+        <span class="local-badge">OnGo Local</span>
+        <h2>{{ global.profileDataPartner?.name || 'Tu local' }}</h2>
+        <p>
+          <i class="fa-solid fa-location-dot"></i>
+          Panel comercial
+        </p>
 
-                        <div class="swiper-btn">
-                            <div class="swiper-pagination style-1 flex-1" #partnerPlansPagination></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <button type="button" class="neon-outline-btn" routerLink="/profile-local">
+          <i class="fa-solid fa-pen"></i>
+          Configurar perfil
+        </button>
+      </div>
     </div>
+  </section>
+
+  <!-- MÉTRICAS -->
+  <section class="local-stats-grid">
+    <div class="stat-card cyan">
+      <i class="fa-solid fa-users"></i>
+      <span>Personas dentro</span>
+      <strong>{{ peopleInside || 0 }}</strong>
+      <small>En tiempo real</small>
+    </div>
+
+    <div class="stat-card pink">
+      <i class="fa-solid fa-fire"></i>
+      <span>Ambiente</span>
+      <strong>{{ ambientLevel || 'Chill' }}</strong>
+      <small>Chill / Activo / Full</small>
+    </div>
+
+    <div class="stat-card gold">
+      <i class="fa-solid fa-gift"></i>
+      <span>Regalos pendientes</span>
+      <strong>{{ giftOrders.length || 0 }}</strong>
+      <small>Por reclamar</small>
+    </div>
+  </section>
+
+  <!-- ACCIONES RÁPIDAS -->
+  <section class="quick-actions">
+    <button type="button">
+      <i class="fa-solid fa-qrcode"></i>
+      Validar QR
+    </button>
+
+    <button type="button">
+      <i class="fa-solid fa-bullhorn"></i>
+      Crear promo
+    </button>
+
+    <button type="button">
+      <i class="fa-solid fa-moon"></i>
+      OnGo Night
+    </button>
+
+    <button type="button" routerLink="/wallet-partner">
+      <i class="fa-solid fa-wallet"></i>
+      Wallet
+    </button>
+  </section>
+
+  <!-- REGALOS PENDIENTES -->
+  <section class="gift-orders-panel" *ngIf="giftOrders.length > 0 || loadingGiftOrders">
+    <div class="panel-header">
+      <div>
+        <span>Barra / Caja</span>
+        <h3>Regalos por reclamar</h3>
+      </div>
+
+      <button type="button" (click)="loadGiftOrders()">
+        <i class="fa-solid fa-rotate-right"></i>
+      </button>
+    </div>
+
+    <div class="gift-loading" *ngIf="loadingGiftOrders">
+      Cargando regalos...
+    </div>
+
+    <article class="gift-ticket" *ngFor="let order of giftOrders">
+      <div class="ticket-left">
+        <div class="ticket-icon">
+          <img *ngIf="order.productImage" [src]="order.productImage" alt="producto">
+          <i *ngIf="!order.productImage" class="fa-solid fa-gift"></i>
+        </div>
+
+        <div>
+          <h4>{{ order.productName }}</h4>
+          <p>Código</p>
+          <strong>{{ order.redeemCode }}</strong>
+        </div>
+      </div>
+
+      <div class="ticket-right">
+        <span>{{ order.amount | currency:'COP':'symbol':'1.0-0' }}</span>
+
+        <button type="button" (click)="markGiftAsRedeemed(order)">
+          <i class="fa-solid fa-circle-check"></i>
+          Entregado
+        </button>
+      </div>
+    </article>
+
+    <div class="gift-tip">
+      <i class="fa-regular fa-lightbulb"></i>
+      Pide el código al cliente antes de entregar el producto.
+    </div>
+  </section>
+
+  <!-- ROADMAP VISUAL -->
+  <section class="coming-soon-panel">
+    <div class="panel-header">
+      <div>
+        <span>Próximamente</span>
+        <h3>Herramientas para tu local</h3>
+      </div>
+    </div>
+
+    <div class="feature-grid">
+      <div><i class="fa-solid fa-music"></i> Música / ambiente</div>
+      <div><i class="fa-solid fa-chart-line"></i> Estadísticas</div>
+      <div><i class="fa-solid fa-crown"></i> Beneficios VIP</div>
+      <div><i class="fa-solid fa-map-location-dot"></i> Destacar en mapa</div>
+      <div><i class="fa-solid fa-tags"></i> Promos por horario</div>
+      <div><i class="fa-solid fa-shield-halved"></i> Anti-fraude</div>
+    </div>
+  </section>
+
+</div>
 </div>
 <!-- MODAL DE RESULTADO -->
 <div class="modal-backdrop" *ngIf="paymentModalOpen" (click)="closePaymentModal()"></div>

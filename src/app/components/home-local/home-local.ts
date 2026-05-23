@@ -10,39 +10,96 @@ import Swiper from 'swiper';
 import { Pagination } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-home-local',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './home-local.html',
   styleUrl: './home-local.scss',
 })
 export class HomeLocal implements AfterViewInit, OnDestroy {
   @ViewChild('partnerPlansSwiper', { static: false })
-partnerPlansSwiperRef?: ElementRef<HTMLDivElement>;
+  partnerPlansSwiperRef?: ElementRef<HTMLDivElement>;
 
-@ViewChild('partnerPlansPagination', { static: false })
-partnerPlansPaginationRef?: ElementRef<HTMLDivElement>;
+  @ViewChild('partnerPlansPagination', { static: false })
+  partnerPlansPaginationRef?: ElementRef<HTMLDivElement>;
 
-private partnerPlansSwiper?: Swiper;
-private partnerPlansSwiperSub?: Subscription;
-paymentModalOpen = false;
-loadingTx = false;
-tx?: any;
-txError?: string;
+  private partnerPlansSwiper?: Swiper;
+  private partnerPlansSwiperSub?: Subscription;
+  paymentModalOpen = false;
+  loadingTx = false;
+  tx?: any;
+  txError?: string;
+  giftOrders: any[] = [];
+  loadingGiftOrders = false;
+  peopleInside = 0;
+ambientLevel = 'Chill';
   constructor(public global: GlobalService,
     public http: HttpClient,
     public auth: AuthPocketbaseService,
-    public wompi: WompiService
-  ) {}
+    public wompi: WompiService,
+    public router: Router
+  ) { }
 
-  ngOnInit(): void {
-    this.global.initPlanningPartnersRealtime();
+
+  async ngOnInit(): Promise<void> {
+  this.global.initPlanningPartnersRealtime();
+
+  setTimeout(() => {
+    this.loadGiftOrders();
+  }, 500);
+}
+
+async loadGiftOrders(): Promise<void> {
+  const partnerId = this.global.profileDataPartner?.id;
+
+  if (!partnerId) {
+    console.warn('No hay partnerId para cargar regalos');
+    return;
   }
+
+  this.loadingGiftOrders = true;
+
+  try {
+    this.giftOrders = await this.global.pb.collection('product_orders').getFullList({
+      filter: `partnerId="${partnerId}" && orderType="gift" && orderStatus="pending_redeem"`,
+      sort: '-created',
+      expand: 'receiverUserId,buyerUserId',
+      requestKey: null
+    });
+  } catch (error) {
+    console.error('Error cargando regalos pendientes:', error);
+  } finally {
+    this.loadingGiftOrders = false;
+  }
+}
+async markGiftAsRedeemed(order: any): Promise<void> {
+  if (!order?.id) return;
+
+  const confirm = window.confirm(
+    `¿Confirmas que entregaste "${order.productName}" con el código ${order.redeemCode}?`
+  );
+
+  if (!confirm) return;
+
+  try {
+    await this.global.pb.collection('product_orders').update(order.id, {
+      orderStatus: 'redeemed',
+      status: 'completed',
+      redeemedAt: new Date().toISOString()
+    }, { requestKey: null });
+
+    this.giftOrders = this.giftOrders.filter(item => item.id !== order.id);
+  } catch (error) {
+    console.error('Error reclamando regalo:', error);
+  }
+}
   async selectPlan(plan: { id: string; name: string; priceCOP: number; role: 'partner' | 'client' }) {
     const reference = `suscrip-${plan.role}-${plan.id}-${crypto.randomUUID()}`;
-  
+
     // 1) firma exactamente con los mismos valores que mandarás al widget
     const { signature } = await lastValueFrom(
       this.http.post<{ signature: string }>('/api/pago/sign', {
@@ -52,7 +109,7 @@ txError?: string;
         // expirationTime: '2025-12-31T23:59:59.000Z' // si decides usarla, pásala también al widget
       })
     );
-  
+
     // 2) abre el widget (modal: no pasar redirectUrl)
     const result = await this.wompi.openCheckout({
       amountInCents: Math.round(plan.priceCOP * 100),
@@ -64,16 +121,16 @@ txError?: string;
       // redirectUrl: `${location.origin}/pago/resultado` // ← usar solo si prefieres redirigir
     });
     console.log('widget result:', result);
-  
+
     // 3) muestra modal y confirma estado
     this.paymentModalOpen = true;
     this.loadingTx = true;
     this.tx = undefined; this.txError = undefined;
-  
+
     // el id de transacción puede venir con distintos nombres según el método
     const txId: string | undefined =
       result?.transaction?.id ?? result?.transactionId ?? result?.id;
-  
+
     if (txId) {
       this.http.get(`/api/pago/tx/${encodeURIComponent(txId)}`).subscribe({
         next: (data: any) => { this.tx = data?.data; this.loadingTx = false; },
@@ -92,59 +149,59 @@ txError?: string;
     }
   }
   ngAfterViewInit(): void {
-  this.bindPartnerPlansSwiper();
-}
-private bindPartnerPlansSwiper(): void {
-  this.partnerPlansSwiperSub?.unsubscribe();
+    this.bindPartnerPlansSwiper();
+  }
+  private bindPartnerPlansSwiper(): void {
+    this.partnerPlansSwiperSub?.unsubscribe();
 
-  this.partnerPlansSwiperSub = this.global.planningPartners$.subscribe((plans) => {
-    if (!plans || !plans.length) return;
+    this.partnerPlansSwiperSub = this.global.planningPartners$.subscribe((plans) => {
+      if (!plans || !plans.length) return;
 
-    setTimeout(() => {
-      this.initPartnerPlansSwiper();
-    }, 0);
-  });
-}
-
-private initPartnerPlansSwiper(): void {
-  if (!this.partnerPlansSwiperRef?.nativeElement || !this.partnerPlansPaginationRef?.nativeElement) {
-    return;
+      setTimeout(() => {
+        this.initPartnerPlansSwiper();
+      }, 0);
+    });
   }
 
-  if (this.partnerPlansSwiper) {
-    this.partnerPlansSwiper.destroy(true, true);
-  }
-
-  this.partnerPlansSwiper = new Swiper(this.partnerPlansSwiperRef.nativeElement, {
-    modules: [Pagination],
-    slidesPerView: 1.08,
-    spaceBetween: 12,
-    grabCursor: true,
-    observer: true,
-    observeParents: true,
-    watchOverflow: true,
-    pagination: {
-      el: this.partnerPlansPaginationRef.nativeElement,
-      clickable: true
-    },
-    breakpoints: {
-      576: {
-        slidesPerView: 1.15,
-        spaceBetween: 14
-      },
-      768: {
-        slidesPerView: 1.35,
-        spaceBetween: 16
-      }
+  private initPartnerPlansSwiper(): void {
+    if (!this.partnerPlansSwiperRef?.nativeElement || !this.partnerPlansPaginationRef?.nativeElement) {
+      return;
     }
-  });
-}
 
-ngOnDestroy(): void {
-  this.partnerPlansSwiper?.destroy(true, true);
-  this.partnerPlansSwiperSub?.unsubscribe();
-}
-  
+    if (this.partnerPlansSwiper) {
+      this.partnerPlansSwiper.destroy(true, true);
+    }
+
+    this.partnerPlansSwiper = new Swiper(this.partnerPlansSwiperRef.nativeElement, {
+      modules: [Pagination],
+      slidesPerView: 1.08,
+      spaceBetween: 12,
+      grabCursor: true,
+      observer: true,
+      observeParents: true,
+      watchOverflow: true,
+      pagination: {
+        el: this.partnerPlansPaginationRef.nativeElement,
+        clickable: true
+      },
+      breakpoints: {
+        576: {
+          slidesPerView: 1.15,
+          spaceBetween: 14
+        },
+        768: {
+          slidesPerView: 1.35,
+          spaceBetween: 16
+        }
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.partnerPlansSwiper?.destroy(true, true);
+    this.partnerPlansSwiperSub?.unsubscribe();
+  }
+
   closePaymentModal() {
     this.paymentModalOpen = false;
     this.tx = undefined; this.txError = undefined;

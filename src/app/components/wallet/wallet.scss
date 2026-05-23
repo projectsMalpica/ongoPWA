@@ -649,16 +649,63 @@
 }
 
 .wallet-sticky-btn {
-  position: fixed;
-  bottom: 100px;
+  position: relative;
+  bottom: 10%;
   z-index: 50;
-
   margin-top: 20px;
   margin-bottom: 0;
-
   padding: 0;
+ /*  position: sticky;
+  bottom: 92px;
+  z-index: 50;
+  margin-top: 20px; */
 }
 
 .btn-gradient {
   width: 100%;
+} 
+:host {
+  background:
+    radial-gradient(circle at top, rgba(255, 0, 180, .18), transparent 32%),
+    linear-gradient(180deg, #07001d 0%, #04072e 55%, #02051f 100%);
+}
+
+.page-content {
+  background:
+    radial-gradient(circle at top right, rgba(255, 47, 179, .18), transparent 35%),
+    linear-gradient(180deg, #07001d 0%, #04072e 55%, #02051f 100%);
+}
+
+.wallet-balance-card {
+  background:
+    radial-gradient(circle at 80% 20%, rgba(255,255,255,.18), transparent 32%),
+    linear-gradient(135deg, #8528ff, #b467ff);
+  box-shadow:
+    0 22px 55px rgba(157, 0, 255, .25),
+    inset 0 1px 0 rgba(255,255,255,.18);
+}
+
+.subscribe-content {
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.09), rgba(255,255,255,.035));
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.08);
+  backdrop-filter: blur(14px);
+}
+
+.pricing-data span {
+  color: rgba(255,255,255,.82);
+}
+
+.wallet-summary-box {
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.08);
+}
+
+.summary-row {
+  color: rgba(255,255,255,.72);
+}
+
+.summary-row strong {
+  color: #fff;
 }

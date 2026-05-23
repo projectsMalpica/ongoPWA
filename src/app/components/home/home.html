@@ -108,22 +108,10 @@
               </span>
             </h2>
 
-            <p class="bio-preview">
+           <!--  <p class="bio-preview">
               {{ clientes[currentIndex]?.Biography || clientes[currentIndex]?.bio || 'Sin biografía disponible.' }}
-            </p>
-            <button
-  class="gift-floating-btn"
-  type="button"
-(click)="onGiftClick($event, clientes[currentIndex])">
-  <i class="fa-solid fa-martini-glass-citrus"></i>
-
-  <div class="gift-btn-text">
-    <strong>Invitar un trago</strong>
-    <span>Enviar regalo</span>
-  </div>
-
-  <div class="gift-glow"></div>
-</button>
+            </p> -->
+           
             <div class="profile-summary">
 
               <div class="summary-chip" *ngIf="clientes[currentIndex]?.gender">
@@ -162,12 +150,36 @@
               </div>
 
             </div>
-            <button class="view-profile-btn" type="button" (mousedown)="$event.stopPropagation()"
-              (mouseup)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()"
-              (touchend)="$event.stopPropagation()" (click)="openProfile($event, clientes[currentIndex])">
-              Ver perfil completo
-            </button>
+           <div class="profile-actions">
 
+  <button
+    class="view-profile-btn"
+    type="button"
+    (mousedown)="$event.stopPropagation()"
+    (mouseup)="$event.stopPropagation()"
+    (touchstart)="$event.stopPropagation()"
+    (touchend)="$event.stopPropagation()"
+    (click)="openProfile($event, clientes[currentIndex])">
+
+    Ver perfil completo
+  </button>
+
+  <button
+    class="gift-floating-btn"
+    type="button"
+    (click)="onGiftClick($event, clientes[currentIndex])">
+
+    <i class="fa-solid fa-martini-glass-citrus"></i>
+
+    <div class="gift-btn-text">
+      <strong>Invitar un trago</strong>
+      <span>Seleccionar regalo</span>
+    </div>
+
+    <div class="gift-glow"></div>
+  </button>
+
+</div>
           </div>
         </div>
 
@@ -281,21 +293,49 @@
   </div>
 </div>
 <!-- GIFT MODAL -->
-<div class="gift-modal-overlay"
-     *ngIf="showGiftModal"
-     (click)="closeGiftModal()">
+<div class="gift-modal-overlay" *ngIf="showGiftModal" (click)="closeGiftModal()">
 
-  <div class="gift-modal-card"
-       (click)="$event.stopPropagation()">
+  <div class="gift-modal-card" (click)="$event.stopPropagation()">
+
+  <div class="gift-success-card" *ngIf="giftSentSuccess; else giftForm">
+
+  <div class="gift-success-icon">
+    <i class="fa-solid fa-check"></i>
+  </div>
+
+  <h3>Regalo listo para reclamar 🎁</h3>
+
+  <p>
+    Comparte este código con el cliente. El local deberá validarlo antes de entregar el producto.
+  </p>
+
+  <div class="redeem-code-box">
+    <small>Código de retiro</small>
+    <strong>{{ lastRedeemCode }}</strong>
+  </div>
+
+  <button type="button" class="send-gift-btn" (click)="copyRedeemCode()">
+    Copiar código
+  </button>
+
+  <button type="button" class="send-gift-btn secondary" (click)="closeGiftModal(true)">
+    Cerrar
+  </button>
+
+</div>
+
+  <ng-template #giftForm>
 
     <button
       type="button"
       class="gift-close"
-      (click)="closeGiftModal()">
+      (click)="closeGiftModal()"
+    >
       <i class="fa-solid fa-xmark"></i>
     </button>
 
     <div class="gift-header">
+
       <h3>Invitar un trago 🍸</h3>
 
       <p>
@@ -304,8 +344,10 @@
       </p>
 
       <span class="wallet-balance">
-        Saldo: {{ walletBalance | currency:'COP':'symbol':'1.0-0' }}
+        Saldo:
+        {{ walletBalance | currency:'COP':'symbol':'1.0-0' }}
       </span>
+
     </div>
 
     <div class="gift-products">
@@ -315,17 +357,25 @@
         class="gift-product"
         *ngFor="let product of partnerProducts"
         [class.active]="selectedGiftProduct?.id === product.id"
-        (click)="selectedGiftProduct = product">
+        (click)="selectedGiftProduct = product"
+      >
 
         <img
           *ngIf="product.image"
           [src]="product.image"
-          alt="gift">
+          alt="gift"
+        >
 
         <div class="gift-info">
+
           <strong>{{ product.name }}</strong>
-                    <small>{{ product.partnerName }}</small>
-  <span>{{ product.price | currency:'COP':'symbol':'1.0-0' }}</span>
+
+          <small>{{ product.partnerName }}</small>
+
+          <span>
+            {{ product.price | currency:'COP':'symbol':'1.0-0' }}
+          </span>
+
         </div>
 
       </button>
@@ -334,18 +384,23 @@
 
     <textarea
       [(ngModel)]="giftMessage"
-      placeholder="Mensaje opcional...">
+      placeholder="Mensaje opcional..."
+    >
     </textarea>
 
     <button
       type="button"
-      class="send-gift-btn"
-      [disabled]="!selectedGiftProduct || isSendingGift"
-      (click)="sendGiftFromHome()">
+      class="send-gift-btn" 
+     [disabled]="isSendingGift"
+      (click)="sendGiftFromHome()"
+    >
 
-      {{ isSendingGift ? 'Enviando...' : 'Enviar regalo 🎁' }}
+      {{ isSendingGift ? 'Enviando...' : 'Enviar regalo ' }}
 
     </button>
 
-  </div>
+  </ng-template>
+
 </div>
+</div>
+

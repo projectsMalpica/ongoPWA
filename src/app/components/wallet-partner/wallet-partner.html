@@ -1,0 +1,89 @@
+<section class="partner-wallet-page">
+
+  <div class="wallet-header">
+    <div>
+      <p class="eyebrow">OnGo Local</p>
+      <h2>Billetera del comercio</h2>
+      <span>Ventas, regalos y movimientos del local</span>
+    </div>
+
+    <button class="refresh-btn" type="button" (click)="loadPartnerWallet()">
+      ↻
+    </button>
+  </div>
+
+  <div class="loading-box" *ngIf="loading">
+    Cargando billetera...
+  </div>
+
+  <div class="error-box" *ngIf="errorMessage && !loading">
+    {{ errorMessage }}
+  </div>
+
+  <ng-container *ngIf="!loading && partnerWallet">
+
+    <div class="balance-card main">
+      <div>
+        <span>Saldo total</span>
+        <h1>{{ totalBalance | currency:'COP':'symbol':'1.0-0' }}</h1>
+        <p>Dinero acumulado por ventas y regalos.</p>
+      </div>
+
+      <div class="wallet-glow-icon">
+        💰
+      </div>
+    </div>
+
+    <div class="mini-grid">
+      <div class="mini-card pink">
+        <span>Pendiente</span>
+        <strong>{{ pendingBalance | currency:'COP':'symbol':'1.0-0' }}</strong>
+        <small>Por reclamar o liberar</small>
+      </div>
+
+      <div class="mini-card cyan">
+        <span>Pagado</span>
+        <strong>{{ paidBalance | currency:'COP':'symbol':'1.0-0' }}</strong>
+        <small>Ya liquidado</small>
+      </div>
+    </div>
+
+    <div class="transactions-card">
+      <div class="section-title">
+        <div>
+          <h3>Movimientos</h3>
+          <span>{{ partnerTransactions.length }} registros</span>
+        </div>
+      </div>
+
+      <div class="empty-state" *ngIf="partnerTransactions.length === 0">
+        Aún no hay movimientos en esta billetera.
+      </div>
+
+      <div class="transaction-item" *ngFor="let tx of partnerTransactions">
+        <div class="tx-left">
+          <div class="tx-icon" [class.debit]="tx.direction === 'debit'">
+            {{ tx.direction === 'debit' ? '−' : '+' }}
+          </div>
+
+          <div>
+            <strong>{{ tx.description || 'Movimiento del local' }}</strong>
+            <p>
+              {{ tx.type }}
+              <span>•</span>
+              {{ tx.created | date:'dd/MM/yyyy, h:mm a' }}
+            </p>
+            <small>{{ getStatusLabel(tx.status) }}</small>
+          </div>
+        </div>
+
+        <div class="tx-amount" [class.debit]="tx.direction === 'debit'">
+          {{ tx.direction === 'debit' ? '-' : '+' }}
+          {{ tx.amount | currency:'COP':'symbol':'1.0-0' }}
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+
+</section>

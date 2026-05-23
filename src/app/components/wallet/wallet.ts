@@ -91,7 +91,6 @@ currentWallet: any = null;
   ) {}
 async ngOnInit(): Promise<void> {
   await this.loadWallet();
-  this.cdr;
 }
 
 async loadWallet(): Promise<void> {
@@ -119,6 +118,7 @@ async loadWallet(): Promise<void> {
     this.currentWallet = wallet;
     this.currentBalance = 0;
   }
+    this.cdr.detectChanges();
 }
   get activePackage(): WalletPackage | undefined {
     return this.packages.find(pkg => pkg.id === this.activePackageId);
@@ -133,11 +133,11 @@ async loadWallet(): Promise<void> {
   }
 
   goBack() {
-    this.global.setRoute('home');
+    this.router.navigate(['/home']);
   }
 
   goToHistory() {
-    this.global.setRoute('wallet-history');
+    this.router.navigate(['/wallet-history']);
   }
    rechargeWallet() {
     const selected = this.activePackage;
@@ -211,6 +211,8 @@ if (transaction?.reference && transaction?.status) {
   console.log('Confirmación backend:', confirmData);
 
   await this.loadWallet();
+  this.currentBalance = Number(confirmData.balanceAfter || this.currentBalance);
+this.cdr.detectChanges();
 }} catch (error) {
     console.error('Error al iniciar recarga:', error);
     alert('No se pudo iniciar el pago.');

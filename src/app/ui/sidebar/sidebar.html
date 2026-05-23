@@ -56,7 +56,7 @@
         </a>
       </li>
       <li>
-        <a class="nav-link" (click)="goChats()">
+        <a class="nav-link"*ngIf="!global.profileDataPartner" (click)="goChats()">
           <span class="dz-icon">
             <i class="icon feather icon-user"></i>
           </span>

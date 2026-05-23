@@ -15,6 +15,7 @@ import { Detailprofile } from './components/detailprofile/detailprofile';
 import { Detailprofilelocal } from './components/detailprofilelocal/detailprofilelocal';
 import { Wallet } from './components/wallet/wallet';
 import { WalletHistory } from './components/wallet-history/wallet-history';
+import { WalletPartner } from './components/wallet-partner/wallet-partner';
 
 
 export const routes: Routes = [
@@ -101,7 +102,13 @@ export const routes: Routes = [
       import('./components/favorites/favorites').then(c => c.Favorites),
     title: 'Favoritos'
   },
- 
+
+ {
+    path: 'wallet-partner',
+    loadComponent: () =>
+      import('./components/wallet-partner/wallet-partner').then(c => c.WalletPartner),
+    title: 'wallet-partner'
+  },
   {
     path: 'chat',
     loadComponent: () =>
