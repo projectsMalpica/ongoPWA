@@ -37,32 +37,32 @@ export class AuthPocketbaseService {
   private currentUserSubject = new BehaviorSubject<any>(null);
   currentUser$ = this.currentUserSubject.asObservable();
   user: any;
-  constructor(
-    public global: GlobalService,
-    public router: Router
-  ) {
-    this.pb = new PocketBase('https://db.ongomatch.com:8090');
+ constructor(
+  public global: GlobalService,
+  public router: Router
+) {
+  this.pb = new PocketBase('https://db.ongomatch.com:8090');
 
-    const token = localStorage.getItem('accessToken');
-    const userString = localStorage.getItem('user');
-    const authUser = this.pb.authStore.model;
+  const token = localStorage.getItem('accessToken');
+  const userString = localStorage.getItem('user');
 
- this.loadProfileByUserType(authUser);
-    if (token && userString) {
+  if (token && userString) {
+    try {
       const user = JSON.parse(userString);
+
       this.pb.authStore.save(token, user);
       this.currentUser = user;
-      localStorage.setItem('isLoggedin', 'true');
-      localStorage.setItem('userId', this.currentUser.id);
 
-      const profileString = localStorage.getItem('profile');
-      if (profileString) {
-        this.profile = JSON.parse(profileString);
-      } else {
-        this.loadProfileFromBackend();
-      }
+      localStorage.setItem('isLoggedin', 'true');
+      localStorage.setItem('userId', user.id);
+
+      this.loadProfileFromBackend();
+    } catch (error) {
+      console.warn('No se pudo restaurar sesión local:', error);
+      this.clearLocalSession();
     }
   }
+}
   private readonly STORAGE = {
     TOKEN: 'pb_token',
     USER: 'pb_user',
@@ -667,22 +667,37 @@ async loadProfileByUserType(authUser: any): Promise<any> {
     }
   } */
 async restoreSession(): Promise<boolean> {
-  const pb = this.pb;
+  const token = localStorage.getItem('accessToken');
+  const userString = localStorage.getItem('user');
 
-  if (!pb.authStore.isValid) {
+  if (!token || !userString) {
     this.clearLocalSession();
     return false;
   }
 
   try {
-    await pb.collection('users').authRefresh();
+    const user = JSON.parse(userString);
 
-    const user = pb.authStore.model;
+    this.pb.authStore.save(token, user);
 
-    if (!user?.id) {
+    await this.pb.collection('users').authRefresh();
+
+    const refreshedUser = this.pb.authStore.record || this.pb.authStore.model;
+
+    if (!refreshedUser?.id) {
       this.clearLocalSession();
       return false;
     }
+
+    this.currentUser = refreshedUser;
+
+    localStorage.setItem('accessToken', this.pb.authStore.token);
+    localStorage.setItem('user', JSON.stringify(refreshedUser));
+    localStorage.setItem('userId', refreshedUser.id);
+    localStorage.setItem('type', JSON.stringify(refreshedUser['type']));
+    localStorage.setItem('isLoggedin', 'true');
+
+    await this.loadProfileByUserType(refreshedUser);
 
     return true;
   } catch (error) {
@@ -695,10 +710,20 @@ clearLocalSession(): void {
   this.pb.authStore.clear();
 
   localStorage.removeItem('pocketbase_auth');
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('user');
+  localStorage.removeItem('record');
+  localStorage.removeItem('userId');
+  localStorage.removeItem('type');
+  localStorage.removeItem('userType');
+  localStorage.removeItem('isLoggedin');
   localStorage.removeItem('profile');
   localStorage.removeItem('profilePartner');
-  localStorage.removeItem('user');
-  localStorage.removeItem('userType');
+  localStorage.removeItem('pendingGoogleUser');
+  localStorage.removeItem('pendingGoogleToken');
+
+  sessionStorage.removeItem('pendingGoogleUser');
+  sessionStorage.removeItem('pendingGoogleToken');
 }
   async waitForAuthUser(retries = 10, delayMs = 300): Promise<boolean> {
     for (let i = 0; i < retries; i++) {

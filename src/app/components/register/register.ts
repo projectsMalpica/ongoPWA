@@ -366,11 +366,11 @@ export class RegisterComponent {
           'La contraseña no cumple los requisitos de seguridad.';
       }
       Swal.fire({
-        title: 'Error',
-        text: translatedMessage,
-        icon: 'error',
-        confirmButtonText: 'Entendido'
-      });
+  title: 'Error real',
+  html: `<pre style="text-align:left;white-space:pre-wrap;font-size:12px">${JSON.stringify(error?.data || error, null, 2)}</pre>`,
+  icon: 'error',
+  confirmButtonText: 'Entendido'
+});
     } finally {
       this.isSubmitting = false;
     }
