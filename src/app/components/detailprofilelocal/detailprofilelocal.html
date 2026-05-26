@@ -67,29 +67,46 @@
             </div>
         </div>
         <div class="local-actions">
-            <!-- link externo -->
-            <a *ngIf="partner.purchaseLink" [href]="partner.purchaseLink" target="_blank" class="action-btn reserve">
-                Comprar entrada en enlace externo
-            </a>
-            <!-- Reservar -->
-            <a *ngIf="partner.reservationEnabled" [href]="partner.reservationLink" target="_blank"
-                class="action-btn reserve">
-                Reservar mesa
-            </a>
+  <button
+    *ngIf="partner.reservationEnabled"
+    type="button"
+    class="action-btn reserve"
+    [disabled]="isReservingTable"
+    (click)="reserveTable()">
+    {{ isReservingTable ? 'Procesando...' : 'Reservar mesa' }}
+  </button>
 
-            <!-- Entradas -->
-            <button *ngIf="partner.ticketsEnabled" type="button" class="action-btn tickets" [disabled]="isBuyingTicket"
-                (click)="buyTicket()">
-                {{ isBuyingTicket ? 'Procesando...' : 'Comprar entrada' }}
-            </button>
+  <button
+    *ngIf="partner.ticketsEnabled"
+    type="button"
+    class="action-btn tickets"
+    [disabled]="isBuyingTicket"
+    (click)="buyTicket()">
+    {{ isBuyingTicket ? 'Procesando...' : 'Comprar entrada' }}
+  </button>
 
-            <!-- Cómo llegar -->
-            <a [href]="'https://www.google.com/maps/dir/?api=1&destination=' + partner.lat + ',' + partner.lng"
-                target="_blank" class="action-btn maps">
-                Cómo llegar
-            </a>
+  <a
+    [href]="'https://www.google.com/maps/dir/?api=1&destination=' + partner.lat + ',' + partner.lng"
+    target="_blank"
+    class="action-btn maps">
+    Cómo llegar
+  </a>
+</div>
 
-        </div>
+<div class="ticket-success-card" *ngIf="showTicketSuccess">
+  <div class="ticket-success-icon">
+    <i class="fa-solid fa-ticket"></i>
+  </div>
+
+  <h6>Entrada comprada 🎟️</h6>
+  <p>Muestra este código al llegar al local.</p>
+
+  <div class="redeem-code-box">
+    <small>Código de entrada</small>
+    <strong>{{ lastTicketCode }}</strong>
+  </div>
+</div>
+       
 
         <!-- PROMOCIONES -->
         <div class="detail-section" *ngIf="partnerPromos.length">

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import PocketBase from 'pocketbase';
 import * as bootstrap from 'bootstrap';
@@ -117,33 +117,144 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
   loadingGiftOrders = false;
   subscriptionPlans: any[] = [];
   planningSubscription: any;
-
+ticketCodeInput = '';
+ticketOrder: any = null;
+ticketRedeemLoading = false;
+ticketRedeemMessage = '';
+ticketRedeemError = '';
   constructor(
     public global: GlobalService,
     public auth: AuthPocketbaseService,
     public modalService: ModalService,
     public http: HttpClient,
     public wompi: WompiService,
-      private planningPartnerService: RealtimePlanningPartnerService
+    private planningPartnerService: RealtimePlanningPartnerService,
+      private cdr: ChangeDetectorRef
   ) {
     this.loadPromotionsForPartner();
     this.pb.autoCancellation(false);
   }
 
   async ngOnInit() {
-  this.fetchPartnerData();
+    this.fetchPartnerData();
 
-  this.planningSubscription =
-    this.planningPartnerService.planningPartner$.subscribe((plans) => {
-      this.subscriptionPlans = plans || [];
-      console.log('Planes cargados:', this.subscriptionPlans);
-    });
+    this.planningSubscription =
+      this.planningPartnerService.planningPartner$.subscribe((plans) => {
+        this.subscriptionPlans = plans || [];
+        console.log('Planes cargados:', this.subscriptionPlans);
+      });
 
-  await this.loadProfileDataPartner();
-  await this.loadPartnerProducts();
+    await this.loadProfileDataPartner();
+    await this.loadPartnerProducts();
 
-  this.global.initPlanningPartnersRealtime();
-  this.initMapIfReady();
+    this.global.initPlanningPartnersRealtime();
+    this.initMapIfReady();
+  }
+async searchTicketByCode(): Promise<void> {
+
+  let partnerId = this.global.profileDataPartner?.id;
+  const code = this.ticketCodeInput.trim();
+
+  this.ticketOrder = null;
+  this.ticketRedeemMessage = '';
+  this.ticketRedeemError = '';
+
+  // Si no existe el id del local en memoria, buscarlo
+  if (!partnerId) {
+
+    const userId = this.auth.currentUser?.id;
+
+    if (!userId) {
+      this.ticketRedeemError = 'No hay usuario autenticado.';
+      return;
+    }
+
+    try {
+
+      const partner = await this.pb
+        .collection('usuariosPartner')
+        .getFirstListItem(
+          `userId="${userId}"`,
+          { requestKey: null }
+        );
+
+      partnerId = partner.id;
+
+      // Guardar en memoria
+      this.global.profileDataPartner.id = partner.id;
+
+    } catch (error) {
+      console.error('Error buscando local:', error);
+      this.ticketRedeemError = 'No se encontró el local.';
+      return;
+    }
+  }
+
+  if (!code) {
+    this.ticketRedeemError = 'Ingresa el código de la entrada.';
+    return;
+  }
+
+  this.ticketRedeemLoading = true;
+
+  try {
+
+    const order = await this.pb
+      .collection('ticket_orders')
+      .getFirstListItem(
+        `partnerId="${partnerId}" && redeemCode="${code}" && status="paid"`,
+        { requestKey: null }
+      );
+
+    this.ticketOrder = order;
+
+    if (order['orderStatus'] === 'redeemed') {
+
+      this.ticketRedeemError = 'Esta entrada ya fue canjeada.';
+
+    } else {
+
+      this.ticketRedeemMessage =
+        'Entrada válida. Puedes permitir el ingreso.';
+    }
+
+  } catch (error) {
+
+    console.error('Error buscando ticket:', error);
+
+    this.ticketRedeemError =
+      'No encontramos una entrada válida con ese código.';
+
+  } finally {
+
+    this.ticketRedeemLoading = false;
+      this.cdr.detectChanges();
+
+  }
+}
+
+async confirmRedeemTicket(): Promise<void> {
+  if (!this.ticketOrder?.id) return;
+
+  const result = await Swal.fire({
+    icon: 'question',
+    title: '¿Validar entrada?',
+    text: `Confirmar ingreso para ${this.ticketOrder.partnerName}`,
+    confirmButtonText: 'Sí, validar',
+    cancelButtonText: 'Cancelar',
+    showCancelButton: true
+  });
+
+  if (!result.isConfirmed) return;
+
+  await this.pb.collection('ticket_orders').update(this.ticketOrder.id, {
+    orderStatus: 'redeemed',
+    redeemedAt: new Date().toISOString()
+  }, { requestKey: null });
+
+  this.ticketRedeemMessage = 'Entrada canjeada correctamente.';
+  this.ticketCodeInput = '';
+  this.ticketOrder = null;
 }
   async searchGiftByCode(): Promise<void> {
     const partnerId = this.global.profileDataPartner?.id;
@@ -183,6 +294,8 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
       this.redeemError = 'No encontramos un regalo con ese código para este local.';
     } finally {
       this.redeemLoading = false;
+        this.cdr.detectChanges();
+
     }
   }
   async loadGiftOrders(): Promise<void> {
@@ -206,6 +319,8 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
       console.error('Error cargando regalos pendientes:', error);
     } finally {
       this.loadingGiftOrders = false;
+        this.cdr.detectChanges();
+
     }
   }
   async markGiftAsRedeemed(order: any): Promise<void> {
@@ -500,6 +615,10 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
 
       if (partnerRecord) {
         this.global.profileDataPartner = {
+          id: partnerRecord.id,
+  avatar: partnerRecord['avatar'] || '',
+  userId: partnerRecord['userId'] || '',
+  venueName: partnerRecord['venueName'] || '',
           name: partnerRecord.name || '',
           email: partnerRecord.email || '',
           phone: partnerRecord.phone || '',
@@ -522,6 +641,7 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
       const userData = await this.pb.collection('usuariosPartner').getFirstListItem(`userId="${user.id}"`);
 
       this.global.profileDataPartner = {
+        id: userData.id,
         avatar: userData['avatar'] || '',
         userId: userData['userId'] || '',
         venueName: userData['venueName'] || '',
@@ -546,7 +666,11 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
         ticketsEnabled: userData['ticketsEnabled'] || false,
         ticketPrice: userData['ticketPrice'] || 0,
         ticketDescription: userData['ticketDescription'] || '',
-
+        reservationPrice: userData['reservationPrice'] || 0,
+reservationCapacity: userData['reservationCapacity'] || 0,
+ticketCapacity: userData['ticketCapacity'] || 0,
+reservationDate: this.toDateTimeLocal(userData['reservationDate'] || ''),
+ticketDate: this.toDateTimeLocal(userData['ticketDate'] || ''),
         ticketsLink:
           userData['ticketsLink'] || '',
 
@@ -557,9 +681,21 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
 
       // Cargar fotos si existen
       if (userData['files']) {
-        const photosData = JSON.parse(userData['files']);
-        this.photosPartner = photosData.map((url: string) => ({ url }));
-      }
+
+  let photosData: any[] = [];
+
+  if (Array.isArray(userData['files'])) {
+    photosData = userData['files'];
+  } else {
+    try {
+      photosData = JSON.parse(userData['files']);
+    } catch {
+      photosData = [];
+    }
+  }
+
+  this.photosPartner = photosData.map((url: string) => ({ url }));
+}
 
       // Inicializar servicios seleccionados
       if (this.global.profileDataPartner.services) {
@@ -571,6 +707,15 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
     } catch (error) {
     }
   }
+  private toDateTimeLocal(value: string): string {
+  if (!value) return '';
+
+  const date = new Date(value);
+  const offset = date.getTimezoneOffset();
+  const localDate = new Date(date.getTime() - offset * 60000);
+
+  return localDate.toISOString().slice(0, 16);
+}
   async saveLocation() {
     try {
       await this.pb.collection('usuariosPartner')
@@ -692,7 +837,22 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
         'reservationEnabled',
         String(this.global.profileDataPartner.reservationEnabled || false)
       );
+      formData.append('reservationPrice', String(this.global.profileDataPartner.reservationPrice || 0));
+formData.append(
+  'reservationDate',
+  this.global.profileDataPartner.reservationDate
+    ? new Date(this.global.profileDataPartner.reservationDate).toISOString()
+    : ''
+);
 
+formData.append(
+  'ticketDate',
+  this.global.profileDataPartner.ticketDate
+    ? new Date(this.global.profileDataPartner.ticketDate).toISOString()
+    : ''
+);      formData.append('reservationCapacity', String(this.global.profileDataPartner.reservationCapacity || 0));
+
+      formData.append('ticketCapacity', String(this.global.profileDataPartner.ticketCapacity || 0));
       formData.append(
         'reservationLink',
         this.global.profileDataPartner.reservationLink || ''
@@ -758,29 +918,44 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
       }
 
       this.global.profileDataPartner = {
-        ...this.global.profileDataPartner,
-        id: savedRecord.id,
-        userId: savedRecord.userId,
-        venueName: savedRecord.venueName || '',
-        description: savedRecord.description || '',
-        email: savedRecord.email || '',
-        phone: savedRecord.phone || '',
-        address: savedRecord.address || '',
-        capacity: savedRecord.capacity || '',
-        openingHours: savedRecord.openingHours || '',
-        lat: savedRecord.lat || '',
-        lng: savedRecord.lng || '',
-        services: savedRecord.services || '',
-        purchaseLink: savedRecord.purchaseLink || '',
-        files: normalizedFiles,
-        avatar: avatarUrl,
-        ticketsEnabled: savedRecord.ticketsEnabled || false,
-        ticketPrice: savedRecord.ticketPrice || 0,
-        ticketDescription: savedRecord.ticketDescription || '',
-        reservationEnabled: savedRecord.reservationEnabled || false,
-        reservationLink: savedRecord.reservationLink || '',
-        whatsappReservations: savedRecord.whatsappReservations || '',
-      };
+  ...this.global.profileDataPartner,
+
+  id: savedRecord.id,
+  userId: savedRecord.userId,
+
+  venueName: savedRecord.venueName || '',
+  description: savedRecord.description || '',
+  email: savedRecord.email || '',
+  phone: savedRecord.phone || '',
+  address: savedRecord.address || '',
+  capacity: savedRecord.capacity || '',
+  openingHours: savedRecord.openingHours || '',
+
+  lat: savedRecord.lat || '',
+  lng: savedRecord.lng || '',
+
+  services: savedRecord.services || '',
+  purchaseLink: savedRecord.purchaseLink || '',
+
+  files: normalizedFiles,
+  avatar: avatarUrl,
+
+  ticketsEnabled: savedRecord.ticketsEnabled || false,
+  ticketPrice: savedRecord.ticketPrice || 0,
+  ticketDescription: savedRecord.ticketDescription || '',
+
+  ticketDate: savedRecord.ticketDate || '',
+  ticketCapacity: savedRecord.ticketCapacity || 0,
+
+  reservationEnabled: savedRecord.reservationEnabled || false,
+  reservationLink: savedRecord.reservationLink || '',
+
+  reservationPrice: savedRecord.reservationPrice || 0,
+  reservationDate: savedRecord.reservationDate || '',
+  reservationCapacity: savedRecord.reservationCapacity || 0,
+
+  whatsappReservations: savedRecord.whatsappReservations || '',
+};
 
       this.avatarPreview = null;
       this.newAvatar = null;

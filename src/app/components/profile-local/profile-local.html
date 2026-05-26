@@ -216,6 +216,70 @@
   </div>
 
 </section>
+ <!-- VALIDAR ENTRADA -->
+<section class="redeem-panel-neon">
+  <div class="panel-header">
+    <div>
+      <span>Taquilla</span>
+      <h3>Validar entrada</h3>
+    </div>
+
+    <div class="redeem-header-icon">
+      <i class="fa-solid fa-ticket"></i>
+    </div>
+  </div>
+
+  <p class="redeem-subtitle">
+    Ingresa el código que muestra el cliente.
+  </p>
+
+  <div class="redeem-input-row">
+    <input
+      type="text"
+      [(ngModel)]="ticketCodeInput"
+      placeholder="TICKET-123456-789"
+      (keyup.enter)="searchTicketByCode()" />
+
+    <button
+      type="button"
+      (click)="searchTicketByCode()"
+      [disabled]="ticketRedeemLoading">
+      <i class="fa-solid fa-magnifying-glass"></i>
+    </button>
+  </div>
+
+  <div class="redeem-loading" *ngIf="ticketRedeemLoading">
+    Buscando entrada...
+  </div>
+
+  <div class="redeem-error" *ngIf="ticketRedeemError">
+    {{ ticketRedeemError }}
+  </div>
+
+  <div class="redeem-success" *ngIf="ticketRedeemMessage">
+    {{ ticketRedeemMessage }}
+  </div>
+
+  <div class="redeem-ticket-neon" *ngIf="ticketOrder">
+    <div class="redeem-ticket-info">
+      <h4>{{ ticketOrder.partnerName }}</h4>
+      <p>Código</p>
+      <strong>{{ ticketOrder.redeemCode }}</strong>
+    </div>
+
+    <div class="redeem-ticket-footer">
+      <span>{{ ticketOrder.amount | currency:'COP':'symbol':'1.0-0' }}</span>
+
+      <button
+        type="button"
+        *ngIf="ticketOrder.orderStatus !== 'redeemed'"
+        (click)="confirmRedeemTicket()">
+        <i class="fa-solid fa-circle-check"></i>
+        Permitir ingreso
+      </button>
+    </div>
+  </div>
+</section>
     <!-- INFO DEL LOCAL -->
     <section class="neon-panel">
       <div class="panel-title">
@@ -291,7 +355,7 @@
         </div>
       </article>
     </section>
-
+   
     <!-- GALERÍA -->
     <section class="neon-panel" *ngIf="global.profileDataPartner.files?.length">
       <div class="panel-title">
@@ -485,7 +549,84 @@
             <input type="checkbox" [(ngModel)]="global.profileDataPartner.reservationEnabled">
           </div>
         </div>
+        <div class="card style-4">
+  <div class="card-header">
+    <label>Precio reserva de mesa</label>
+  </div>
+  <div class="card-body">
+    <input
+      type="number"
+      class="form-control"
+      [(ngModel)]="global.profileDataPartner.reservationPrice"
+      placeholder="Ej: 50000">
+  </div>
+</div>
 
+<div class="card style-4">
+  <div class="card-header">
+    <label>Fecha reserva disponible</label>
+  </div>
+  <div class="card-body">
+    <input
+      type="datetime-local"
+      class="form-control"
+      [(ngModel)]="global.profileDataPartner.reservationDate">
+  </div>
+</div>
+
+<div class="card style-4">
+  <div class="card-header">
+    <label>Cupos para reservas</label>
+  </div>
+  <div class="card-body">
+    <input
+      type="number"
+      class="form-control"
+      [(ngModel)]="global.profileDataPartner.reservationCapacity"
+      placeholder="Ej: 20">
+  </div>
+</div>
+<div class="card style-4">
+          <div class="card-header">
+            <label>Venta de entradas activa</label>
+          </div>
+          <div class="card-body">
+            <input type="checkbox" [(ngModel)]="global.profileDataPartner.ticketsEnabled">
+          </div>
+        </div>
+<div class="card style-4">
+  <div class="card-header">
+    <label>Fecha del evento / entrada</label>
+  </div>
+  <div class="card-body">
+    <input
+      type="datetime-local"
+      class="form-control"
+      [(ngModel)]="global.profileDataPartner.ticketDate">
+  </div>
+</div>
+
+<div class="card style-4">
+  <div class="card-header">
+    <label>Cantidad de entradas disponibles</label>
+  </div>
+  <div class="card-body">
+    <input
+      type="number"
+      class="form-control"
+      [(ngModel)]="global.profileDataPartner.ticketCapacity"
+      placeholder="Ej: 100">
+  </div>
+</div>
+<div class="card style-4">
+          <div class="card-header">
+            <label>Precio de entrada</label>
+          </div>
+          <div class="card-body">
+            <input type="number" class="form-control" [(ngModel)]="global.profileDataPartner.ticketPrice"
+              placeholder="Ej: 30000">
+          </div>
+        </div>
         <div class="card style-4">
           <div class="card-header">
             <label>WhatsApp reservas</label>
@@ -496,24 +637,9 @@
           </div>
         </div>
 
-        <div class="card style-4">
-          <div class="card-header">
-            <label>Venta de entradas activa</label>
-          </div>
-          <div class="card-body">
-            <input type="checkbox" [(ngModel)]="global.profileDataPartner.ticketsEnabled">
-          </div>
-        </div>
+        
 
-        <div class="card style-4">
-          <div class="card-header">
-            <label>Precio de entrada</label>
-          </div>
-          <div class="card-body">
-            <input type="number" class="form-control" [(ngModel)]="global.profileDataPartner.ticketPrice"
-              placeholder="Ej: 30000">
-          </div>
-        </div>
+        
         <div class="card style-4">
           <div class="card-header">
             <h6 class="title mb-0">Servicios</h6>
@@ -605,6 +731,7 @@
     </button>
   </div>
 </section>
+
 <!-- ========================= -->
 <!-- OFFCANVAS SERVICIOS -->
 <!-- ========================= -->

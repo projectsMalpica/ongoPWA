@@ -585,3 +585,57 @@
     background: rgba(255, 47, 160, 0.16);
   }
 }
+.ticket-success-card {
+  margin-top: 16px;
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(0, 184, 148, 0.14);
+  border: 1px solid rgba(0, 184, 148, 0.45);
+  color: #fff;
+  text-align: center;
+}
+
+.ticket-success-icon {
+  width: 46px;
+  height: 46px;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 184, 148, 0.25);
+  color: #00e6b8;
+  font-size: 22px;
+}
+
+.ticket-success-card h6 {
+  margin: 0 0 6px;
+  color: #fff;
+  font-weight: 800;
+}
+
+.ticket-success-card p {
+  margin: 0 0 12px;
+  color: rgba(255,255,255,0.75);
+  font-size: 0.85rem;
+}
+
+.redeem-code-box {
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(0,0,0,0.28);
+  border: 1px dashed rgba(255,255,255,0.35);
+}
+
+.redeem-code-box small {
+  display: block;
+  margin-bottom: 4px;
+  color: rgba(255,255,255,0.6);
+}
+
+.redeem-code-box strong {
+  display: block;
+  font-size: 1.25rem;
+  letter-spacing: 1px;
+  color: #00e6b8;
+}
