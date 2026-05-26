@@ -8,6 +8,7 @@ import { filter } from 'rxjs/operators';
 import { ToastService } from './services/ToastService.service';
 import { NotificationsService } from './services/NotificationsService.service';
 import { GlobalService } from './services/global.service';
+import { SwUpdate } from '@angular/service-worker';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -44,34 +45,41 @@ export class App {
   constructor(
     private toastService: ToastService,
     public notificationsService: NotificationsService,
-    public global: GlobalService
-  ) {
-    this.router.events
-      .pipe(filter(event => event instanceof NavigationEnd))
-      .subscribe((event: NavigationEnd) => {
-        this.showLayout = !this.hiddenLayoutRoutes.includes(event.urlAfterRedirects);
-      });
-
-    this.showLayout = !this.hiddenLayoutRoutes.includes(this.router.url);
-
-    if (typeof window !== 'undefined') {
-      this.isIos =
-        /iphone|ipad|ipod/i.test(window.navigator.userAgent) ||
-        ((navigator.platform === 'MacIntel') && (navigator as any).maxTouchPoints > 1);
-      this.isInstalled =
-        window.matchMedia('(display-mode: standalone)').matches ||
-        (window.navigator as any).standalone === true;
-
-      const dismissed = localStorage.getItem('ongo-pwa-dismissed') === '1';
-
-      if (this.isIos && !this.isInstalled && !dismissed) {
-        this.showPwaPrompt = true;
-      }
-    }
-    this.toastService.toasts$.subscribe(t => {
-      this.toasts = t;
+    public global: GlobalService,
+      private swUpdate: SwUpdate
+  ) 
+  {
+     this.router.events
+    .pipe(filter(event => event instanceof NavigationEnd))
+    .subscribe((event: NavigationEnd) => {
+      this.showLayout = !this.hiddenLayoutRoutes.includes(event.urlAfterRedirects);
     });
+
+  this.showLayout = !this.hiddenLayoutRoutes.includes(this.router.url);
+
+  this.checkForAppUpdates();
+
+  if (typeof window !== 'undefined') {
+    this.isIos =
+      /iphone|ipad|ipod/i.test(window.navigator.userAgent) ||
+      ((navigator.platform === 'MacIntel') && (navigator as any).maxTouchPoints > 1);
+
+    this.isInstalled =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true;
+
+    const dismissed = localStorage.getItem('ongo-pwa-dismissed') === '1';
+
+    if (this.isIos && !this.isInstalled && !dismissed) {
+      this.showPwaPrompt = true;
+    }
   }
+
+  this.toastService.toasts$.subscribe(t => {
+    this.toasts = t;
+  });
+  }
+  
   async ngOnInit() {
     setTimeout(async () => {
       const user = this.global.pb.authStore.model;
@@ -84,7 +92,34 @@ export class App {
       }
     }, 500);
   }
+  checkForAppUpdates() {
+  if (this.swUpdate.isEnabled) {
+    this.swUpdate.versionUpdates.subscribe(event => {
+      if (event.type === 'VERSION_READY') {
+        console.log('Nueva versión disponible. Recargando app...');
+        window.location.reload();
+      }
+    });
+  }
+}
+async logoutHard() {
+  this.global.pb.authStore.clear();
 
+  localStorage.clear();
+  sessionStorage.clear();
+
+  if ('databases' in indexedDB) {
+    const dbs = await indexedDB.databases();
+
+    dbs.forEach((db) => {
+      if (db.name) {
+        indexedDB.deleteDatabase(db.name);
+      }
+    });
+  }
+
+  window.location.href = '/login';
+}
   @HostListener('window:beforeinstallprompt', ['$event'])
   onBeforeInstallPrompt(event: Event) {
     event.preventDefault();

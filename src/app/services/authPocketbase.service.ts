@@ -45,7 +45,9 @@ export class AuthPocketbaseService {
 
     const token = localStorage.getItem('accessToken');
     const userString = localStorage.getItem('user');
+    const authUser = this.pb.authStore.model;
 
+ this.loadProfileByUserType(authUser);
     if (token && userString) {
       const user = JSON.parse(userString);
       this.pb.authStore.save(token, user);
@@ -378,7 +380,66 @@ export class AuthPocketbaseService {
         })
     );
   }
+async initUserSession() {
+  const validSession = await this.restoreSession();
 
+  if (!validSession) {
+    this.router.navigate(['/login']);
+    return;
+  }
+
+  const authUser = this.pb.authStore.model;
+
+  if (!authUser?.id) {
+    this.clearLocalSession();
+    this.router.navigate(['/login']);
+    return;
+  }
+
+  await this.loadProfileByUserType(authUser);
+}
+async loadProfileByUserType(authUser: any): Promise<any> {
+  const userId = authUser?.id;
+  const type = authUser?.type || authUser?.userType;
+
+  if (!userId) {
+    throw new Error('No hay authUser.id');
+  }
+
+  if (!type) {
+    throw new Error('El usuario no tiene type o userType');
+  }
+
+  let collectionName = '';
+
+  if (type === 'client') {
+    collectionName = 'usuariosClient';
+  }
+
+  if (type === 'partner') {
+    collectionName = 'usuariosPartner';
+  }
+
+  if (!collectionName) {
+    throw new Error(`Tipo de usuario no reconocido: ${type}`);
+  }
+
+  const profile = await this.pb
+    .collection(collectionName)
+    .getFirstListItem(`userId="${userId}"`);
+
+  if (type === 'client') {
+    localStorage.setItem('profile', JSON.stringify(profile));
+    localStorage.removeItem('profilePartner');
+  }
+
+  if (type === 'partner') {
+    localStorage.setItem('profilePartner', JSON.stringify(profile));
+    localStorage.removeItem('profile');
+  }
+
+  return profile;
+}
   profileStatus() {
     return this.complete;
   }
@@ -589,7 +650,7 @@ export class AuthPocketbaseService {
     return userId ? userId : '';
   }
 
-  async restoreSession() {
+ /*  async restoreSession() {
     try {
       const token = localStorage.getItem('accessToken');
       const recordString = localStorage.getItem('record');
@@ -604,8 +665,41 @@ export class AuthPocketbaseService {
     } catch (e) {
       console.warn('No se pudo restaurar la sesión:', e);
     }
+  } */
+async restoreSession(): Promise<boolean> {
+  const pb = this.pb;
+
+  if (!pb.authStore.isValid) {
+    this.clearLocalSession();
+    return false;
   }
 
+  try {
+    await pb.collection('users').authRefresh();
+
+    const user = pb.authStore.model;
+
+    if (!user?.id) {
+      this.clearLocalSession();
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Sesión inválida o expirada:', error);
+    this.clearLocalSession();
+    return false;
+  }
+}
+clearLocalSession(): void {
+  this.pb.authStore.clear();
+
+  localStorage.removeItem('pocketbase_auth');
+  localStorage.removeItem('profile');
+  localStorage.removeItem('profilePartner');
+  localStorage.removeItem('user');
+  localStorage.removeItem('userType');
+}
   async waitForAuthUser(retries = 10, delayMs = 300): Promise<boolean> {
     for (let i = 0; i < retries; i++) {
       if (this.currentUser?.id) {
