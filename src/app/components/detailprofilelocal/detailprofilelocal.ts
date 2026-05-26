@@ -129,29 +129,36 @@ async buyTicket(): Promise<void> {
   }
 }
   normalizePartnerData(): void {
-    if (typeof this.partner.files === 'string') {
-      try {
-        this.partner.files = JSON.parse(this.partner.files);
-      } catch {
-        this.partner.files = [];
-      }
-    }
-
-    if (!Array.isArray(this.partner.files)) {
-      this.partner.files = [];
-    }
-
-    if (typeof this.partner.services === 'string') {
-      this.partner.services = this.partner.services
-        .split(',')
-        .map((item: string) => item.trim())
-        .filter(Boolean);
-    }
-
-    if (!Array.isArray(this.partner.services)) {
-      this.partner.services = [];
+  if (typeof this.partner.files === 'string') {
+    try {
+      this.partner.files = JSON.parse(this.partner.files);
+    } catch {
+      this.partner.files = [this.partner.files];
     }
   }
+
+  if (!Array.isArray(this.partner.files)) {
+    this.partner.files = [];
+  }
+
+  this.partner.files = this.partner.files.map((file: string) => {
+    if (!file) return '';
+    return file.startsWith('http')
+      ? file
+      : this.pb.files.getUrl(this.partner, file);
+  }).filter(Boolean);
+
+  if (typeof this.partner.services === 'string') {
+    this.partner.services = this.partner.services
+      .split(',')
+      .map((item: string) => item.trim())
+      .filter(Boolean);
+  }
+
+  if (!Array.isArray(this.partner.services)) {
+    this.partner.services = [];
+  }
+}
 
   setAvatarUrl(): void {
     if (this.partner.avatar?.startsWith('http')) {
