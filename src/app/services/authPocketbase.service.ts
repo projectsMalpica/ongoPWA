@@ -37,32 +37,32 @@ export class AuthPocketbaseService {
   private currentUserSubject = new BehaviorSubject<any>(null);
   currentUser$ = this.currentUserSubject.asObservable();
   user: any;
- constructor(
-  public global: GlobalService,
-  public router: Router
-) {
-  this.pb = new PocketBase('https://db.ongomatch.com:8090');
+  constructor(
+    public global: GlobalService,
+    public router: Router
+  ) {
+    this.pb = new PocketBase('https://db.ongomatch.com:8090');
 
-  const token = localStorage.getItem('accessToken');
-  const userString = localStorage.getItem('user');
+    const token = localStorage.getItem('accessToken');
+    const userString = localStorage.getItem('user');
 
-  if (token && userString) {
-    try {
-      const user = JSON.parse(userString);
+    if (token && userString) {
+      try {
+        const user = JSON.parse(userString);
 
-      this.pb.authStore.save(token, user);
-      this.currentUser = user;
+        this.pb.authStore.save(token, user);
+        this.currentUser = user;
 
-      localStorage.setItem('isLoggedin', 'true');
-      localStorage.setItem('userId', user.id);
+        localStorage.setItem('isLoggedin', 'true');
+        localStorage.setItem('userId', user.id);
 
-      this.loadProfileFromBackend();
-    } catch (error) {
-      console.warn('No se pudo restaurar sesión local:', error);
-      this.clearLocalSession();
+        this.loadProfileFromBackend();
+      } catch (error) {
+        console.warn('No se pudo restaurar sesión local:', error);
+        this.clearLocalSession();
+      }
     }
   }
-}
   private readonly STORAGE = {
     TOKEN: 'pb_token',
     USER: 'pb_user',
@@ -380,66 +380,66 @@ export class AuthPocketbaseService {
         })
     );
   }
-async initUserSession() {
-  const validSession = await this.restoreSession();
+  async initUserSession() {
+    const validSession = await this.restoreSession();
 
-  if (!validSession) {
-    this.router.navigate(['/login']);
-    return;
+    if (!validSession) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    const authUser = this.pb.authStore.model;
+
+    if (!authUser?.id) {
+      this.clearLocalSession();
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    await this.loadProfileByUserType(authUser);
   }
+  async loadProfileByUserType(authUser: any): Promise<any> {
+    const userId = authUser?.id;
+    const type = authUser?.type || authUser?.userType;
 
-  const authUser = this.pb.authStore.model;
+    if (!userId) {
+      throw new Error('No hay authUser.id');
+    }
 
-  if (!authUser?.id) {
-    this.clearLocalSession();
-    this.router.navigate(['/login']);
-    return;
+    if (!type) {
+      throw new Error('El usuario no tiene type o userType');
+    }
+
+    let collectionName = '';
+
+    if (type === 'client') {
+      collectionName = 'usuariosClient';
+    }
+
+    if (type === 'partner') {
+      collectionName = 'usuariosPartner';
+    }
+
+    if (!collectionName) {
+      throw new Error(`Tipo de usuario no reconocido: ${type}`);
+    }
+
+    const profile = await this.pb
+      .collection(collectionName)
+      .getFirstListItem(`userId="${userId}"`);
+
+    if (type === 'client') {
+      localStorage.setItem('profile', JSON.stringify(profile));
+      localStorage.removeItem('profilePartner');
+    }
+
+    if (type === 'partner') {
+      localStorage.setItem('profilePartner', JSON.stringify(profile));
+      localStorage.removeItem('profile');
+    }
+
+    return profile;
   }
-
-  await this.loadProfileByUserType(authUser);
-}
-async loadProfileByUserType(authUser: any): Promise<any> {
-  const userId = authUser?.id;
-  const type = authUser?.type || authUser?.userType;
-
-  if (!userId) {
-    throw new Error('No hay authUser.id');
-  }
-
-  if (!type) {
-    throw new Error('El usuario no tiene type o userType');
-  }
-
-  let collectionName = '';
-
-  if (type === 'client') {
-    collectionName = 'usuariosClient';
-  }
-
-  if (type === 'partner') {
-    collectionName = 'usuariosPartner';
-  }
-
-  if (!collectionName) {
-    throw new Error(`Tipo de usuario no reconocido: ${type}`);
-  }
-
-  const profile = await this.pb
-    .collection(collectionName)
-    .getFirstListItem(`userId="${userId}"`);
-
-  if (type === 'client') {
-    localStorage.setItem('profile', JSON.stringify(profile));
-    localStorage.removeItem('profilePartner');
-  }
-
-  if (type === 'partner') {
-    localStorage.setItem('profilePartner', JSON.stringify(profile));
-    localStorage.removeItem('profile');
-  }
-
-  return profile;
-}
   profileStatus() {
     return this.complete;
   }
@@ -455,7 +455,7 @@ async loadProfileByUserType(authUser: any): Promise<any> {
       password: password,
       passwordConfirm: password,
       type: type,
-      username: name,
+      username: this.makeSafeUsername(name),
       name: name,
     };
 
@@ -470,7 +470,18 @@ async loadProfileByUserType(authUser: any): Promise<any> {
         })
     );
   }
+  makeSafeUsername(value: string): string {
+    const base = (value || 'usuario')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9_]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 30);
 
+    return `${base || 'usuario'}_${Date.now().toString().slice(-6)}`;
+  }
   loginUser(email: string, password: string): Observable<any> {
     return from(this.pb.collection('users').authWithPassword(email, password)).pipe(
       map((authData) => {
@@ -650,81 +661,81 @@ async loadProfileByUserType(authUser: any): Promise<any> {
     return userId ? userId : '';
   }
 
- /*  async restoreSession() {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const recordString = localStorage.getItem('record');
-      if (token && recordString) {
-        const record = JSON.parse(recordString);
-        this.pb.authStore.save(token, record);
-        this.currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  /*  async restoreSession() {
+     try {
+       const token = localStorage.getItem('accessToken');
+       const recordString = localStorage.getItem('record');
+       if (token && recordString) {
+         const record = JSON.parse(recordString);
+         this.pb.authStore.save(token, record);
+         this.currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+ 
+         // ✔️ Carga siempre el perfil más reciente
+         await this.loadProfileFromBackend();
+       }
+     } catch (e) {
+       console.warn('No se pudo restaurar la sesión:', e);
+     }
+   } */
+  async restoreSession(): Promise<boolean> {
+    const token = localStorage.getItem('accessToken');
+    const userString = localStorage.getItem('user');
 
-        // ✔️ Carga siempre el perfil más reciente
-        await this.loadProfileFromBackend();
-      }
-    } catch (e) {
-      console.warn('No se pudo restaurar la sesión:', e);
-    }
-  } */
-async restoreSession(): Promise<boolean> {
-  const token = localStorage.getItem('accessToken');
-  const userString = localStorage.getItem('user');
-
-  if (!token || !userString) {
-    this.clearLocalSession();
-    return false;
-  }
-
-  try {
-    const user = JSON.parse(userString);
-
-    this.pb.authStore.save(token, user);
-
-    await this.pb.collection('users').authRefresh();
-
-    const refreshedUser = this.pb.authStore.record || this.pb.authStore.model;
-
-    if (!refreshedUser?.id) {
+    if (!token || !userString) {
       this.clearLocalSession();
       return false;
     }
 
-    this.currentUser = refreshedUser;
+    try {
+      const user = JSON.parse(userString);
 
-    localStorage.setItem('accessToken', this.pb.authStore.token);
-    localStorage.setItem('user', JSON.stringify(refreshedUser));
-    localStorage.setItem('userId', refreshedUser.id);
-    localStorage.setItem('type', JSON.stringify(refreshedUser['type']));
-    localStorage.setItem('isLoggedin', 'true');
+      this.pb.authStore.save(token, user);
 
-    await this.loadProfileByUserType(refreshedUser);
+      await this.pb.collection('users').authRefresh();
 
-    return true;
-  } catch (error) {
-    console.error('Sesión inválida o expirada:', error);
-    this.clearLocalSession();
-    return false;
+      const refreshedUser = this.pb.authStore.record || this.pb.authStore.model;
+
+      if (!refreshedUser?.id) {
+        this.clearLocalSession();
+        return false;
+      }
+
+      this.currentUser = refreshedUser;
+
+      localStorage.setItem('accessToken', this.pb.authStore.token);
+      localStorage.setItem('user', JSON.stringify(refreshedUser));
+      localStorage.setItem('userId', refreshedUser.id);
+      localStorage.setItem('type', JSON.stringify(refreshedUser['type']));
+      localStorage.setItem('isLoggedin', 'true');
+
+      await this.loadProfileByUserType(refreshedUser);
+
+      return true;
+    } catch (error) {
+      console.error('Sesión inválida o expirada:', error);
+      this.clearLocalSession();
+      return false;
+    }
   }
-}
-clearLocalSession(): void {
-  this.pb.authStore.clear();
+  clearLocalSession(): void {
+    this.pb.authStore.clear();
 
-  localStorage.removeItem('pocketbase_auth');
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('user');
-  localStorage.removeItem('record');
-  localStorage.removeItem('userId');
-  localStorage.removeItem('type');
-  localStorage.removeItem('userType');
-  localStorage.removeItem('isLoggedin');
-  localStorage.removeItem('profile');
-  localStorage.removeItem('profilePartner');
-  localStorage.removeItem('pendingGoogleUser');
-  localStorage.removeItem('pendingGoogleToken');
+    localStorage.removeItem('pocketbase_auth');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
+    localStorage.removeItem('record');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('type');
+    localStorage.removeItem('userType');
+    localStorage.removeItem('isLoggedin');
+    localStorage.removeItem('profile');
+    localStorage.removeItem('profilePartner');
+    localStorage.removeItem('pendingGoogleUser');
+    localStorage.removeItem('pendingGoogleToken');
 
-  sessionStorage.removeItem('pendingGoogleUser');
-  sessionStorage.removeItem('pendingGoogleToken');
-}
+    sessionStorage.removeItem('pendingGoogleUser');
+    sessionStorage.removeItem('pendingGoogleToken');
+  }
   async waitForAuthUser(retries = 10, delayMs = 300): Promise<boolean> {
     for (let i = 0; i < retries; i++) {
       if (this.currentUser?.id) {
