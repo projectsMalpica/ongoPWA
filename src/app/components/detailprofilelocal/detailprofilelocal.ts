@@ -8,6 +8,7 @@ import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../services/ToastService.service';
 import { Router } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
+import { environment } from '../../environments/environment';
 @Component({
   selector: 'app-detailprofilelocal',
   standalone: true,
@@ -34,6 +35,7 @@ export class Detailprofilelocal {
   isBuyingTicket = false;
   lastTicketCode = '';
 showTicketSuccess = false;
+
   constructor(public global: GlobalService,
     public changeDetectorRef: ChangeDetectorRef,
     public auth: AuthPocketbaseService,
@@ -84,6 +86,13 @@ showTicketSuccess = false;
     console.log('Productos:', this.partnerProducts);
     this.changeDetectorRef.detectChanges();
   }
+  getAvatarUrl(user: any): string {
+  if (!user?.avatar) {
+    return 'assets/images/user/pic1.jpg';
+  }
+
+  return `${environment.pbUrl}/api/files/${user.collectionId}/${user.id}/${user.avatar}`;
+}
 async payWithWallet(params: {
   amount: number;
   description: string;

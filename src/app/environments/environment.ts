@@ -1,5 +1,6 @@
 export const environment = {
   production: false,
+  pbUrl:'https://db.ongomatch.com:8090',
   WOMPI_PUBLIC_KEY: 'pub_test_W6tvBfniNct1v0wtAg0evTrGPii3FAeN',
   MAPBOX_PUBLIC_TOKEN: '',
   apiBase: '/api', 
