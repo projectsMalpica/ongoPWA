@@ -85,7 +85,7 @@ export class Explorer implements OnInit, OnDestroy, AfterViewInit {
     this.router.navigate(['/detailprofilelocal', partner.id]);
   }
 
-  goToPromo(promo: any): void {
+ /*  goToPromo(promo: any): void {
   if (!promo) return;
 
   // Caso 1: la promo tiene directamente el id del local
@@ -111,5 +111,12 @@ export class Explorer implements OnInit, OnDestroy, AfterViewInit {
   }
 
   console.warn('No se encontró local asociado a esta promoción:', promo);
+} */
+goToPromo(promo: any): void {
+  if (!promo?.id) return;
+
+  localStorage.setItem('selectedPromo', JSON.stringify(promo));
+
+  this.router.navigate(['/detailpromo', promo.id]);
 }
 }

@@ -1,0 +1,39 @@
+<div class="page-content p-t50 p-b50">
+  <div class="container">
+
+    <div class="checkout-promo-card" *ngIf="promo">
+
+      <img
+        class="promo-img"
+        [src]="promo.files?.[0] || 'assets/img/default.jpg'"
+        alt="Promoción"
+      />
+
+      <h2>{{ promo.name }}</h2>
+
+      <p>{{ promo.description }}</p>
+
+      <div class="price-box">
+        <span>Total a pagar</span>
+        <strong>
+          {{ getAmount() | currency:'COP':'symbol':'1.0-0' }}
+        </strong>
+      </div>
+
+      <div class="alert-error" *ngIf="error">
+        {{ error }}
+      </div>
+
+      <button
+        type="button"
+        class="pay-btn"
+        [disabled]="loading"
+        (click)="createPromoOrder()"
+      >
+        {{ loading ? 'Creando orden...' : 'Continuar al pago' }}
+      </button>
+
+    </div>
+
+  </div>
+</div>

@@ -157,87 +157,122 @@
     </div>
 </div>
 
-
-
 <!-- Modal de regalo -->
 <div class="gift-modal-backdrop" *ngIf="showGiftModal" (click)="closeGiftModal()">
-    <div class="gift-modal" (click)="$event.stopPropagation()">
+  <div class="gift-modal" (click)="$event.stopPropagation()">
 
-        <div class="gift-modal-header">
-            <h5>Enviar regalo 🎁</h5>
-            <button type="button" (click)="closeGiftModal()">×</button>
-        </div>
+    <div class="gift-success-card" *ngIf="giftSentSuccess; else giftForm">
+      <div class="gift-success-icon">
+        <i class="fa-solid fa-check"></i>
+      </div>
 
-        <div class="gift-product-preview" *ngIf="selectedGiftProduct">
-            <img [src]="selectedGiftProduct.image || 'assets/images/default-product.jpg'" alt="producto">
+      <h3>Compra lista para reclamar 🎁</h3>
 
-            <div>
-                <h6>{{ selectedGiftProduct.name }}</h6>
-                <p>{{ selectedGiftProduct.category || 'Producto' }}</p>
-                <strong>{{ selectedGiftProduct.price | number:'1.0-0' }} COP</strong>
-            </div>
-        </div>
-        <div class="gift-total-box">
-            <span>Total</span>
-            <strong>
-                {{ selectedGiftProduct.price | number:'1.0-0' }} COP
-            </strong>
-        </div>
-        <div class="gift-receiver-box">
-            <label>¿Para quién es?</label>
+      <p>
+        Comparte este código. El local deberá validarlo antes de entregar el producto.
+      </p>
 
-            <div class="receiver-option" [class.active]="selectedReceiverUserId === ''"
-                (click)="selectedReceiverUserId = ''">
+      <div class="redeem-code-box">
+        <small>Código de retiro</small>
+        <strong>{{ lastRedeemCode }}</strong>
+      </div>
 
-                <img [src]="auth.currentUser?.avatar || 'assets/images/user/pic1.jpg'" alt="Yo">
-                <div>
-                    <strong>Para mí</strong>
-                    <small>Comprar para mi cuenta</small>
-                </div>
+      <button type="button" class="send-gift-btn" (click)="copyRedeemCode()">
+        Copiar código
+      </button>
 
-                <i *ngIf="selectedReceiverUserId === ''" class="fa fa-check"></i>
-            </div>
-
-            <div class="receiver-option" *ngFor="let user of giftReceivers"
-                [class.active]="selectedReceiverUserId === user.userId" (click)="selectedReceiverUserId = user.userId">
-
-                <img [src]="user.avatar || 'assets/images/user/pic1.jpg'" alt="usuario">
-                <div>
-                    <strong>{{ user.name }}</strong>
-                    <small>Enviar regalo</small>
-                </div>
-
-                <i *ngIf="selectedReceiverUserId === user.userId" class="fa fa-check"></i>
-            </div>
-        </div>
-
-        <div class="gift-field">
-            <label>Mensaje opcional</label>
-            <textarea rows="3" [(ngModel)]="giftMessage" placeholder="Ej: Este trago va por mí 🍸"></textarea>
-        </div>
-
-        <div class="gift-payment-methods">
-            <label>Método de pago</label>
-
-            <div class="payment-option" [class.active]="giftPaymentMethod === 'wallet'"
-                (click)="giftPaymentMethod = 'wallet'">
-                <span>Wallet</span>
-                <strong>Saldo: {{ walletBalance | number:'1.0-0' }} COP</strong>
-            </div>
-
-            <div class="payment-option" [class.active]="giftPaymentMethod === 'wompi'"
-                (click)="giftPaymentMethod = 'wompi'">
-                <span>Wompi</span>
-                <strong>Pago directo</strong>
-            </div>
-        </div>
-        <div class="gift-confirm-info">
-            <i class="fa-solid fa-lock"></i>
-            <span>Confirma tu compra o regalo</span>
-        </div>
-        <button type="button" class="send-gift-btn" [disabled]="isSendingGift" (click)="sendGift()">
-            {{ isSendingGift ? 'Procesando...' : 'Confirmar compra / Enviar regalo 🎁' }}
-        </button>
-
+      <button type="button" class="send-gift-btn secondary" (click)="closeGiftModal(true)">
+        Cerrar
+      </button>
     </div>
+
+    <ng-template #giftForm>
+
+      <div class="gift-modal-header">
+        <h5>Enviar regalo 🎁</h5>
+        <button type="button" (click)="closeGiftModal()">×</button>
+      </div>
+
+      <div class="gift-product-preview" *ngIf="selectedGiftProduct">
+        <img [src]="selectedGiftProduct.image || 'assets/images/default-product.jpg'" alt="producto">
+
+        <div>
+          <h6>{{ selectedGiftProduct.name }}</h6>
+          <p>{{ selectedGiftProduct.category || 'Producto' }}</p>
+          <strong>{{ selectedGiftProduct.price | number:'1.0-0' }} COP</strong>
+        </div>
+      </div>
+
+      <div class="gift-total-box">
+        <span>Total</span>
+        <strong>{{ selectedGiftProduct?.price | number:'1.0-0' }} COP</strong>
+      </div>
+
+      <div class="gift-receiver-box">
+        <label>¿Para quién es?</label>
+
+        <div class="receiver-option"
+             [class.active]="selectedReceiverUserId === ''"
+             (click)="selectedReceiverUserId = ''">
+
+          <img [src]="auth.currentUser?.avatar || 'assets/images/user/pic1.jpg'" alt="Yo">
+
+          <div>
+            <strong>Para mí</strong>
+            <small>Comprar para mi cuenta</small>
+          </div>
+
+          <i *ngIf="selectedReceiverUserId === ''" class="fa fa-check"></i>
+        </div>
+
+        <div class="receiver-option"
+             *ngFor="let user of giftReceivers"
+             [class.active]="selectedReceiverUserId === user.userId"
+             (click)="selectedReceiverUserId = user.userId">
+
+          <img [src]="user.avatar || 'assets/images/user/pic1.jpg'" alt="usuario">
+
+          <div>
+            <strong>{{ user.name }}</strong>
+            <small>Enviar regalo</small>
+          </div>
+
+          <i *ngIf="selectedReceiverUserId === user.userId" class="fa fa-check"></i>
+        </div>
+      </div>
+
+      <div class="gift-field">
+        <label>Mensaje opcional</label>
+        <textarea rows="3" [(ngModel)]="giftMessage" placeholder="Ej: Este trago va por mí 🍸"></textarea>
+      </div>
+
+      <div class="gift-payment-methods">
+        <label>Método de pago</label>
+
+        <div class="payment-option active">
+          <span>Wallet</span>
+          <strong>Saldo: {{ walletBalance | number:'1.0-0' }} COP</strong>
+        </div>
+
+        <div class="payment-option" (click)="goToWalletRecharge()">
+          <span>Recargar wallet</span>
+          <strong>Agregar saldo</strong>
+        </div>
+      </div>
+
+      <div class="gift-confirm-info">
+        <i class="fa-solid fa-lock"></i>
+        <span>Confirma tu compra o regalo</span>
+      </div>
+
+      <button type="button"
+              class="send-gift-btn"
+              [disabled]="isSendingGift"
+              (click)="sendGift()">
+        {{ isSendingGift ? 'Procesando...' : 'Confirmar compra / Enviar regalo 🎁' }}
+      </button>
+
+    </ng-template>
+
+  </div>
 </div>

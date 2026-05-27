@@ -16,6 +16,7 @@ import { Detailprofilelocal } from './components/detailprofilelocal/detailprofil
 import { Wallet } from './components/wallet/wallet';
 import { WalletHistory } from './components/wallet-history/wallet-history';
 import { WalletPartner } from './components/wallet-partner/wallet-partner';
+import { Detailpromo } from './components/detailpromo/detailpromo';
 
 
 export const routes: Routes = [
@@ -61,6 +62,17 @@ export const routes: Routes = [
     title: 'Explorar'
   },
   {
+    path: 'detailpromo/:id',
+    loadComponent: () =>
+      import('./components/detailpromo/detailpromo').then(m => m.Detailpromo),
+    title: 'Detalle de promocion'
+  },
+  {
+  path: 'checkout-promo/:id',
+  loadComponent: () =>
+    import('./components/checkout-promo/checkout-promo').then(m => m.CheckoutPromo)
+},
+  {
     path: 'profile',
     loadComponent: () =>
       import('./components/profile/profile').then(c => c.Profile),
@@ -79,11 +91,11 @@ export const routes: Routes = [
     title: 'Perfil'
   },
   {
-  path: 'detailprofile/:id',
-  loadComponent: () =>
-    import('./components/detailprofile/detailprofile').then(c => c.Detailprofile),
-  title: 'Perfil'
-},
+    path: 'detailprofile/:id',
+    loadComponent: () =>
+      import('./components/detailprofile/detailprofile').then(c => c.Detailprofile),
+    title: 'Perfil'
+  },
   {
     path: 'detailprofilelocal',
     loadComponent: () =>
@@ -91,11 +103,11 @@ export const routes: Routes = [
     title: 'Perfil local'
   },
   {
-  path: 'detailprofilelocal/:id',
-  loadComponent: () =>
-    import('./components/detailprofilelocal/detailprofilelocal').then(c => c.Detailprofilelocal),
-  title: 'Perfil local'
-},
+    path: 'detailprofilelocal/:id',
+    loadComponent: () =>
+      import('./components/detailprofilelocal/detailprofilelocal').then(c => c.Detailprofilelocal),
+    title: 'Perfil local'
+  },
   {
     path: 'favorites',
     loadComponent: () =>
@@ -103,7 +115,7 @@ export const routes: Routes = [
     title: 'Favoritos'
   },
 
- {
+  {
     path: 'wallet-partner',
     loadComponent: () =>
       import('./components/wallet-partner/wallet-partner').then(c => c.WalletPartner),

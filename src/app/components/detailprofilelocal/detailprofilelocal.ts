@@ -9,6 +9,8 @@ import { ToastService } from '../../services/ToastService.service';
 import { Router } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { environment } from '../../environments/environment';
+import Swal from 'sweetalert2';
+
 @Component({
   selector: 'app-detailprofilelocal',
   standalone: true,
@@ -34,8 +36,10 @@ export class Detailprofilelocal {
   isSendingGift = false;
   isBuyingTicket = false;
   lastTicketCode = '';
-showTicketSuccess = false;
-
+  showTicketSuccess = false;
+  lastRedeemCode = '';
+  lastRedeemQr = '';
+  giftSentSuccess = false;
   constructor(public global: GlobalService,
     public changeDetectorRef: ChangeDetectorRef,
     public auth: AuthPocketbaseService,
@@ -87,173 +91,173 @@ showTicketSuccess = false;
     this.changeDetectorRef.detectChanges();
   }
   getAvatarUrl(user: any): string {
-  if (!user?.avatar) {
-    return 'assets/images/user/pic1.jpg';
-  }
-
-  return `${environment.pbUrl}/api/files/${user.collectionId}/${user.id}/${user.avatar}`;
-}
-async payWithWallet(params: {
-  amount: number;
-  description: string;
-  referenceType: string;
-  referenceId: string;
-}): Promise<boolean> {
-  const authUser = this.auth.currentUser;
-
-  if (!authUser?.id) {
-    this.toastService.show('Debes iniciar sesión.', 'error');
-    return false;
-  }
-
-  await this.loadWallet();
-
-  if (!this.currentWallet?.id) {
-    this.toastService.show('No se encontró tu wallet.', 'error');
-    return false;
-  }
-
-  const balanceBefore = Number(this.currentWallet.balance || 0);
-
-  if (balanceBefore < params.amount) {
-    this.toastService.show('Saldo insuficiente. Recarga tu wallet para continuar.', 'error');
-
-    setTimeout(() => {
-      this.router.navigate(['/wallet']);
-    }, 800);
-
-    return false;
-  }
-
-  const balanceAfter = balanceBefore - params.amount;
-
-  let authUserRecordId = authUser.id;
-
-  try {
-    const authRecord = await this.pb.collection('users').getFirstListItem(
-      `email="${authUser.email}"`,
-      { requestKey: null }
-    );
-
-    authUserRecordId = authRecord.id;
-  } catch (error) {
-    console.warn('No se pudo confirmar el usuario en users, se usará authUser.id:', authUser.id);
-  }
-
-  const transactionData: any = {
-    walletId: this.currentWallet.id,
-    userId: authUserRecordId,
-    type: params.referenceType === 'ticket_order' ? 'ticket' : 'purchase',
-    amount: params.amount,
-    direction: 'debit',
-    balanceBefore,
-    balanceAfter,
-    referenceType: params.referenceType,
-    referenceId: params.referenceId,
-    status: 'completed',
-    description: params.description
-  };
-
-  if (this.partner?.id) {
-    transactionData.partnerId = this.partner.id;
-  }
-
-  try {
-    const transaction = await this.pb.collection('wallet_transactions').create(transactionData, {
-      requestKey: null
-    });
-
-    console.log('Transacción wallet creada:', transaction);
-
-    await this.pb.collection('wallet').update(this.currentWallet.id, {
-      balance: balanceAfter
-    }, { requestKey: null });
-
-    this.walletBalance = balanceAfter;
-    this.currentWallet.balance = balanceAfter;
-
-    return true;
-
-  } catch (error: any) {
-    console.error('wallet_transactions data:', transactionData);
-    console.error('PocketBase response:', error?.response);
-
-    this.toastService.show('No se pudo registrar la transacción.', 'error');
-    return false;
-  }
-}
-  private generateRedeemCode(prefix = 'TICKET'): string {
-  return `${prefix}-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
-}
-
-async buyTicket(): Promise<void> {
-  try {
-    this.isBuyingTicket = true;
-
-    const buyerUserId = this.auth.currentUser?.id;
-
-    if (!buyerUserId) {
-      this.toastService.show('Debes iniciar sesión para comprar entrada.', 'error');
-      return;
+    if (!user?.avatar) {
+      return 'assets/images/user/pic1.jpg';
     }
 
-    const amount = Number(this.partner.ticketPrice || 0);
+    return `${environment.pbUrl}/api/files/${user.collectionId}/${user.id}/${user.avatar}`;
+  }
+  async payWithWallet(params: {
+    amount: number;
+    description: string;
+    referenceType: string;
+    referenceId: string;
+  }): Promise<boolean> {
+    const authUser = this.auth.currentUser;
 
-    if (!amount || amount <= 0) {
-      this.toastService.show('Este local no tiene precio de entrada configurado.', 'error');
-      return;
+    if (!authUser?.id) {
+      this.toastService.show('Debes iniciar sesión.', 'error');
+      return false;
     }
 
-    const redeemCode = this.generateRedeemCode('TICKET');
+    await this.loadWallet();
 
-    const order = await this.pb.collection('ticket_orders').create({
-      buyerUserId,
-      partnerId: this.partner.id,
-      partnerUserId: this.partner.userId,
-      partnerName: this.partner.venueName,
-      amount,
-      status: 'pending',
-      orderStatus: 'pending_redeem',
-      paymentMethod: 'wallet',
-      ticketDate: this.partner.ticketDate || '',
-      redeemCode,
-      referenceId: `ticket_${this.partner.id}_${Date.now()}`
-    }, { requestKey: null });
+    if (!this.currentWallet?.id) {
+      this.toastService.show('No se encontró tu wallet.', 'error');
+      return false;
+    }
 
-    const paid = await this.payWithWallet({
-      amount,
-      description: `Entrada comprada: ${this.partner.venueName}`,
-      referenceType: 'ticket_order',
-      referenceId: order.id
-    });
+    const balanceBefore = Number(this.currentWallet.balance || 0);
 
-    if (!paid) {
-      await this.pb.collection('ticket_orders').update(order.id, {
-        status: 'cancelled',
-        orderStatus: 'cancelled'
+    if (balanceBefore < params.amount) {
+      this.toastService.show('Saldo insuficiente. Recarga tu wallet para continuar.', 'error');
+
+      setTimeout(() => {
+        this.router.navigate(['/wallet']);
+      }, 800);
+
+      return false;
+    }
+
+    const balanceAfter = balanceBefore - params.amount;
+
+    let authUserRecordId = authUser.id;
+
+    try {
+      const authRecord = await this.pb.collection('users').getFirstListItem(
+        `email="${authUser.email}"`,
+        { requestKey: null }
+      );
+
+      authUserRecordId = authRecord.id;
+    } catch (error) {
+      console.warn('No se pudo confirmar el usuario en users, se usará authUser.id:', authUser.id);
+    }
+
+    const transactionData: any = {
+      walletId: this.currentWallet.id,
+      userId: authUserRecordId,
+      type: params.referenceType === 'ticket_order' ? 'ticket' : 'purchase',
+      amount: params.amount,
+      direction: 'debit',
+      balanceBefore,
+      balanceAfter,
+      referenceType: params.referenceType,
+      referenceId: params.referenceId,
+      status: 'completed',
+      description: params.description
+    };
+
+    if (this.partner?.id) {
+      transactionData.partnerId = this.partner.id;
+    }
+
+    try {
+      const transaction = await this.pb.collection('wallet_transactions').create(transactionData, {
+        requestKey: null
+      });
+
+      console.log('Transacción wallet creada:', transaction);
+
+      await this.pb.collection('wallet').update(this.currentWallet.id, {
+        balance: balanceAfter
       }, { requestKey: null });
-      return;
+
+      this.walletBalance = balanceAfter;
+      this.currentWallet.balance = balanceAfter;
+
+      return true;
+
+    } catch (error: any) {
+      console.error('wallet_transactions data:', transactionData);
+      console.error('PocketBase response:', error?.response);
+
+      this.toastService.show('No se pudo registrar la transacción.', 'error');
+      return false;
     }
-
-    await this.pb.collection('ticket_orders').update(order.id, {
-      status: 'paid',
-      orderStatus: 'pending_redeem',
-      paidAt: new Date().toISOString()
-    }, { requestKey: null });
-
-    this.lastTicketCode = redeemCode;
-    this.showTicketSuccess = true;
-
-    this.toastService.show(`Entrada comprada. Código: ${redeemCode}`, 'success');
-
-  } catch (error) {
-    console.error('Error comprando entrada:', error);
-    this.toastService.show('No se pudo comprar la entrada.', 'error');
-  } finally {
-    this.isBuyingTicket = false;
-    this.changeDetectorRef.detectChanges();
   }
-}
+  private generateRedeemCode(prefix = 'TICKET'): string {
+    return `${prefix}-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
+  }
+
+  async buyTicket(): Promise<void> {
+    try {
+      this.isBuyingTicket = true;
+
+      const buyerUserId = this.auth.currentUser?.id;
+
+      if (!buyerUserId) {
+        this.toastService.show('Debes iniciar sesión para comprar entrada.', 'error');
+        return;
+      }
+
+      const amount = Number(this.partner.ticketPrice || 0);
+
+      if (!amount || amount <= 0) {
+        this.toastService.show('Este local no tiene precio de entrada configurado.', 'error');
+        return;
+      }
+
+      const redeemCode = this.generateRedeemCode('TICKET');
+
+      const order = await this.pb.collection('ticket_orders').create({
+        buyerUserId,
+        partnerId: this.partner.id,
+        partnerUserId: this.partner.userId,
+        partnerName: this.partner.venueName,
+        amount,
+        status: 'pending',
+        orderStatus: 'pending_redeem',
+        paymentMethod: 'wallet',
+        ticketDate: this.partner.ticketDate || '',
+        redeemCode,
+        referenceId: `ticket_${this.partner.id}_${Date.now()}`
+      }, { requestKey: null });
+
+      const paid = await this.payWithWallet({
+        amount,
+        description: `Entrada comprada: ${this.partner.venueName}`,
+        referenceType: 'ticket_order',
+        referenceId: order.id
+      });
+
+      if (!paid) {
+        await this.pb.collection('ticket_orders').update(order.id, {
+          status: 'cancelled',
+          orderStatus: 'cancelled'
+        }, { requestKey: null });
+        return;
+      }
+
+      await this.pb.collection('ticket_orders').update(order.id, {
+        status: 'paid',
+        orderStatus: 'pending_redeem',
+        paidAt: new Date().toISOString()
+      }, { requestKey: null });
+
+      this.lastTicketCode = redeemCode;
+      this.showTicketSuccess = true;
+
+      this.toastService.show(`Entrada comprada. Código: ${redeemCode}`, 'success');
+
+    } catch (error) {
+      console.error('Error comprando entrada:', error);
+      this.toastService.show('No se pudo comprar la entrada.', 'error');
+    } finally {
+      this.isBuyingTicket = false;
+      this.changeDetectorRef.detectChanges();
+    }
+  }
   async reserveTable(): Promise<void> {
     try {
       this.isReservingTable = true;
@@ -457,14 +461,20 @@ async buyTicket(): Promise<void> {
     this.changeDetectorRef.detectChanges();
   }
 
-  closeGiftModal(): void {
-    if (this.isSendingGift) return;
+  closeGiftModal(force = false): void {
+  if (this.isSendingGift && !force) return;
 
-    this.showGiftModal = false;
-    this.selectedGiftProduct = null;
-    this.selectedReceiverUserId = '';
-    this.giftMessage = '';
+  this.showGiftModal = false;
+  this.selectedGiftProduct = null;
+  this.selectedReceiverUserId = '';
+  this.giftMessage = '';
+  this.giftSentSuccess = false;
+
+  if (!force) {
+    this.lastRedeemCode = '';
+    this.lastRedeemQr = '';
   }
+}
 
   async loadWallet(): Promise<void> {
     const userId = this.auth.currentUser?.id;
@@ -495,7 +505,9 @@ async buyTicket(): Promise<void> {
   }
 
   async loadGiftReceivers(): Promise<void> {
+
     try {
+
       const currentUserId = this.auth.currentUser?.id;
 
       if (!currentUserId) {
@@ -503,8 +515,43 @@ async buyTicket(): Promise<void> {
         return;
       }
 
+      /*
+        Buscar matches reales
+      */
+
+      const matchRecords = await this.pb.collection('matches').getFullList({
+        filter: `
+        (user1="${currentUserId}" || user2="${currentUserId}")
+        && status="matched"
+      `,
+        requestKey: null
+      });
+
+      if (!matchRecords.length) {
+        this.giftReceivers = [];
+        return;
+      }
+
+      /*
+        Obtener IDs de usuarios conectados
+      */
+
+      const matchedUserIds = matchRecords.map((match: any) => {
+
+        return match.user1 === currentUserId
+          ? match.user2
+          : match.user1;
+
+      });
+
+      /*
+        Buscar solo esos usuarios
+      */
+
       const records = await this.pb.collection('usuariosClient').getFullList({
-        filter: `userId!="${currentUserId}"`,
+        filter: matchedUserIds
+          .map((id: string) => `userId="${id}"`)
+          .join(' || '),
         sort: 'name',
         requestKey: null
       });
@@ -520,8 +567,11 @@ async buyTicket(): Promise<void> {
       this.changeDetectorRef.detectChanges();
 
     } catch (error) {
-      console.error('Error cargando clientes receptores:', error);
+
+      console.error('Error cargando matches para regalos:', error);
+
       this.giftReceivers = [];
+
     }
   }
   normalizeClientAvatar(client: any): string {
@@ -561,14 +611,7 @@ async buyTicket(): Promise<void> {
       return;
     }
 
-    const receiverUserId = this.selectedReceiverUserId || buyerUserId;
-
-    if (this.giftPaymentMethod === 'wallet') {
-      await this.sendGiftWithWallet();
-      return;
-    }
-
-    await this.sendGiftWithWompi();
+    await this.sendGiftWithWallet();
   }
   async sendGiftWithWallet(): Promise<void> {
     try {
@@ -579,6 +622,9 @@ async buyTicket(): Promise<void> {
       const amount = Number(product.price || 0);
       const receiverUserId = this.selectedReceiverUserId || buyerUserId;
       const isGift = receiverUserId !== buyerUserId;
+      const partnerId = product.partnerId || this.partner.id;
+      const redeemCode = this.generateRedeemCode('GIFT');
+      const redeemQr = `${window.location.origin}/redeem/${redeemCode}`;
       if (!buyerUserId) {
         alert('Debes iniciar sesión.');
         return;
@@ -591,10 +637,21 @@ async buyTicket(): Promise<void> {
       const balanceBefore = Number(this.currentWallet.balance || 0);
 
       if (balanceBefore < amount) {
-        this.toastService.show(
-          'Saldo insuficiente. Usa Wompi o recarga tu wallet 💳',
-          'error'
-        ); return;
+        const result = await Swal.fire({
+          icon: 'warning',
+          title: 'Saldo insuficiente',
+          text: 'Recarga tu wallet para poder completar esta compra.',
+          confirmButtonText: 'Recargar wallet',
+          showCancelButton: true,
+          cancelButtonText: 'Cancelar'
+        });
+
+        if (result.isConfirmed) {
+          this.closeGiftModal();
+          this.router.navigate(['/wallet']);
+        }
+
+        return;
       }
 
       const balanceAfter = balanceBefore - amount;
@@ -603,16 +660,22 @@ async buyTicket(): Promise<void> {
         balance: balanceAfter
       }, { requestKey: null });
 
+
       const order = await this.pb.collection('product_orders').create({
         buyerUserId,
         receiverUserId,
-        partnerId: product.partnerId || this.partner.id,
+        partnerId,
         productId: product.id,
         productName: product.name,
         productImage: product.image || '',
         amount,
         paymentMethod: 'wallet',
         status: 'paid',
+        orderStatus: 'pending_redeem',
+        orderType: isGift ? 'gift' : 'self_purchase',
+        redeemCode,
+        redeemQr,
+        referenceId: `wallet_gift_${product.id}_${Date.now()}`,
         message: this.giftMessage || ''
       }, { requestKey: null });
 
@@ -626,22 +689,41 @@ async buyTicket(): Promise<void> {
         balanceAfter,
         referenceType: 'product_order',
         referenceId: order.id,
-        status: 'approved',
+status: 'completed',
         description: `Regalo enviado: ${product.name}`
       }, { requestKey: null });
 
       this.walletBalance = balanceAfter;
-      this.closeGiftModal();
+this.currentWallet.balance = balanceAfter;
 
-      this.toastService.show('Regalo enviado correctamente 🎁', 'success');
+this.lastRedeemCode = redeemCode;
+this.lastRedeemQr = redeemQr;
+this.giftSentSuccess = true;
 
-    } catch (error) {
+this.toastService.show('Regalo enviado correctamente 🎁', 'success');
+this.changeDetectorRef.detectChanges();
+
+    } catch (error: any) {
       console.error('Error enviando regalo con wallet:', error);
-      this.toastService.show('No se pudo enviar el regalo.', 'error');
+      console.error('PocketBase response:', error?.response);
+
+      this.toastService.show(
+        error?.response?.message || 'No se pudo enviar el regalo.',
+        'error'
+      );
     } finally {
       this.isSendingGift = false;
+      this.changeDetectorRef.detectChanges();
     }
   }
+  copyRedeemCode(): void {
+  if (!this.lastRedeemCode) return;
+
+  navigator.clipboard.writeText(this.lastRedeemCode);
+  this.toastService.show('Código copiado ✅', 'success');
+}
+
+
   async sendGiftWithWompi(): Promise<void> {
     try {
       this.isSendingGift = true;
@@ -675,12 +757,28 @@ async buyTicket(): Promise<void> {
 
       await new Promise(resolve => setTimeout(resolve, 150));
 
-      await this.wompiService.openCheckout({
+      const wompiResult = await this.wompiService.openCheckout({
         amountInCents: amount * 100,
         reference,
         currency: 'COP',
         customerEmail: this.auth.currentUser?.email || ''
       });
+
+      const transaction = wompiResult?.transaction;
+
+      if (transaction?.status === 'APPROVED') {
+        await this.confirmProductOrderPayment(reference, transaction);
+        this.toastService.show('Pago aprobado. Regalo enviado 🎁', 'success');
+        return;
+      }
+
+      if (transaction?.status === 'DECLINED') {
+        await this.cancelProductOrderPayment(reference, transaction);
+        this.toastService.show('El pago fue rechazado.', 'error');
+        return;
+      }
+
+      this.toastService.show('Pago pendiente de confirmación.');
 
     } catch (error) {
       console.error('Error enviando regalo con Wompi:', error);
@@ -688,5 +786,41 @@ async buyTicket(): Promise<void> {
     } finally {
       this.isSendingGift = false;
     }
+  }
+ goToWalletRecharge(): void {
+  this.closeGiftModal();
+  this.router.navigate(['/wallet']);
+}
+  async confirmProductOrderPayment(reference: string, transaction: any): Promise<void> {
+    const order = await this.pb.collection('product_orders').getFirstListItem(
+      `referenceId="${reference}"`,
+      { requestKey: null }
+    );
+
+    const redeemCode = this.generateRedeemCode('GIFT');
+
+    await this.pb.collection('product_orders').update(order.id, {
+      status: 'paid',
+      orderStatus: 'pending_redeem',
+      paidAt: new Date().toISOString(),
+      redeemCode,
+      paymentData: transaction
+    }, { requestKey: null });
+
+    this.closeGiftModal();
+
+    this.toastService.show(`Código de regalo: ${redeemCode}`, 'success');
+  }
+  async cancelProductOrderPayment(reference: string, transaction: any): Promise<void> {
+    const order = await this.pb.collection('product_orders').getFirstListItem(
+      `referenceId="${reference}"`,
+      { requestKey: null }
+    );
+
+    await this.pb.collection('product_orders').update(order.id, {
+      status: 'cancelled',
+      orderStatus: 'cancelled',
+      paymentData: transaction
+    }, { requestKey: null });
   }
 }

@@ -1,0 +1,44 @@
+<div class="page-content p-t50 p-b50">
+  <div class="container">
+
+    <div *ngIf="loading">
+      Cargando promoción...
+    </div>
+
+    <div *ngIf="error">
+      {{ error }}
+    </div>
+
+    <div class="promo-detail" *ngIf="promo">
+
+      <div class="promo-image">
+        <img
+          [src]="promo.files?.[0] || 'assets/img/default.jpg'"
+          alt="Promoción"
+        />
+      </div>
+
+      <div class="promo-info">
+        <h2>{{ promo.name }}</h2>
+
+        <p>
+          {{ promo.description }}
+        </p>
+
+        <div class="promo-price" *ngIf="promo.price">
+          <span>Precio</span>
+          <strong>
+            {{ promo.price | currency:'COP':'symbol':'1.0-0' }}
+          </strong>
+        </div>
+
+        <button type="button" class="buy-promo-btn" (click)="buyPromo()">
+          Comprar promoción
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+</div>
