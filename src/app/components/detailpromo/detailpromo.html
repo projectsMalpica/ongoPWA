@@ -1,41 +1,27 @@
-<div class="page-content p-t50 p-b50">
+<div class="page-content promo-detail-page p-t50 p-b50">
   <div class="container">
 
-    <div *ngIf="loading">
-      Cargando promoción...
-    </div>
+    <div class="promo-detail-card" *ngIf="promo">
 
-    <div *ngIf="error">
-      {{ error }}
-    </div>
-
-    <div class="promo-detail" *ngIf="promo">
-
-      <div class="promo-image">
-        <img
-          [src]="promo.files?.[0] || 'assets/img/default.jpg'"
-          alt="Promoción"
-        />
+      <div class="promo-hero-img">
+        <img [src]="promo.files?.[0] || 'assets/img/default.jpg'" alt="Promoción">
       </div>
 
-      <div class="promo-info">
-        <h2>{{ promo.name }}</h2>
+      <div class="promo-detail-content">
+        <span class="promo-chip">Promoción OnGo</span>
 
-        <p>
-          {{ promo.description }}
-        </p>
+        <h1>{{ promo.name }}</h1>
 
-        <div class="promo-price" *ngIf="promo.price">
+        <p>{{ promo.description }}</p>
+
+        <div class="promo-price-box" *ngIf="promo.price">
           <span>Precio</span>
-          <strong>
-            {{ promo.price | currency:'COP':'symbol':'1.0-0' }}
-          </strong>
+          <strong>{{ promo.price | currency:'COP':'symbol':'1.0-0' }}</strong>
         </div>
 
         <button type="button" class="buy-promo-btn" (click)="buyPromo()">
           Comprar promoción
         </button>
-
       </div>
 
     </div>

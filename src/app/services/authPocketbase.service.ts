@@ -286,22 +286,26 @@ export class AuthPocketbaseService {
   isLogin() {
     return localStorage.getItem('isLoggedin');
   }
-
+  /* 
+    isAdmin() {
+      const userType = localStorage.getItem('type');
+  
+      if (!userType || userType === 'undefined') {
+        return false;
+      }
+  
+      try {
+        return JSON.parse(userType) === 'admin';
+      } catch {
+        return false;
+      }
+    } */
   isAdmin() {
-    const userType = localStorage.getItem('type');
-
-    if (!userType || userType === 'undefined') {
-      return false;
-    }
-
-    try {
-      return JSON.parse(userType) === 'admin';
-    } catch {
-      return false;
-    }
+    const type = this.normalizeUserType(localStorage.getItem('type'));
+    return type === 'admin';
   }
 
-  isPartner() {
+  /* isPartner() {
     const userType = localStorage.getItem('type');
 
     if (!userType || userType === 'undefined') {
@@ -313,20 +317,28 @@ export class AuthPocketbaseService {
     } catch {
       return false;
     }
+  } */
+  isPartner() {
+    const type = this.normalizeUserType(localStorage.getItem('type'));
+    return type === 'partner';
   }
 
+  /*  isClient() {
+     const userType = localStorage.getItem('type');
+ 
+     if (!userType || userType === 'undefined') {
+       return false;
+     }
+ 
+     try {
+       return JSON.parse(userType) === 'client';
+     } catch {
+       return false;
+     }
+   } */
   isClient() {
-    const userType = localStorage.getItem('type');
-
-    if (!userType || userType === 'undefined') {
-      return false;
-    }
-
-    try {
-      return JSON.parse(userType) === 'client';
-    } catch {
-      return false;
-    }
+    const type = this.normalizeUserType(localStorage.getItem('type'));
+    return type === 'client';
   }
 
   async findClientByUserId(userId: string): Promise<any> {
@@ -400,8 +412,7 @@ export class AuthPocketbaseService {
   }
   async loadProfileByUserType(authUser: any): Promise<any> {
     const userId = authUser?.id;
-    const type = authUser?.type || authUser?.userType;
-
+    const type = this.normalizeUserType(authUser?.type || authUser?.userType);
     if (!userId) {
       throw new Error('No hay authUser.id');
     }
@@ -516,14 +527,25 @@ export class AuthPocketbaseService {
         // 🚪 Limpia cualquier conexión anterior
         await this.pb.realtime.unsubscribe();
         this.pb.authStore.clear();
+
         this.pb.authStore.save(token, authData.record);
 
-        // Guarda en localStorage
-        this.setUser(user);
+        this.currentUser = user;
+
         localStorage.setItem('accessToken', token);
         localStorage.setItem('userId', user.id);
         localStorage.setItem('user', JSON.stringify(user));
-        localStorage.setItem('type', JSON.stringify(user.type));
+        localStorage.setItem('record', JSON.stringify(authData.record));
+        localStorage.setItem('type', this.normalizeUserType(user.type) || '');
+        localStorage.setItem('isLoggedin', 'true');
+
+        this.currentUserSubject.next(user);
+        // Guarda en localStorage
+        /* this.setUser(user);
+        localStorage.setItem('accessToken', token);
+        localStorage.setItem('userId', user.id);
+        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('type', JSON.stringify(user.type)); */
 
         console.log(`🔎 Login OK. Buscando perfil para tipo=${user.type}, userId=${user.id}`);
 
@@ -559,41 +581,30 @@ export class AuthPocketbaseService {
   async logoutUser(): Promise<any> {
     await this.pb.realtime.unsubscribe();
     this.pb.authStore.clear();
-    localStorage.clear();
+    /* localStorage.clear(); */
+    this.clearLocalSession();
     this.global.setRoute('login');
     return of(null);
   }
+  normalizeUserType(type: any): 'admin' | 'partner' | 'client' | null {
+    if (Array.isArray(type)) return type[0] || null;
 
+    if (typeof type === 'string') {
+      try {
+        const parsed = JSON.parse(type);
+        if (Array.isArray(parsed)) return parsed[0] || null;
+        return parsed;
+      } catch {
+        return type as any;
+      }
+    }
+
+    return null;
+  }
   setToken(token: string, model: RecordModel): void {
     this.pb.authStore.save(token, model);
   }
-  /*  async permision() {
-     // Espera hasta que authStore esté listo
-     await new Promise(resolve => {
-       const check = () => this.pb.authStore.isValid ? resolve(true) : setTimeout(check, 50);
-       check();
-     });
-   
-     if (!this.isAuthenticated()) {
-       this.global.setRoute('home');
-       return;
-     }
-     
-     const user = this.getCurrentUser();
-     if (!user?.type) {
-       this.global.setRoute('home');
-       return;
-     }
-   
-     // Redirige según rol
-     if (user.type === 'partner') {
-       this.global.setRoute('home-local');
-     } else if (user.type === 'client') {
-       this.global.setRoute('explorer');
-     } else {
-       this.global.setRoute('login');
-     }
-   } */
+
   async permision() {
     await new Promise(resolve => {
       const check = () => this.pb.authStore.isValid ? resolve(true) : setTimeout(check, 50);
@@ -661,22 +672,6 @@ export class AuthPocketbaseService {
     return userId ? userId : '';
   }
 
-  /*  async restoreSession() {
-     try {
-       const token = localStorage.getItem('accessToken');
-       const recordString = localStorage.getItem('record');
-       if (token && recordString) {
-         const record = JSON.parse(recordString);
-         this.pb.authStore.save(token, record);
-         this.currentUser = JSON.parse(localStorage.getItem('user') || '{}');
- 
-         // ✔️ Carga siempre el perfil más reciente
-         await this.loadProfileFromBackend();
-       }
-     } catch (e) {
-       console.warn('No se pudo restaurar la sesión:', e);
-     }
-   } */
   async restoreSession(): Promise<boolean> {
     const token = localStorage.getItem('accessToken');
     const userString = localStorage.getItem('user');
@@ -699,13 +694,17 @@ export class AuthPocketbaseService {
         this.clearLocalSession();
         return false;
       }
+      const cleanType = this.normalizeUserType(refreshedUser['type']);
+
+      refreshedUser['type'] = cleanType;
 
       this.currentUser = refreshedUser;
+      this.currentUserSubject.next(refreshedUser);
 
       localStorage.setItem('accessToken', this.pb.authStore.token);
       localStorage.setItem('user', JSON.stringify(refreshedUser));
       localStorage.setItem('userId', refreshedUser.id);
-      localStorage.setItem('type', JSON.stringify(refreshedUser['type']));
+      localStorage.setItem('type', cleanType || '');
       localStorage.setItem('isLoggedin', 'true');
 
       await this.loadProfileByUserType(refreshedUser);
@@ -713,7 +712,9 @@ export class AuthPocketbaseService {
       return true;
     } catch (error) {
       console.error('Sesión inválida o expirada:', error);
-      this.clearLocalSession();
+      /*       this.clearLocalSession();
+       */
+      console.warn('No limpio sesión durante diagnóstico');
       return false;
     }
   }

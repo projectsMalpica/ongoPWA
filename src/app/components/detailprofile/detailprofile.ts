@@ -28,7 +28,7 @@ export class Detailprofile {
     private router: Router,
     private authPocketbaseService: AuthPocketbaseService
   ) { 
-          this.pb = this.global.pb;
+    this.pb = this.authPocketbaseService.pb;
 
   }
 

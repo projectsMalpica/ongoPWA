@@ -64,5 +64,6 @@ export class Detailpromo implements OnInit {
 
     this.router.navigate(['/checkout-promo', this.promo.id]);
   }
+  
 
 }

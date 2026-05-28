@@ -58,7 +58,8 @@ export class Home implements OnInit {
     private router: Router,
     private toastService: ToastService
   ) {
-    this.pb = this.global.pb;
+/*     this.pb = this.global.pb;
+ */    this.pb = this.authPocketbaseService.pb;
   }
   async openGiftFromHome(cliente: any): Promise<void> {
   if (!cliente?.id) return;

@@ -11,11 +11,18 @@ import { RouterModule } from '@angular/router';
   styleUrl: './menubar.scss',
 })
 export class Menubar {
-isPartner: boolean = false;
+  isPartner = false;
 constructor(
   public global: GlobalService,
   public auth: AuthPocketbaseService
 ) { 
-  this.isPartner = this.auth.isPartner();
 }
+ ngOnInit() {
+    this.isPartner = this.auth.isPartner();
+
+    this.auth.currentUser$.subscribe(user => {
+      const type = user?.type || JSON.parse(localStorage.getItem('type') || 'null');
+      this.isPartner = type === 'partner';
+    });
+  }
 }

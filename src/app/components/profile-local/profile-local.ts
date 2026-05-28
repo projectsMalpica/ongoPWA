@@ -44,6 +44,7 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
     partnerId: ''
   };
 
+
   productImageFile: File | null = null;
   isEditingProduct: boolean = false;
   editingProductId: string | null = null;
@@ -90,12 +91,13 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
   lat: number = 0;
   lng: number = 0;
   newPromo = {
-    name: '',
-    description: '',
-    date: '',
-    files: [],
-    userId: '',
-  };
+  name: '',
+  description: '',
+  date: '',
+  price: null as number | null,
+  files: [],
+  userId: '',
+};
   showPromos = false;
   isServicesOffcanvasOpen = false;
 
@@ -1067,8 +1069,14 @@ formData.append(
         this.loadPromotionsForPartner();
         this.isEditingPromo = false;
         this.editingPromoId = null;
-        this.newPromo = { name: '', description: '', date: '', files: [], userId: '' };
-        this.promoImageFile = null;
+this.newPromo = {
+  name: '',
+  description: '',
+  date: '',
+  price: null,
+  files: [],
+  userId: '',
+};        this.promoImageFile = null;
         // Cierra modal y muestra toast igual que antes
         const modalEl = document.getElementById('promoModal');
         if (modalEl) {
@@ -1109,6 +1117,7 @@ formData.append(
       promoForm.append('name', this.newPromo.name);
       promoForm.append('description', `${this.newPromo.description}\nFecha: ${this.newPromo.date}`);
       promoForm.append('userId', this.auth.currentUser?.id || '');
+      promoForm.append('price', String(this.newPromo.price || 0));
       if (imageUrl) {
         // Guardar el enlace como array de string (JSON)
         promoForm.append('files', JSON.stringify([imageUrl]));
@@ -1118,7 +1127,7 @@ formData.append(
       console.log('Promo guardada con imagen:', result);
 
       // Reset
-      this.newPromo = { name: '', description: '', date: '', files: [], userId: '' };
+      this.newPromo = { name: '', description: '', date: '', files: [], userId: '', price: null as number | null };
       this.promoImageFile = null;
 
       // Cerrar modal y limpiar backdrop
@@ -1171,7 +1180,8 @@ formData.append(
         name: promo.name,
         description: promo.description,
         files: promo.files,
-        userId: promo.userId
+        userId: promo.userId,
+          price: Number(promo.price || 0)
 
       }));
     } catch (error) {
@@ -1185,6 +1195,7 @@ formData.append(
       date: '',
       files: [],
       userId: '',
+      price: null as number | null,
     };
     this.promoImageFile = null;
     this.isEditingPromo = false;
@@ -1243,6 +1254,7 @@ formData.append(
       date: promo.description.split('\nFecha:')[1]?.trim() || '',
       files: promo.files || [],
       userId: promo.userId || '',
+      price: Number(this.newPromo.price || 0),
     };
     this.editingPromoId = promo.id;
     this.isEditingPromo = true;

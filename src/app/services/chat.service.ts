@@ -294,8 +294,8 @@ async initConversationsRealtime() {
 
   async logout() {
     await this.pb.collection('messages').unsubscribe('*');
-    this.pb.authStore.clear();
-
+/*     this.pb.authStore.clear();
+ */
     this.userId = '';
     this.messagesSubject.next([]);
     this.conversationsSubject.next([]);

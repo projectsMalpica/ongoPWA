@@ -40,6 +40,7 @@ export class Detailprofilelocal {
   lastRedeemCode = '';
   lastRedeemQr = '';
   giftSentSuccess = false;
+  
   constructor(public global: GlobalService,
     public changeDetectorRef: ChangeDetectorRef,
     public auth: AuthPocketbaseService,

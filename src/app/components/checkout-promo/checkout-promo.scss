@@ -1,0 +1,115 @@
+.promo-checkout-page {
+  min-height: 100vh;
+  background: #050818;
+  color: #fff;
+}
+
+.promo-ticket-card {
+  max-width: 420px;
+  margin: 0 auto;
+  border-radius: 28px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #16071f, #090414);
+  border: 1px solid rgba(255, 47, 179, .25);
+  box-shadow: 0 25px 70px rgba(0,0,0,.55);
+}
+
+.promo-ticket-image img {
+  width: 100%;
+  height: 360px;
+  object-fit: cover;
+}
+
+.promo-ticket-body,
+.promo-ticket-success {
+  padding: 22px;
+}
+
+.promo-chip {
+  color: #ff2fb3;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.promo-ticket-body h2,
+.promo-ticket-success h2 {
+  margin: 8px 0;
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.promo-ticket-body p,
+.promo-ticket-success p {
+  color: rgba(255,255,255,.72);
+}
+
+.ticket-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding: 15px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.08);
+}
+
+.ticket-row strong {
+  color: #ff4dca;
+}
+
+.pay-btn,
+.secondary-btn {
+  width: 100%;
+  margin-top: 16px;
+  border: 0;
+  border-radius: 18px;
+  padding: 15px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.pay-btn {
+  background: linear-gradient(135deg, #ff2fb3, #8f00ff);
+}
+
+.secondary-btn {
+  background: rgba(255,255,255,.12);
+}
+
+.success-icon {
+  width: 78px;
+  height: 78px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #91ff7d;
+  font-size: 38px;
+  border: 4px solid rgba(132,255,132,.35);
+}
+
+.redeem-code-box {
+  margin: 22px 0;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.1);
+  text-align: center;
+}
+
+.redeem-code-box small {
+  display: block;
+  color: rgba(255,255,255,.65);
+  margin-bottom: 8px;
+}
+
+.redeem-code-box strong {
+  font-size: 16px;
+  word-break: break-all;
+}
+
+.alert-error {
+  margin-top: 14px;
+  color: #ff8aa8;
+  font-size: 13px;
+}

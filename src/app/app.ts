@@ -9,6 +9,7 @@ import { ToastService } from './services/ToastService.service';
 import { NotificationsService } from './services/NotificationsService.service';
 import { GlobalService } from './services/global.service';
 import { SwUpdate } from '@angular/service-worker';
+import { AuthPocketbaseService } from './services/authPocketbase.service';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -46,7 +47,8 @@ export class App {
     private toastService: ToastService,
     public notificationsService: NotificationsService,
     public global: GlobalService,
-      private swUpdate: SwUpdate
+      private swUpdate: SwUpdate,
+      private auth: AuthPocketbaseService
   ) 
   {
      this.router.events
@@ -80,19 +82,35 @@ export class App {
   });
   }
   
-  async ngOnInit() {
-    setTimeout(async () => {
-      const user = this.global.pb.authStore.model;
+ async ngOnInit() {
+  const restored = await this.auth.restoreSession();
 
-      if (user?.id) {
-        await this.notificationsService.initRealtimeNotifications(user.id);
-        console.log('Realtime notifications iniciado para:', user.id);
-      } else {
-        console.warn('No hay usuario autenticado para iniciar notificaciones');
-      }
-    }, 500);
+  if (!restored) {
+    console.warn('No se pudo restaurar sesión');
+    return;
   }
+
+  const user = this.auth.pb.authStore.record || this.auth.pb.authStore.model;
+
+  if (!user?.id) {
+    console.warn('No hay usuario válido');
+    return;
+  }
+
+  this.global.pb.authStore.save(
+    this.auth.pb.authStore.token,
+    user
+  );
+
+  await this.notificationsService.initRealtimeNotifications(user.id);
+
+  console.log('Sesión restaurada:', user.id);
+}
   checkForAppUpdates() {
+  if (location.hostname === 'localhost') {
+    return;
+  }
+
   if (this.swUpdate.isEnabled) {
     this.swUpdate.versionUpdates.subscribe(event => {
       if (event.type === 'VERSION_READY') {
@@ -105,9 +123,9 @@ export class App {
 async logoutHard() {
   this.global.pb.authStore.clear();
 
-  localStorage.clear();
-  sessionStorage.clear();
-
+  /* localStorage.clear();
+  sessionStorage.clear(); */
+this.auth.clearLocalSession();
   if ('databases' in indexedDB) {
     const dbs = await indexedDB.databases();
 

@@ -11,10 +11,7 @@
       </button>
 
       <div class="local-avatar-wrap">
-        <img
-          [src]="global.profileDataPartner.avatar || 'assets/images/avatar-local.png'"
-          alt="local"
-        />
+        <img [src]="global.profileDataPartner.avatar || 'assets/images/avatar-local.png'" alt="local" />
       </div>
 
       <div class="local-hero-info">
@@ -29,7 +26,7 @@
       </div>
     </section>
 
-   
+
 
     <!-- ACCIONES -->
     <section class="local-actions">
@@ -55,231 +52,198 @@
     </section>
     <section class="subscription-neon-panel">
 
-  <div class="panel-header">
-    <div>
-      <span>OnGo Premium</span>
-      <h3>Planes del local</h3>
-    </div>
+      <div class="panel-header">
+        <div>
+          <span>OnGo Premium</span>
+          <h3>Planes del local</h3>
+        </div>
 
-    <button type="button" (click)="openSubscriptionsModal()">
-      Ver planes
-    </button>
-  </div>
+        <button type="button" (click)="openSubscriptionsModal()">
+          Ver planes
+        </button>
+      </div>
 
-  <div class="subscription-swiper2 swiper">
+      <div class="subscription-swiper2 swiper">
 
-    <div class="swiper-wrapper">
+        <div class="swiper-wrapper">
 
-      <div class="swiper-slide" *ngFor="let plan of subscriptionPlans">
+          <div class="swiper-slide" *ngFor="let plan of subscriptionPlans">
 
-        <div class="subscription-card-neon">
+            <div class="subscription-card-neon">
 
-          <div class="subscription-top">
+              <div class="subscription-top">
 
-            <div class="subscription-icon">
-              <i class="fa-solid fa-crown"></i>
-            </div>
+                <div class="subscription-icon">
+                  <i class="fa-solid fa-crown"></i>
+                </div>
 
-            <div>
-              <h4>{{ plan.name }}</h4>
-              <p>{{ plan.description }}</p>
+                <div>
+                  <h4>{{ plan.name }}</h4>
+                  <p>{{ plan.description }}</p>
+                </div>
+
+              </div>
+
+              <div class="subscription-price">
+                {{ plan.priceCOP | currency:'COP':'symbol':'1.0-0' }}
+                <small>/ mes</small>
+              </div>
+
+              <ul class="subscription-benefits">
+                <li *ngFor="let benefit of plan.items">
+                  <i class="fa-solid fa-check"></i>
+                  {{ benefit }}
+                </li>
+              </ul>
+
+              <button type="button" class="subscription-btn" (click)="subscribeToPlan(plan)">
+                Suscribirme
+              </button>
+
             </div>
 
           </div>
 
-          <div class="subscription-price">
-{{ plan.priceCOP | currency:'COP':'symbol':'1.0-0' }}
-            <small>/ mes</small>
+        </div>
+
+        <div class="swiper-pagination"></div>
+
+      </div>
+
+    </section>
+    <!-- VALIDAR REGALO -->
+    <section class="redeem-panel-neon">
+
+      <div class="panel-header">
+        <div>
+          <span>Barra / Caja</span>
+          <h3>Validar regalo</h3>
+        </div>
+
+        <div class="redeem-header-icon">
+          <i class="fa-solid fa-qrcode"></i>
+        </div>
+      </div>
+
+      <p class="redeem-subtitle">
+        Ingresa el código que muestra el cliente para entregar el producto.
+      </p>
+
+      <div class="redeem-input-row">
+
+        <input type="text" [(ngModel)]="redeemCodeInput" placeholder="ONGO-123456" (keyup.enter)="searchGiftByCode()" />
+
+        <button type="button" (click)="searchGiftByCode()" [disabled]="redeemLoading">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </button>
+
+      </div>
+
+      <div class="redeem-loading" *ngIf="redeemLoading">
+        Buscando regalo...
+      </div>
+
+      <div class="redeem-error" *ngIf="redeemError">
+        {{ redeemError }}
+      </div>
+
+      <div class="redeem-success" *ngIf="redeemMessage">
+        {{ redeemMessage }}
+      </div>
+
+      <div class="redeem-ticket-neon" *ngIf="redeemOrder">
+
+        <div class="redeem-ticket-top">
+
+          <div class="redeem-ticket-icon">
+            <img *ngIf="redeemOrder.productImage" [src]="redeemOrder.productImage" alt="producto" />
+
+            <i *ngIf="!redeemOrder.productImage" class="fa-solid fa-gift"></i>
           </div>
 
-          <ul class="subscription-benefits">
-            <li *ngFor="let benefit of plan.items">
-              <i class="fa-solid fa-check"></i>
-              {{ benefit }}
-            </li>
-          </ul>
+          <div class="redeem-ticket-info">
+            <h4>{{ redeemOrder.productName }}</h4>
 
-          <button
-            type="button"
-            class="subscription-btn"
-            (click)="subscribeToPlan(plan)"
-          >
-            Suscribirme
+            <p>Código</p>
+
+            <strong>
+              {{ redeemOrder.redeemCode }}
+            </strong>
+          </div>
+
+        </div>
+
+        <div class="redeem-ticket-footer">
+
+          <span>
+            {{ redeemOrder.amount | currency:'COP':'symbol':'1.0-0' }}
+          </span>
+
+          <button type="button" *ngIf="redeemOrder.orderStatus !== 'redeemed'" (click)="confirmRedeemGift()">
+            <i class="fa-solid fa-circle-check"></i>
+            Entregar
           </button>
 
         </div>
 
       </div>
 
-    </div>
+    </section>
+    <!-- VALIDAR ENTRADA -->
+    <section class="redeem-panel-neon">
+      <div class="panel-header">
+        <div>
+          <span>Taquilla</span>
+          <h3>Validar entrada</h3>
+        </div>
 
-    <div class="swiper-pagination"></div>
-
-  </div>
-
-</section>
-<!-- VALIDAR REGALO -->
-<section class="redeem-panel-neon">
-
-  <div class="panel-header">
-    <div>
-      <span>Barra / Caja</span>
-      <h3>Validar regalo</h3>
-    </div>
-
-    <div class="redeem-header-icon">
-      <i class="fa-solid fa-qrcode"></i>
-    </div>
-  </div>
-
-  <p class="redeem-subtitle">
-    Ingresa el código que muestra el cliente para entregar el producto.
-  </p>
-
-  <div class="redeem-input-row">
-
-    <input
-      type="text"
-      [(ngModel)]="redeemCodeInput"
-      placeholder="ONGO-123456"
-      (keyup.enter)="searchGiftByCode()"
-    />
-
-    <button
-      type="button"
-      (click)="searchGiftByCode()"
-      [disabled]="redeemLoading"
-    >
-      <i class="fa-solid fa-magnifying-glass"></i>
-    </button>
-
-  </div>
-
-  <div class="redeem-loading" *ngIf="redeemLoading">
-    Buscando regalo...
-  </div>
-
-  <div class="redeem-error" *ngIf="redeemError">
-    {{ redeemError }}
-  </div>
-
-  <div class="redeem-success" *ngIf="redeemMessage">
-    {{ redeemMessage }}
-  </div>
-
-  <div class="redeem-ticket-neon" *ngIf="redeemOrder">
-
-    <div class="redeem-ticket-top">
-
-      <div class="redeem-ticket-icon">
-        <img
-          *ngIf="redeemOrder.productImage"
-          [src]="redeemOrder.productImage"
-          alt="producto"
-        />
-
-        <i
-          *ngIf="!redeemOrder.productImage"
-          class="fa-solid fa-gift"
-        ></i>
+        <div class="redeem-header-icon">
+          <i class="fa-solid fa-ticket"></i>
+        </div>
       </div>
 
-      <div class="redeem-ticket-info">
-        <h4>{{ redeemOrder.productName }}</h4>
+      <p class="redeem-subtitle">
+        Ingresa el código que muestra el cliente.
+      </p>
 
-        <p>Código</p>
+      <div class="redeem-input-row">
+        <input type="text" [(ngModel)]="ticketCodeInput" placeholder="TICKET-123456-789"
+          (keyup.enter)="searchTicketByCode()" />
 
-        <strong>
-          {{ redeemOrder.redeemCode }}
-        </strong>
+        <button type="button" (click)="searchTicketByCode()" [disabled]="ticketRedeemLoading">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </button>
       </div>
 
-    </div>
+      <div class="redeem-loading" *ngIf="ticketRedeemLoading">
+        Buscando entrada...
+      </div>
 
-    <div class="redeem-ticket-footer">
+      <div class="redeem-error" *ngIf="ticketRedeemError">
+        {{ ticketRedeemError }}
+      </div>
 
-      <span>
-        {{ redeemOrder.amount | currency:'COP':'symbol':'1.0-0' }}
-      </span>
+      <div class="redeem-success" *ngIf="ticketRedeemMessage">
+        {{ ticketRedeemMessage }}
+      </div>
 
-      <button
-        type="button"
-        *ngIf="redeemOrder.orderStatus !== 'redeemed'"
-        (click)="confirmRedeemGift()"
-      >
-        <i class="fa-solid fa-circle-check"></i>
-        Entregar
-      </button>
+      <div class="redeem-ticket-neon" *ngIf="ticketOrder">
+        <div class="redeem-ticket-info">
+          <h4>{{ ticketOrder.partnerName }}</h4>
+          <p>Código</p>
+          <strong>{{ ticketOrder.redeemCode }}</strong>
+        </div>
 
-    </div>
+        <div class="redeem-ticket-footer">
+          <span>{{ ticketOrder.amount | currency:'COP':'symbol':'1.0-0' }}</span>
 
-  </div>
-
-</section>
- <!-- VALIDAR ENTRADA -->
-<section class="redeem-panel-neon">
-  <div class="panel-header">
-    <div>
-      <span>Taquilla</span>
-      <h3>Validar entrada</h3>
-    </div>
-
-    <div class="redeem-header-icon">
-      <i class="fa-solid fa-ticket"></i>
-    </div>
-  </div>
-
-  <p class="redeem-subtitle">
-    Ingresa el código que muestra el cliente.
-  </p>
-
-  <div class="redeem-input-row">
-    <input
-      type="text"
-      [(ngModel)]="ticketCodeInput"
-      placeholder="TICKET-123456-789"
-      (keyup.enter)="searchTicketByCode()" />
-
-    <button
-      type="button"
-      (click)="searchTicketByCode()"
-      [disabled]="ticketRedeemLoading">
-      <i class="fa-solid fa-magnifying-glass"></i>
-    </button>
-  </div>
-
-  <div class="redeem-loading" *ngIf="ticketRedeemLoading">
-    Buscando entrada...
-  </div>
-
-  <div class="redeem-error" *ngIf="ticketRedeemError">
-    {{ ticketRedeemError }}
-  </div>
-
-  <div class="redeem-success" *ngIf="ticketRedeemMessage">
-    {{ ticketRedeemMessage }}
-  </div>
-
-  <div class="redeem-ticket-neon" *ngIf="ticketOrder">
-    <div class="redeem-ticket-info">
-      <h4>{{ ticketOrder.partnerName }}</h4>
-      <p>Código</p>
-      <strong>{{ ticketOrder.redeemCode }}</strong>
-    </div>
-
-    <div class="redeem-ticket-footer">
-      <span>{{ ticketOrder.amount | currency:'COP':'symbol':'1.0-0' }}</span>
-
-      <button
-        type="button"
-        *ngIf="ticketOrder.orderStatus !== 'redeemed'"
-        (click)="confirmRedeemTicket()">
-        <i class="fa-solid fa-circle-check"></i>
-        Permitir ingreso
-      </button>
-    </div>
-  </div>
-</section>
+          <button type="button" *ngIf="ticketOrder.orderStatus !== 'redeemed'" (click)="confirmRedeemTicket()">
+            <i class="fa-solid fa-circle-check"></i>
+            Permitir ingreso
+          </button>
+        </div>
+      </div>
+    </section>
     <!-- INFO DEL LOCAL -->
     <section class="neon-panel">
       <div class="panel-title">
@@ -310,7 +274,8 @@
       </div>
 
       <p class="local-description">
-        {{ global.profileDataPartner.description || 'Agrega una descripción para que los usuarios conozcan mejor tu local.' }}
+        {{ global.profileDataPartner.description || 'Agrega una descripción para que los usuarios conozcan mejor tu
+        local.' }}
       </p>
     </section>
 
@@ -355,7 +320,7 @@
         </div>
       </article>
     </section>
-   
+
     <!-- GALERÍA -->
     <section class="neon-panel" *ngIf="global.profileDataPartner.files?.length">
       <div class="panel-title">
@@ -550,43 +515,34 @@
           </div>
         </div>
         <div class="card style-4">
-  <div class="card-header">
-    <label>Precio reserva de mesa</label>
-  </div>
-  <div class="card-body">
-    <input
-      type="number"
-      class="form-control"
-      [(ngModel)]="global.profileDataPartner.reservationPrice"
-      placeholder="Ej: 50000">
-  </div>
-</div>
+          <div class="card-header">
+            <label>Precio reserva de mesa</label>
+          </div>
+          <div class="card-body">
+            <input type="number" class="form-control" [(ngModel)]="global.profileDataPartner.reservationPrice"
+              placeholder="Ej: 50000">
+          </div>
+        </div>
 
-<div class="card style-4">
-  <div class="card-header">
-    <label>Fecha reserva disponible</label>
-  </div>
-  <div class="card-body">
-    <input
-      type="datetime-local"
-      class="form-control"
-      [(ngModel)]="global.profileDataPartner.reservationDate">
-  </div>
-</div>
+        <div class="card style-4">
+          <div class="card-header">
+            <label>Fecha reserva disponible</label>
+          </div>
+          <div class="card-body">
+            <input type="datetime-local" class="form-control" [(ngModel)]="global.profileDataPartner.reservationDate">
+          </div>
+        </div>
 
-<div class="card style-4">
-  <div class="card-header">
-    <label>Cupos para reservas</label>
-  </div>
-  <div class="card-body">
-    <input
-      type="number"
-      class="form-control"
-      [(ngModel)]="global.profileDataPartner.reservationCapacity"
-      placeholder="Ej: 20">
-  </div>
-</div>
-<div class="card style-4">
+        <div class="card style-4">
+          <div class="card-header">
+            <label>Cupos para reservas</label>
+          </div>
+          <div class="card-body">
+            <input type="number" class="form-control" [(ngModel)]="global.profileDataPartner.reservationCapacity"
+              placeholder="Ej: 20">
+          </div>
+        </div>
+        <div class="card style-4">
           <div class="card-header">
             <label>Venta de entradas activa</label>
           </div>
@@ -594,31 +550,25 @@
             <input type="checkbox" [(ngModel)]="global.profileDataPartner.ticketsEnabled">
           </div>
         </div>
-<div class="card style-4">
-  <div class="card-header">
-    <label>Fecha del evento / entrada</label>
-  </div>
-  <div class="card-body">
-    <input
-      type="datetime-local"
-      class="form-control"
-      [(ngModel)]="global.profileDataPartner.ticketDate">
-  </div>
-</div>
+        <div class="card style-4">
+          <div class="card-header">
+            <label>Fecha del evento / entrada</label>
+          </div>
+          <div class="card-body">
+            <input type="datetime-local" class="form-control" [(ngModel)]="global.profileDataPartner.ticketDate">
+          </div>
+        </div>
 
-<div class="card style-4">
-  <div class="card-header">
-    <label>Cantidad de entradas disponibles</label>
-  </div>
-  <div class="card-body">
-    <input
-      type="number"
-      class="form-control"
-      [(ngModel)]="global.profileDataPartner.ticketCapacity"
-      placeholder="Ej: 100">
-  </div>
-</div>
-<div class="card style-4">
+        <div class="card style-4">
+          <div class="card-header">
+            <label>Cantidad de entradas disponibles</label>
+          </div>
+          <div class="card-body">
+            <input type="number" class="form-control" [(ngModel)]="global.profileDataPartner.ticketCapacity"
+              placeholder="Ej: 100">
+          </div>
+        </div>
+        <div class="card style-4">
           <div class="card-header">
             <label>Precio de entrada</label>
           </div>
@@ -637,9 +587,9 @@
           </div>
         </div>
 
-        
 
-        
+
+
         <div class="card style-4">
           <div class="card-header">
             <h6 class="title mb-0">Servicios</h6>
@@ -681,12 +631,8 @@
   </div>
 
   <div class="redeem-form">
-    <input
-      type="text"
-      [(ngModel)]="redeemCodeInput"
-      placeholder="Ej: ONGO-123456789"
-      (keyup.enter)="searchGiftByCode()"
-    />
+    <input type="text" [(ngModel)]="redeemCodeInput" placeholder="Ej: ONGO-123456789"
+      (keyup.enter)="searchGiftByCode()" />
 
     <button type="button" (click)="searchGiftByCode()" [disabled]="redeemLoading">
       {{ redeemLoading ? 'Buscando...' : 'Validar' }}
@@ -720,12 +666,8 @@
       <strong>{{ redeemOrder.amount | currency:'COP':'symbol':'1.0-0' }}</strong>
     </div>
 
-    <button
-      type="button"
-      class="redeem-confirm-btn"
-      *ngIf="redeemOrder.orderStatus !== 'redeemed'"
-      (click)="confirmRedeemGift()"
-    >
+    <button type="button" class="redeem-confirm-btn" *ngIf="redeemOrder.orderStatus !== 'redeemed'"
+      (click)="confirmRedeemGift()">
       <i class="fa-solid fa-circle-check"></i>
       Marcar como entregado
     </button>
@@ -821,7 +763,11 @@
             <label for="promoDate" class="form-label">Fecha</label>
             <input type="date" class="form-control" id="promoDate" [(ngModel)]="newPromo.date" name="date">
           </div>
-
+          <div class="mb-3">
+            <label for="promoPrice" class="form-label">Precio</label>
+            <input type="number" class="form-control" id="promoPrice" [(ngModel)]="newPromo.price" name="price"
+              placeholder="Ej: 25000">
+          </div>
           <div class="mb-3">
             <label for="promoImage" class="form-label">Imagen</label>
             <input type="file" class="form-control" id="promoImage" (change)="onPromoImageSelected($event)">
@@ -870,6 +816,9 @@
                   <div class="left-content">
                     <h6 class="title">{{ promo.name }}</h6>
                     <span class="about">{{ promo.description }}</span>
+                    <strong *ngIf="promo.price">
+  {{ promo.price | number:'1.0-0' }} COP
+</strong>
                   </div>
 
                   <div class="meta-btn">
@@ -928,7 +877,8 @@
 <!-- ========================= -->
 <!-- MODAL SUBSCRIPCIONES -->
 <!-- ========================= -->
-<div class="modal fade" id="subscriptionsModal" tabindex="-1" aria-labelledby="subscriptionsModalLabel" aria-hidden="true">
+<div class="modal fade" id="subscriptionsModal" tabindex="-1" aria-labelledby="subscriptionsModalLabel"
+  aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content subscriptions-modal-neon">
 
@@ -961,7 +911,7 @@
 
           <div class="modal-plan-price">
             {{ plan.priceCOP | currency:'COP':'symbol':'1.0-0' }} o
-                                    {{ plan.PriceUSD | currency:'USD':'symbol':'1.0-0' }}
+            {{ plan.PriceUSD | currency:'USD':'symbol':'1.0-0' }}
 
 
             <small>/mes</small>

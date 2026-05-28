@@ -1091,8 +1091,8 @@ export class RegisterComponent {
     localStorage.removeItem('pendingGoogleUser');
     localStorage.removeItem('pendingGoogleToken');
 
-    this.auth.pb.authStore.clear();
-  }
+/*     this.auth.pb.authStore.clear();
+ */  }
   async registerWithGoogle(type: 'client' | 'partner') {
     try {
       this.loadingGoogle = true;

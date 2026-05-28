@@ -1,128 +1,86 @@
-.promo-page {
+.promo-detail-page,
+.promo-checkout-page {
   min-height: 100vh;
-  background: #020927;
+  background: #050818;
   color: #fff;
-  padding-bottom: 120px;
 }
 
-.promo-hero {
-  position: relative;
-  width: 100%;
-  height: 430px;
-  overflow: hidden;
-  border-bottom-left-radius: 34px;
-  border-bottom-right-radius: 34px;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-}
-
-.promo-gradient {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(2, 9, 39, 0.05) 0%,
-    rgba(2, 9, 39, 0.35) 45%,
-    #020927 100%
-  );
-}
-
-.back-btn {
-  position: absolute;
-  top: 18px;
-  left: 18px;
-  width: 44px;
-  height: 44px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: rgba(2, 9, 39, 0.6);
-  color: #fff;
-  border-radius: 16px;
-  backdrop-filter: blur(10px);
-}
-
-.promo-card {
-  position: relative;
-  margin: -55px 16px 0;
-  padding: 22px;
+.promo-detail-card,
+.promo-ticket-card {
+  max-width: 420px;
+  margin: 0 auto;
   border-radius: 28px;
-  background: rgba(11, 20, 58, 0.88);
-  border: 1px solid rgba(255, 47, 145, 0.35);
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(16px);
-
-  h1 {
-    margin: 8px 0;
-    font-size: 30px;
-    line-height: 1;
-    font-weight: 900;
-    letter-spacing: -0.8px;
-  }
+  overflow: hidden;
+  background: linear-gradient(180deg, #16071f, #090414);
+  border: 1px solid rgba(255, 47, 179, .25);
+  box-shadow: 0 25px 70px rgba(0,0,0,.55);
 }
 
-.promo-label {
-  display: inline-flex;
-  padding: 7px 12px;
-  border-radius: 999px;
-  background: rgba(255, 47, 145, 0.16);
-  color: #ff2f91;
+.promo-hero-img img,
+.promo-ticket-image img {
+  width: 100%;
+  height: 360px;
+  object-fit: cover;
+}
+
+.promo-detail-content,
+.promo-ticket-body,
+.promo-ticket-success {
+  padding: 22px;
+}
+
+.promo-chip {
+  color: #ff2fb3;
   font-size: 12px;
   font-weight: 800;
-  text-transform: uppercase;
 }
 
-.promo-description {
-  margin-top: 12px;
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 15px;
-  line-height: 1.45;
-}
-
-.promo-meta {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 20px;
-
-  div {
-    padding: 14px;
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.08);
-  }
-
-  small {
-    display: block;
-    color: rgba(255, 255, 255, 0.55);
-    font-size: 12px;
-    margin-bottom: 4px;
-  }
-
-  strong {
-    color: #fff;
-    font-size: 15px;
-  }
-}
-
-.buy-promo-btn {
-  width: 100%;
-  margin-top: 22px;
-  padding: 16px;
-  border: none;
-  border-radius: 22px;
-  background: linear-gradient(135deg, #ff2f91, #9b2cff);
-  color: #fff;
-  font-size: 16px;
+.promo-detail-content h1,
+.promo-ticket-body h2,
+.promo-ticket-success h2 {
+  margin: 8px 0;
+  font-size: 28px;
   font-weight: 900;
-  box-shadow: 0 14px 32px rgba(255, 47, 145, 0.28);
 }
 
-.promo-loading {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  background: #020927;
+.promo-detail-content p,
+.promo-ticket-body p,
+.promo-ticket-success p {
+  color: rgba(255,255,255,.72);
+}
+
+.promo-price-box,
+.ticket-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding: 15px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.08);
+}
+
+.promo-price-box strong,
+.ticket-row strong {
+  color: #ff4dca;
+}
+
+.buy-promo-btn,
+.pay-btn,
+.secondary-btn {
+  width: 100%;
+  margin-top: 16px;
+  border: 0;
+  border-radius: 18px;
+  padding: 15px;
+  font-weight: 800;
   color: #fff;
+}
+
+.buy-promo-btn,
+.pay-btn {
+  background: linear-gradient(135deg, #ff2fb3, #8f00ff);
+}
+
+.secondary-btn {
+  background: rgba(255,255,255,.12);
 }
