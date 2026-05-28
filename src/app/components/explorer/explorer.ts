@@ -85,38 +85,12 @@ export class Explorer implements OnInit, OnDestroy, AfterViewInit {
     this.router.navigate(['/detailprofilelocal', partner.id]);
   }
 
- /*  goToPromo(promo: any): void {
-  if (!promo) return;
-
-  // Caso 1: la promo tiene directamente el id del local
-  if (promo.partner) {
-    const partner = this.partners.find(p => p.id === promo.partner);
-
-    if (partner) {
-      localStorage.setItem('selectedPartner', JSON.stringify(partner));
-      this.router.navigate(['/detailprofilelocal', partner.id]);
-      return;
-    }
-  }
-
-  // Caso 2: la promo está relacionada por userId
-  if (promo.userId) {
-    const partner = this.partners.find(p => p.userId === promo.userId);
-
-    if (partner) {
-      localStorage.setItem('selectedPartner', JSON.stringify(partner));
-      this.router.navigate(['/detailprofilelocal', partner.id]);
-      return;
-    }
-  }
-
-  console.warn('No se encontró local asociado a esta promoción:', promo);
-} */
-goToPromo(promo: any): void {
+ goToPromo(promo: any): void {
   if (!promo?.id) return;
 
+  localStorage.setItem('selectedPromoToBuy', JSON.stringify(promo));
   localStorage.setItem('selectedPromo', JSON.stringify(promo));
 
-  this.router.navigate(['/detailpromo', promo.id]);
+  this.router.navigate(['/checkout-promo', promo.id]);
 }
 }

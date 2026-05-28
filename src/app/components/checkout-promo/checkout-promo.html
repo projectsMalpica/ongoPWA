@@ -1,6 +1,14 @@
 <div class="page-content promo-checkout-page p-t50 p-b50">
   <div class="container">
 
+    <div class="alert-error" *ngIf="error && !promo">
+      {{ error }}
+    </div>
+
+    <div class="promo-loading" *ngIf="!promo && !error">
+      Cargando promoción...
+    </div>
+
     <div class="promo-ticket-card" *ngIf="promo">
 
       <div class="promo-ticket-image">

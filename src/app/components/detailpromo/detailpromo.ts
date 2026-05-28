@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import PocketBase from 'pocketbase';
+import { AuthPocketbaseService } from '../../services/authPocketbase.service';
 
 @Component({
   selector: 'app-detailpromo',
@@ -11,7 +12,7 @@ import PocketBase from 'pocketbase';
   styleUrl: './detailpromo.scss',
 })
 export class Detailpromo implements OnInit {
-  pb = new PocketBase('https://db.ongomatch.com:8090');
+  pb!: PocketBase;
 
   promo: any = null;
   loading = false;
@@ -19,10 +20,15 @@ export class Detailpromo implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private router: Router
-  ) {}
+    private router: Router,
+    private auth: AuthPocketbaseService
+  ) {
+    this.pb = this.auth.pb;
+  }
 
   async ngOnInit(): Promise<void> {
+    await this.auth.restoreSession();
+
     const id = this.route.snapshot.paramMap.get('id');
 
     if (!id) {
@@ -33,7 +39,11 @@ export class Detailpromo implements OnInit {
     const promoLocal = localStorage.getItem('selectedPromo');
 
     if (promoLocal) {
-      this.promo = JSON.parse(promoLocal);
+      try {
+        this.promo = JSON.parse(promoLocal);
+      } catch {
+        localStorage.removeItem('selectedPromo');
+      }
     }
 
     await this.loadPromo(id);
@@ -58,12 +68,11 @@ export class Detailpromo implements OnInit {
   }
 
   buyPromo(): void {
-    if (!this.promo) return;
+    if (!this.promo?.id) return;
 
     localStorage.setItem('selectedPromoToBuy', JSON.stringify(this.promo));
+    localStorage.setItem('selectedPromo', JSON.stringify(this.promo));
 
     this.router.navigate(['/checkout-promo', this.promo.id]);
   }
-  
-
 }
