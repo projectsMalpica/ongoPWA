@@ -14,22 +14,25 @@ import Swiper from 'swiper';
 import { Pagination } from 'swiper/modules';
 import 'swiper/css/pagination';
 import { RouterModule } from '@angular/router';
+import { WompiService } from '../../services/wompi.service';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, CommonModule,RouterModule],
+  imports: [FormsModule, ReactiveFormsModule, CommonModule, RouterModule],
   templateUrl: './profile.html',
   styleUrl: './profile.scss',
 })
 export class Profile implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('clientPlansSwiper', { static: false })
-clientPlansSwiperRef?: ElementRef<HTMLDivElement>;
+  clientPlansSwiperRef?: ElementRef<HTMLDivElement>;
 
-@ViewChild('clientPlansPagination', { static: false })
-clientPlansPaginationRef?: ElementRef<HTMLDivElement>;
-refreshKey = Date.now();
-private clientPlansSwiper?: Swiper;
-private clientPlansSwiperSub?: Subscription;
+  @ViewChild('clientPlansPagination', { static: false })
+  clientPlansPaginationRef?: ElementRef<HTMLDivElement>;
+  refreshKey = Date.now();
+  private clientPlansSwiper?: Swiper;
+  private clientPlansSwiperSub?: Subscription;
   profileData: any = {
     name: '',
     gender: '',
@@ -105,10 +108,13 @@ private clientPlansSwiperSub?: Subscription;
   avatar: File | null = null;
   avatarPreview: string | ArrayBuffer | null = null;
   planningClients: any[] = [];
+  subscribingPlanId: string | null = null;
   constructor(
     public global: GlobalService,
     public auth: AuthPocketbaseService,
-    public realtimeClientes: RealtimeClientesService
+    public realtimeClientes: RealtimeClientesService,
+    public wompi: WompiService,
+    private http: HttpClient
   ) { }
 
 
@@ -130,7 +136,103 @@ private clientPlansSwiperSub?: Subscription;
     await this.global.initClientesRealtime();
     await this.global.initPlanningClientsRealtime();
   }
+  async subscribeClientPlan(plan: any): Promise<void> {
+  if (this.subscribingPlanId) return;
 
+  try {
+    this.subscribingPlanId = plan.id;
+
+    await this.auth.restoreSession();
+
+    const user = this.auth.getCurrentUser();
+
+    if (!user?.id) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Inicia sesión',
+        text: 'Debes iniciar sesión para comprar una suscripción.'
+      });
+      return;
+    }
+
+    const clientRecord = await this.pb
+      .collection('usuariosClient')
+      .getFirstListItem(`userId="${user.id}"`);
+
+    const amountCOP = Number(plan.priceCOP || 0);
+
+    if (!amountCOP || amountCOP <= 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Plan no válido',
+        text: 'Este plan no tiene un precio válido.'
+      });
+      return;
+    }
+
+    const intent = await firstValueFrom(
+      this.http.post<any>('https://db.ongomatch.com:5542/client/subscription-intent', {
+        userId: user.id,
+        clientId: clientRecord.id,
+        planId: plan.id,
+        planName: plan.name,
+        price: amountCOP,
+        customerEmail: user.email || clientRecord['email'] || ''
+      })
+    );
+
+    const result = await this.wompi.openCheckout({
+      amountInCents: intent.amountInCents,
+      reference: intent.reference,
+      currency: 'COP',
+      customerEmail: user.email || clientRecord['email'] || '',
+      signature: intent.signature,
+      publicKey: intent.publicKey,
+      redirectUrl: intent.redirectUrl
+    });
+
+    const transaction = result?.transaction;
+
+    await firstValueFrom(
+      this.http.post<any>('https://db.ongomatch.com:5542/client/confirm-subscription', {
+        reference: intent.reference,
+        status: transaction?.status || 'UNKNOWN',
+        transactionId: transaction?.id || '',
+        paymentData: result
+      })
+    );
+
+    if (transaction?.status === 'APPROVED') {
+      await this.loadProfile();
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Suscripción activa',
+        text: `Tu plan ${plan.name} fue activado correctamente.`,
+        timer: 1800,
+        showConfirmButton: false
+      });
+    } else {
+      Swal.fire({
+        icon: 'error',
+        title: 'Pago no aprobado',
+        text: 'La suscripción no fue activada porque el pago no fue aprobado.'
+      });
+    }
+
+  } catch (error: any) {
+    console.error('Error creando suscripción:', error);
+
+    Swal.fire({
+      icon: 'error',
+      title: 'No se pudo procesar',
+      text: error?.error?.error || error?.message || 'Ocurrió un error al procesar la suscripción.'
+    });
+
+  } finally {
+    this.subscribingPlanId = null;
+  }
+}
   countries = [
     { code: '+57', name: 'Colombia', flag: '🇦🇷' },
     { code: '+56', name: 'Chile', flag: '🇨🇱' },
@@ -168,145 +270,151 @@ private clientPlansSwiperSub?: Subscription;
     }
   }
 
-async loadProfile() {
-  const user = this.auth.getCurrentUser();
-  console.log('Cargando perfil de usuario:', user);
+  async loadProfile() {
+    const user = this.auth.getCurrentUser();
+    console.log('Cargando perfil de usuario:', user);
 
-  if (!user?.id) {
-    console.error('No hay usuario autenticado');
-    return;
-  }
-
-  try {
-    const userData = await this.pb
-      .collection('usuariosClient')
-      .getFirstListItem(`userId="${user.id}"`);
-
-    const rawInterests = userData['interests'];
-    let interestsArray: string[] = [];
-
-    if (typeof rawInterests === 'string' && rawInterests.trim().startsWith('[')) {
-      try {
-        const parsed = JSON.parse(rawInterests);
-        interestsArray = Array.isArray(parsed)
-          ? parsed.map((item: any) => String(item).trim()).filter(Boolean)
-          : [];
-      } catch (e) {
-        console.warn('No se pudo parsear interests como JSON:', e);
-        interestsArray = [];
-      }
-    } else if (Array.isArray(rawInterests)) {
-      interestsArray = rawInterests
-        .map((item: any) => String(item).trim())
-        .filter(Boolean);
-    } else if (typeof rawInterests === 'string' && rawInterests.trim()) {
-      interestsArray = rawInterests
-        .split(',')
-        .map((item: string) => item.trim())
-        .filter(Boolean);
+    if (!user?.id) {
+      console.error('No hay usuario autenticado');
+      return;
     }
 
-    this.profileData = {
-      name: userData['name'] || '',
-      interestedIn: userData['interestedIn'] || '',
-      lookingFor: userData['lookingFor'] || '',
-      language: userData['language'] || '',
-      orientation: userData['orientation'] || '',
-      birthday: userData['birthday'] || '',
-      gender: userData['gender'] || '',
-      address: userData['address'] || '',
-      about: userData['about'] || '',
-      age: userData['age'] ?? null,
-      photos: userData['photos'] || [],
-      email: userData['email'] || '',
-      userId: userData['userId'] || '',
-      status: userData['status'] || '',
-      interests: interestsArray.join(', '),
-      avatar: userData['avatar'] || '',
-    };
+    try {
+      const userData = await this.pb
+        .collection('usuariosClient')
+        .getFirstListItem(`userId="${user.id}"`);
 
-    this.selectedInterests = [...interestsArray];
-    this.photos = this.parsePhotos(userData['photos']);
+      const rawInterests = userData['interests'];
+      let interestsArray: string[] = [];
 
-    this.global.profileData = { ...this.profileData };
-  } catch (error) {
-    console.error('Error cargando perfil:', error);
+      if (typeof rawInterests === 'string' && rawInterests.trim().startsWith('[')) {
+        try {
+          const parsed = JSON.parse(rawInterests);
+          interestsArray = Array.isArray(parsed)
+            ? parsed.map((item: any) => String(item).trim()).filter(Boolean)
+            : [];
+        } catch (e) {
+          console.warn('No se pudo parsear interests como JSON:', e);
+          interestsArray = [];
+        }
+      } else if (Array.isArray(rawInterests)) {
+        interestsArray = rawInterests
+          .map((item: any) => String(item).trim())
+          .filter(Boolean);
+      } else if (typeof rawInterests === 'string' && rawInterests.trim()) {
+        interestsArray = rawInterests
+          .split(',')
+          .map((item: string) => item.trim())
+          .filter(Boolean);
+      }
 
-    this.profileData = {
-      name: '',
-      gender: '',
-      userId: '',
-      status: '',
-      photos: [],
-      birthday: '',
-      interestedIn: '',
-      email: '',
-      orientation: '',
-      lookingFor: '',
-      address: '',
-      language: '',
-      about: '',
-      age: null,
-      interests: '',
-      avatar: '',
-    };
+      this.profileData = {
+        name: userData['name'] || '',
+        interestedIn: userData['interestedIn'] || '',
+        lookingFor: userData['lookingFor'] || '',
+        language: userData['language'] || '',
+        orientation: userData['orientation'] || '',
+        birthday: userData['birthday'] || '',
+        gender: userData['gender'] || '',
+        address: userData['address'] || '',
+        about: userData['about'] || '',
+        age: userData['age'] ?? null,
+        photos: userData['photos'] || [],
+        email: userData['email'] || '',
+        userId: userData['userId'] || '',
+        status: userData['status'] || '',
+        interests: interestsArray.join(', '),
+        avatar: userData['avatar'] || '',
+        subscriptions: userData['subscriptions'] || 'Sin plan',
+        subscriptionPlanId: userData['subscriptionPlanId'] || '',
+        subscriptionStatus: userData['subscriptionStatus'] || '',
+        subscriptionStartsAt: userData['subscriptionStartsAt'] || '',
+        subscriptionExpiresAt: userData['subscriptionExpiresAt'] || '',
+      };
 
-    this.selectedInterests = [];
-    this.photos = Array(6).fill({ url: '' });
+      this.selectedInterests = [...interestsArray];
+      this.photos = this.parsePhotos(userData['photos']);
+
+      this.global.profileData = { ...this.profileData };
+    } catch (error) {
+      console.error('Error cargando perfil:', error);
+
+      this.profileData = {
+        name: '',
+        gender: '',
+        userId: '',
+        status: '',
+        photos: [],
+        birthday: '',
+        interestedIn: '',
+        email: '',
+        orientation: '',
+        lookingFor: '',
+        address: '',
+        language: '',
+        about: '',
+        age: null,
+        interests: '',
+        avatar: '',
+
+      };
+
+      this.selectedInterests = [];
+      this.photos = Array(6).fill({ url: '' });
+    }
   }
-}
-ngAfterViewInit(): void {
-  this.bindClientPlansSwiper();
-}
-private bindClientPlansSwiper(): void {
-  this.clientPlansSwiperSub?.unsubscribe();
+  ngAfterViewInit(): void {
+    this.bindClientPlansSwiper();
+  }
+  private bindClientPlansSwiper(): void {
+    this.clientPlansSwiperSub?.unsubscribe();
 
-  this.clientPlansSwiperSub = this.global.planningClients$.subscribe((plans) => {
-    if (!plans || !plans.length) return;
+    this.clientPlansSwiperSub = this.global.planningClients$.subscribe((plans) => {
+      if (!plans || !plans.length) return;
 
-    setTimeout(() => {
-      this.initClientPlansSwiper();
-    }, 0);
-  });
-}
-ngOnDestroy(): void {
-  this.clientPlansSwiper?.destroy(true, true);
-  this.clientPlansSwiperSub?.unsubscribe();
-}
-
-private initClientPlansSwiper(): void {
-  if (!this.clientPlansSwiperRef?.nativeElement || !this.clientPlansPaginationRef?.nativeElement) {
-    return;
+      setTimeout(() => {
+        this.initClientPlansSwiper();
+      }, 0);
+    });
+  }
+  ngOnDestroy(): void {
+    this.clientPlansSwiper?.destroy(true, true);
+    this.clientPlansSwiperSub?.unsubscribe();
   }
 
-  if (this.clientPlansSwiper) {
-    this.clientPlansSwiper.destroy(true, true);
-  }
+  private initClientPlansSwiper(): void {
+    if (!this.clientPlansSwiperRef?.nativeElement || !this.clientPlansPaginationRef?.nativeElement) {
+      return;
+    }
 
-  this.clientPlansSwiper = new Swiper(this.clientPlansSwiperRef.nativeElement, {
-    modules: [Pagination],
-    slidesPerView: 1.08,
-    spaceBetween: 12,
-    grabCursor: true,
-    observer: true,
-    observeParents: true,
-    watchOverflow: true,
-    pagination: {
-      el: this.clientPlansPaginationRef.nativeElement,
-      clickable: true
-    },
-    breakpoints: {
-      576: {
-        slidesPerView: 1.15,
-        spaceBetween: 14
+    if (this.clientPlansSwiper) {
+      this.clientPlansSwiper.destroy(true, true);
+    }
+
+    this.clientPlansSwiper = new Swiper(this.clientPlansSwiperRef.nativeElement, {
+      modules: [Pagination],
+      slidesPerView: 1.08,
+      spaceBetween: 12,
+      grabCursor: true,
+      observer: true,
+      observeParents: true,
+      watchOverflow: true,
+      pagination: {
+        el: this.clientPlansPaginationRef.nativeElement,
+        clickable: true
       },
-      768: {
-        slidesPerView: 1.35,
-        spaceBetween: 16
+      breakpoints: {
+        576: {
+          slidesPerView: 1.15,
+          spaceBetween: 14
+        },
+        768: {
+          slidesPerView: 1.35,
+          spaceBetween: 16
+        }
       }
-    }
-  });
-}
+    });
+  }
   parsePhotos(photosData: any): any[] {
     let photosArray: { url: string }[] = [];
 
@@ -429,165 +537,165 @@ private initClientPlansSwiper(): void {
     }
   }
 
-private closeAllOffcanvas(): void {
-  const elements = document.querySelectorAll('.offcanvas.show');
+  private closeAllOffcanvas(): void {
+    const elements = document.querySelectorAll('.offcanvas.show');
 
-  elements.forEach((el) => {
-    const instance =
-      bootstrap.Offcanvas.getInstance(el as Element) ||
-      new bootstrap.Offcanvas(el as Element);
+    elements.forEach((el) => {
+      const instance =
+        bootstrap.Offcanvas.getInstance(el as Element) ||
+        new bootstrap.Offcanvas(el as Element);
 
-    instance.hide();
-  });
+      instance.hide();
+    });
 
-  document.querySelectorAll('.offcanvas-backdrop').forEach((el) => el.remove());
+    document.querySelectorAll('.offcanvas-backdrop').forEach((el) => el.remove());
 
-  document.body.classList.remove('modal-open');
-  document.body.style.removeProperty('overflow');
-  document.body.style.removeProperty('padding-right');
-}
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
+  }
   async saveProfile() {
-  if (this.isSaving) return;
+    if (this.isSaving) return;
 
-  try {
-    this.isSaving = true;
+    try {
+      this.isSaving = true;
 
-    Swal.fire({
-      title: 'Guardando perfil...',
-      text: 'Espera un momento',
-      allowOutsideClick: false,
-      allowEscapeKey: false,
-      showConfirmButton: false,
-      didOpen: () => {
-        Swal.showLoading();
+      Swal.fire({
+        title: 'Guardando perfil...',
+        text: 'Espera un momento',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      const uploadedPhotos: string[] = [];
+
+      for (const photo of this.photos) {
+        if (photo?.file) {
+          const formData = new FormData();
+          formData.append('file', photo.file);
+
+          const record = await this.pb.collection('files').create(formData);
+          const url = this.pb.files.getUrl(record, record['file']);
+          uploadedPhotos.push(url);
+        } else if (photo?.url) {
+          uploadedPhotos.push(photo.url);
+        }
       }
-    });
 
-    const uploadedPhotos: string[] = [];
+      let avatarUrl = this.profileData.avatar || '';
 
-    for (const photo of this.photos) {
-      if (photo?.file) {
-        const formData = new FormData();
-        formData.append('file', photo.file);
+      if (this.avatar) {
+        const avatarFormData = new FormData();
+        avatarFormData.append('file', this.avatar);
+        avatarFormData.append('userId', this.auth.currentUser?.id || '');
+        avatarFormData.append('type', 'avatar');
 
-        const record = await this.pb.collection('files').create(formData);
-        const url = this.pb.files.getUrl(record, record['file']);
-        uploadedPhotos.push(url);
-      } else if (photo?.url) {
-        uploadedPhotos.push(photo.url);
+        const avatarRecord = await this.pb.collection('files').create(avatarFormData);
+        avatarUrl = this.pb.files.getUrl(avatarRecord, avatarRecord['file']);
       }
+
+      const data: any = {
+        name: this.profileData.name || '',
+        birthday: this.profileData.birthday || '',
+        interestedIn: this.profileData.interestedIn || '',
+        lookingFor: this.profileData.lookingFor || '',
+        language: this.profileData.language || '',
+        orientation: this.profileData.orientation || '',
+        age: this.profileData.age || null,
+        gender: this.profileData.gender || '',
+        address: this.profileData.address || '',
+        about: this.profileData.about || '',
+        photos: JSON.stringify(uploadedPhotos),
+        email: this.auth.currentUser?.email || '',
+        userId: this.auth.currentUser?.id || '',
+        status: this.auth.currentUser?.status || '',
+        interests: JSON.stringify(this.selectedInterests),
+        avatar: avatarUrl,
+      };
+
+      const existingProfile = await this.pb
+        .collection('usuariosClient')
+        .getFirstListItem(`userId="${this.auth.currentUser?.id}"`)
+        .catch(() => null);
+
+      if (existingProfile) {
+        await this.pb.collection('usuariosClient').update(existingProfile.id, data);
+      } else {
+        await this.pb.collection('usuariosClient').create(data);
+      }
+
+      await this.loadProfile();
+
+      this.global.profileData = { ...this.profileData };
+      this.auth.profile = { ...this.profileData };
+      localStorage.setItem('profile', JSON.stringify(this.profileData));
+
+      this.avatarPreview = null;
+      this.avatar = null;
+
+      this.closeAllOffcanvas();
+
+      setTimeout(() => {
+        this.isSaving = false;
+        this.isEditProfile = false;
+      }, 200);
+      this.isSaving = false;
+      this.isEditProfile = false;
+
+      Swal.close();
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Perfil actualizado',
+        text: 'Tus cambios se guardaron correctamente',
+        timer: 1400,
+        showConfirmButton: false
+      });
+
+    } catch (error: any) {
+      console.error('Error guardando perfil:', error);
+
+      this.isSaving = false;
+      Swal.close();
+
+      Swal.fire({
+        icon: 'error',
+        title: 'No se pudo guardar',
+        text: error?.message || 'Ocurrió un error al guardar los cambios',
+        confirmButtonText: 'Aceptar'
+      });
     }
-
-    let avatarUrl = this.profileData.avatar || '';
-
-    if (this.avatar) {
-      const avatarFormData = new FormData();
-      avatarFormData.append('file', this.avatar);
-      avatarFormData.append('userId', this.auth.currentUser?.id || '');
-      avatarFormData.append('type', 'avatar');
-
-      const avatarRecord = await this.pb.collection('files').create(avatarFormData);
-      avatarUrl = this.pb.files.getUrl(avatarRecord, avatarRecord['file']);
-    }
-
-    const data: any = {
-      name: this.profileData.name || '',
-      birthday: this.profileData.birthday || '',
-      interestedIn: this.profileData.interestedIn || '',
-      lookingFor: this.profileData.lookingFor || '',
-      language: this.profileData.language || '',
-      orientation: this.profileData.orientation || '',
-      age: this.profileData.age || null,
-      gender: this.profileData.gender || '',
-      address: this.profileData.address || '',
-      about: this.profileData.about || '',
-      photos: JSON.stringify(uploadedPhotos),
-      email: this.auth.currentUser?.email || '',
-      userId: this.auth.currentUser?.id || '',
-      status: this.auth.currentUser?.status || '',
-      interests: JSON.stringify(this.selectedInterests),
-      avatar: avatarUrl,
-    };
-
-    const existingProfile = await this.pb
-      .collection('usuariosClient')
-      .getFirstListItem(`userId="${this.auth.currentUser?.id}"`)
-      .catch(() => null);
-
-    if (existingProfile) {
-      await this.pb.collection('usuariosClient').update(existingProfile.id, data);
-    } else {
-      await this.pb.collection('usuariosClient').create(data);
-    }
-
-    await this.loadProfile();
-
-    this.global.profileData = { ...this.profileData };
-    this.auth.profile = { ...this.profileData };
-    localStorage.setItem('profile', JSON.stringify(this.profileData));
-
-    this.avatarPreview = null;
-    this.avatar = null;
-
-this.closeAllOffcanvas();
-
-setTimeout(() => {
-  this.isSaving = false;
-  this.isEditProfile = false;
-}, 200);
-    this.isSaving = false;
-    this.isEditProfile = false;
-
-    Swal.close();
-
-    Swal.fire({
-      icon: 'success',
-      title: 'Perfil actualizado',
-      text: 'Tus cambios se guardaron correctamente',
-      timer: 1400,
-      showConfirmButton: false
-    });
-
-  } catch (error: any) {
-    console.error('Error guardando perfil:', error);
-
-    this.isSaving = false;
-    Swal.close();
-
-    Swal.fire({
-      icon: 'error',
-      title: 'No se pudo guardar',
-      text: error?.message || 'Ocurrió un error al guardar los cambios',
-      confirmButtonText: 'Aceptar'
-    });
   }
-}
   private normalizeStringArray(value: any): string[] {
-  if (Array.isArray(value)) {
-    return value.map(v => String(v).trim()).filter(Boolean);
-  }
-
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-
-    if (!trimmed) return [];
-
-    if (trimmed.startsWith('[')) {
-      try {
-        const parsed = JSON.parse(trimmed);
-        return Array.isArray(parsed)
-          ? parsed.map(v => String(v).trim()).filter(Boolean)
-          : [];
-      } catch {
-        return [];
-      }
+    if (Array.isArray(value)) {
+      return value.map(v => String(v).trim()).filter(Boolean);
     }
 
-    return trimmed.split(',').map(v => v.trim()).filter(Boolean);
-  }
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
 
-  return [];
-}
+      if (!trimmed) return [];
+
+      if (trimmed.startsWith('[')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          return Array.isArray(parsed)
+            ? parsed.map(v => String(v).trim()).filter(Boolean)
+            : [];
+        } catch {
+          return [];
+        }
+      }
+
+      return trimmed.split(',').map(v => v.trim()).filter(Boolean);
+    }
+
+    return [];
+  }
   saveInterestedIn() {
     this.profileData.interestedIn = this.profileData.interestedIn || '';
   }

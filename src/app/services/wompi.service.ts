@@ -60,16 +60,30 @@ export class WompiService {
       throw new Error('Falta WOMPI_PUBLIC_KEY');
     }
 
-    const checkoutConfig: any = {
+    /* const checkoutConfig: any = {
       currency: options.currency ?? 'COP',
       amountInCents: options.amountInCents,
       reference: options.reference,
       publicKey,
-    };
+    }; */
+    const checkoutConfig: any = {
+  currency: options.currency ?? 'COP',
+  amountInCents: options.amountInCents,
+  reference: options.reference,
+  publicKey,
+  signature: {
+    integrity: options.signature
+  }
+};
 
-    if (options.signature) {
+    /* if (options.signature) {
       checkoutConfig['signature:integrity'] = options.signature;
-    }
+    } */
+   if (options.signature) {
+  checkoutConfig.signature = {
+    integrity: options.signature
+  };
+}
 
     if (options.redirectUrl) {
       checkoutConfig.redirectUrl = options.redirectUrl;

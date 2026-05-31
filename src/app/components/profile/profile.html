@@ -105,6 +105,7 @@
           </div>
           <button type="button" class="btn btn-gradient-purple w-100 rounded-pill mt-3" [routerLink]="['/my-orders']"
             [queryParams]="{ refresh: refreshKey }">
+            <i class="fa fa-ticket"></i>
             Ver mis compras y códigos
           </button>
           <div class="gallery-section">
@@ -175,6 +176,10 @@
 
                   <div class="plan-price">{{ planning.priceCOP }} <span>COP/mes</span></div>
                   <div class="plan-price">{{ planning.priceUSD }} <span>USD/mes</span></div>
+                  <button type="button" class="btn btn-gradient-purple-2 w-100 rounded-pill mt-3"
+                    [disabled]="subscribingPlanId === planning.id" (click)="subscribeClientPlan(planning)">
+                    {{ subscribingPlanId === planning.id ? 'Procesando...' : 'Suscribirme' }}
+                  </button>
                 </div>
               </div>
             </div>
