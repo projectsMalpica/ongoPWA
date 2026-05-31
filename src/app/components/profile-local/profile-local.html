@@ -925,9 +925,13 @@
             </li>
           </ul>
 
-          <button type="button" class="modal-subscribe-btn" (click)="subscribeToPlan(plan)">
-            Suscribirme
-          </button>
+          <button
+  type="button"
+  class="subscription-btn"
+  [disabled]="subscribingPlanId === plan.id"
+  (click)="subscribeToPlan(plan)">
+  {{ subscribingPlanId === plan.id ? 'Procesando...' : 'Suscribirme' }}
+</button>
         </div>
 
       </div>

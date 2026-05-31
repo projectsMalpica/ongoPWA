@@ -44,7 +44,7 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
     partnerId: ''
   };
 
-
+  subscribingPlanId: string | null = null;
   productImageFile: File | null = null;
   isEditingProduct: boolean = false;
   editingProductId: string | null = null;
@@ -91,13 +91,13 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
   lat: number = 0;
   lng: number = 0;
   newPromo = {
-  name: '',
-  description: '',
-  date: '',
-  price: null as number | null,
-  files: [],
-  userId: '',
-};
+    name: '',
+    description: '',
+    date: '',
+    price: null as number | null,
+    files: [],
+    userId: '',
+  };
   showPromos = false;
   isServicesOffcanvasOpen = false;
 
@@ -119,11 +119,11 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
   loadingGiftOrders = false;
   subscriptionPlans: any[] = [];
   planningSubscription: any;
-ticketCodeInput = '';
-ticketOrder: any = null;
-ticketRedeemLoading = false;
-ticketRedeemMessage = '';
-ticketRedeemError = '';
+  ticketCodeInput = '';
+  ticketOrder: any = null;
+  ticketRedeemLoading = false;
+  ticketRedeemMessage = '';
+  ticketRedeemError = '';
   constructor(
     public global: GlobalService,
     public auth: AuthPocketbaseService,
@@ -131,7 +131,7 @@ ticketRedeemError = '';
     public http: HttpClient,
     public wompi: WompiService,
     private planningPartnerService: RealtimePlanningPartnerService,
-      private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef
   ) {
     this.loadPromotionsForPartner();
     this.pb.autoCancellation(false);
@@ -152,112 +152,112 @@ ticketRedeemError = '';
     this.global.initPlanningPartnersRealtime();
     this.initMapIfReady();
   }
-async searchTicketByCode(): Promise<void> {
+  async searchTicketByCode(): Promise<void> {
 
-  let partnerId = this.global.profileDataPartner?.id;
-  const code = this.ticketCodeInput.trim();
+    let partnerId = this.global.profileDataPartner?.id;
+    const code = this.ticketCodeInput.trim();
 
-  this.ticketOrder = null;
-  this.ticketRedeemMessage = '';
-  this.ticketRedeemError = '';
+    this.ticketOrder = null;
+    this.ticketRedeemMessage = '';
+    this.ticketRedeemError = '';
 
-  // Si no existe el id del local en memoria, buscarlo
-  if (!partnerId) {
+    // Si no existe el id del local en memoria, buscarlo
+    if (!partnerId) {
 
-    const userId = this.auth.currentUser?.id;
+      const userId = this.auth.currentUser?.id;
 
-    if (!userId) {
-      this.ticketRedeemError = 'No hay usuario autenticado.';
+      if (!userId) {
+        this.ticketRedeemError = 'No hay usuario autenticado.';
+        return;
+      }
+
+      try {
+
+        const partner = await this.pb
+          .collection('usuariosPartner')
+          .getFirstListItem(
+            `userId="${userId}"`,
+            { requestKey: null }
+          );
+
+        partnerId = partner.id;
+
+        // Guardar en memoria
+        this.global.profileDataPartner.id = partner.id;
+
+      } catch (error) {
+        console.error('Error buscando local:', error);
+        this.ticketRedeemError = 'No se encontró el local.';
+        return;
+      }
+    }
+
+    if (!code) {
+      this.ticketRedeemError = 'Ingresa el código de la entrada.';
       return;
     }
+
+    this.ticketRedeemLoading = true;
 
     try {
 
-      const partner = await this.pb
-        .collection('usuariosPartner')
+      const order = await this.pb
+        .collection('ticket_orders')
         .getFirstListItem(
-          `userId="${userId}"`,
+          `partnerId="${partnerId}" && redeemCode="${code}" && status="paid"`,
           { requestKey: null }
         );
 
-      partnerId = partner.id;
+      this.ticketOrder = order;
 
-      // Guardar en memoria
-      this.global.profileDataPartner.id = partner.id;
+      if (order['orderStatus'] === 'redeemed') {
+
+        this.ticketRedeemError = 'Esta entrada ya fue canjeada.';
+
+      } else {
+
+        this.ticketRedeemMessage =
+          'Entrada válida. Puedes permitir el ingreso.';
+      }
 
     } catch (error) {
-      console.error('Error buscando local:', error);
-      this.ticketRedeemError = 'No se encontró el local.';
-      return;
-    }
-  }
 
-  if (!code) {
-    this.ticketRedeemError = 'Ingresa el código de la entrada.';
-    return;
-  }
+      console.error('Error buscando ticket:', error);
 
-  this.ticketRedeemLoading = true;
+      this.ticketRedeemError =
+        'No encontramos una entrada válida con ese código.';
 
-  try {
+    } finally {
 
-    const order = await this.pb
-      .collection('ticket_orders')
-      .getFirstListItem(
-        `partnerId="${partnerId}" && redeemCode="${code}" && status="paid"`,
-        { requestKey: null }
-      );
-
-    this.ticketOrder = order;
-
-    if (order['orderStatus'] === 'redeemed') {
-
-      this.ticketRedeemError = 'Esta entrada ya fue canjeada.';
-
-    } else {
-
-      this.ticketRedeemMessage =
-        'Entrada válida. Puedes permitir el ingreso.';
-    }
-
-  } catch (error) {
-
-    console.error('Error buscando ticket:', error);
-
-    this.ticketRedeemError =
-      'No encontramos una entrada válida con ese código.';
-
-  } finally {
-
-    this.ticketRedeemLoading = false;
+      this.ticketRedeemLoading = false;
       this.cdr.detectChanges();
 
+    }
   }
-}
 
-async confirmRedeemTicket(): Promise<void> {
-  if (!this.ticketOrder?.id) return;
+  async confirmRedeemTicket(): Promise<void> {
+    if (!this.ticketOrder?.id) return;
 
-  const result = await Swal.fire({
-    icon: 'question',
-    title: '¿Validar entrada?',
-    text: `Confirmar ingreso para ${this.ticketOrder.partnerName}`,
-    confirmButtonText: 'Sí, validar',
-    cancelButtonText: 'Cancelar',
-    showCancelButton: true
-  });
+    const result = await Swal.fire({
+      icon: 'question',
+      title: '¿Validar entrada?',
+      text: `Confirmar ingreso para ${this.ticketOrder.partnerName}`,
+      confirmButtonText: 'Sí, validar',
+      cancelButtonText: 'Cancelar',
+      showCancelButton: true
+    });
 
-  if (!result.isConfirmed) return;
+    if (!result.isConfirmed) return;
 
-  await this.pb.collection('ticket_orders').update(this.ticketOrder.id, {
-    orderStatus: 'redeemed',
-    redeemedAt: new Date().toISOString()
-  }, { requestKey: null });
+    await this.pb.collection('ticket_orders').update(this.ticketOrder.id, {
+      orderStatus: 'redeemed',
+      redeemedAt: new Date().toISOString()
+    }, { requestKey: null });
 
-  this.ticketRedeemMessage = 'Entrada canjeada correctamente.';
-  this.ticketCodeInput = '';
-  this.ticketOrder = null;
-}
+    this.ticketRedeemMessage = 'Entrada canjeada correctamente.';
+    this.ticketCodeInput = '';
+    this.ticketOrder = null;
+  }
   async searchGiftByCode(): Promise<void> {
     const partnerId = this.global.profileDataPartner?.id;
     const code = this.redeemCodeInput.trim();
@@ -296,7 +296,7 @@ async confirmRedeemTicket(): Promise<void> {
       this.redeemError = 'No encontramos un regalo con ese código para este local.';
     } finally {
       this.redeemLoading = false;
-        this.cdr.detectChanges();
+      this.cdr.detectChanges();
 
     }
   }
@@ -321,7 +321,7 @@ async confirmRedeemTicket(): Promise<void> {
       console.error('Error cargando regalos pendientes:', error);
     } finally {
       this.loadingGiftOrders = false;
-        this.cdr.detectChanges();
+      this.cdr.detectChanges();
 
     }
   }
@@ -618,9 +618,9 @@ async confirmRedeemTicket(): Promise<void> {
       if (partnerRecord) {
         this.global.profileDataPartner = {
           id: partnerRecord.id,
-  avatar: partnerRecord['avatar'] || '',
-  userId: partnerRecord['userId'] || '',
-  venueName: partnerRecord['venueName'] || '',
+          avatar: partnerRecord['avatar'] || '',
+          userId: partnerRecord['userId'] || '',
+          venueName: partnerRecord['venueName'] || '',
           name: partnerRecord.name || '',
           email: partnerRecord.email || '',
           phone: partnerRecord.phone || '',
@@ -661,43 +661,45 @@ async confirmRedeemTicket(): Promise<void> {
         purchaseLink: userData['purchaseLink'] || '',
         reservationEnabled:
           userData['reservationEnabled'] || false,
-
         reservationLink:
           userData['reservationLink'] || '',
-
         ticketsEnabled: userData['ticketsEnabled'] || false,
         ticketPrice: userData['ticketPrice'] || 0,
         ticketDescription: userData['ticketDescription'] || '',
         reservationPrice: userData['reservationPrice'] || 0,
-reservationCapacity: userData['reservationCapacity'] || 0,
-ticketCapacity: userData['ticketCapacity'] || 0,
-reservationDate: this.toDateTimeLocal(userData['reservationDate'] || ''),
-ticketDate: this.toDateTimeLocal(userData['ticketDate'] || ''),
+        reservationCapacity: userData['reservationCapacity'] || 0,
+        ticketCapacity: userData['ticketCapacity'] || 0,
+        reservationDate: this.toDateTimeLocal(userData['reservationDate'] || ''),
+        ticketDate: this.toDateTimeLocal(userData['ticketDate'] || ''),
         ticketsLink:
           userData['ticketsLink'] || '',
-
         whatsappReservations:
           userData['whatsappReservations'] || '',
+        subscriptionPlanName: userData['subscriptionPlanName'] || '',
+        subscriptionPlanId: userData['subscriptionPlanId'] || '',
+        subscriptionStatus: userData['subscriptionStatus'] || '',
+        subscriptionStartsAt: userData['subscriptionStartsAt'] || '',
+        subscriptionExpiresAt: userData['subscriptionExpiresAt'] || '',
       };
       this.global.profileDataPartner.avatar = this.pb.files.getUrl(userData, userData['avatar']);
 
       // Cargar fotos si existen
       if (userData['files']) {
 
-  let photosData: any[] = [];
+        let photosData: any[] = [];
 
-  if (Array.isArray(userData['files'])) {
-    photosData = userData['files'];
-  } else {
-    try {
-      photosData = JSON.parse(userData['files']);
-    } catch {
-      photosData = [];
-    }
-  }
+        if (Array.isArray(userData['files'])) {
+          photosData = userData['files'];
+        } else {
+          try {
+            photosData = JSON.parse(userData['files']);
+          } catch {
+            photosData = [];
+          }
+        }
 
-  this.photosPartner = photosData.map((url: string) => ({ url }));
-}
+        this.photosPartner = photosData.map((url: string) => ({ url }));
+      }
 
       // Inicializar servicios seleccionados
       if (this.global.profileDataPartner.services) {
@@ -710,14 +712,14 @@ ticketDate: this.toDateTimeLocal(userData['ticketDate'] || ''),
     }
   }
   private toDateTimeLocal(value: string): string {
-  if (!value) return '';
+    if (!value) return '';
 
-  const date = new Date(value);
-  const offset = date.getTimezoneOffset();
-  const localDate = new Date(date.getTime() - offset * 60000);
+    const date = new Date(value);
+    const offset = date.getTimezoneOffset();
+    const localDate = new Date(date.getTime() - offset * 60000);
 
-  return localDate.toISOString().slice(0, 16);
-}
+    return localDate.toISOString().slice(0, 16);
+  }
   async saveLocation() {
     try {
       await this.pb.collection('usuariosPartner')
@@ -840,19 +842,19 @@ ticketDate: this.toDateTimeLocal(userData['ticketDate'] || ''),
         String(this.global.profileDataPartner.reservationEnabled || false)
       );
       formData.append('reservationPrice', String(this.global.profileDataPartner.reservationPrice || 0));
-formData.append(
-  'reservationDate',
-  this.global.profileDataPartner.reservationDate
-    ? new Date(this.global.profileDataPartner.reservationDate).toISOString()
-    : ''
-);
+      formData.append(
+        'reservationDate',
+        this.global.profileDataPartner.reservationDate
+          ? new Date(this.global.profileDataPartner.reservationDate).toISOString()
+          : ''
+      );
 
-formData.append(
-  'ticketDate',
-  this.global.profileDataPartner.ticketDate
-    ? new Date(this.global.profileDataPartner.ticketDate).toISOString()
-    : ''
-);      formData.append('reservationCapacity', String(this.global.profileDataPartner.reservationCapacity || 0));
+      formData.append(
+        'ticketDate',
+        this.global.profileDataPartner.ticketDate
+          ? new Date(this.global.profileDataPartner.ticketDate).toISOString()
+          : ''
+      ); formData.append('reservationCapacity', String(this.global.profileDataPartner.reservationCapacity || 0));
 
       formData.append('ticketCapacity', String(this.global.profileDataPartner.ticketCapacity || 0));
       formData.append(
@@ -920,44 +922,44 @@ formData.append(
       }
 
       this.global.profileDataPartner = {
-  ...this.global.profileDataPartner,
+        ...this.global.profileDataPartner,
 
-  id: savedRecord.id,
-  userId: savedRecord.userId,
+        id: savedRecord.id,
+        userId: savedRecord.userId,
 
-  venueName: savedRecord.venueName || '',
-  description: savedRecord.description || '',
-  email: savedRecord.email || '',
-  phone: savedRecord.phone || '',
-  address: savedRecord.address || '',
-  capacity: savedRecord.capacity || '',
-  openingHours: savedRecord.openingHours || '',
+        venueName: savedRecord.venueName || '',
+        description: savedRecord.description || '',
+        email: savedRecord.email || '',
+        phone: savedRecord.phone || '',
+        address: savedRecord.address || '',
+        capacity: savedRecord.capacity || '',
+        openingHours: savedRecord.openingHours || '',
 
-  lat: savedRecord.lat || '',
-  lng: savedRecord.lng || '',
+        lat: savedRecord.lat || '',
+        lng: savedRecord.lng || '',
 
-  services: savedRecord.services || '',
-  purchaseLink: savedRecord.purchaseLink || '',
+        services: savedRecord.services || '',
+        purchaseLink: savedRecord.purchaseLink || '',
 
-  files: normalizedFiles,
-  avatar: avatarUrl,
+        files: normalizedFiles,
+        avatar: avatarUrl,
 
-  ticketsEnabled: savedRecord.ticketsEnabled || false,
-  ticketPrice: savedRecord.ticketPrice || 0,
-  ticketDescription: savedRecord.ticketDescription || '',
+        ticketsEnabled: savedRecord.ticketsEnabled || false,
+        ticketPrice: savedRecord.ticketPrice || 0,
+        ticketDescription: savedRecord.ticketDescription || '',
 
-  ticketDate: savedRecord.ticketDate || '',
-  ticketCapacity: savedRecord.ticketCapacity || 0,
+        ticketDate: savedRecord.ticketDate || '',
+        ticketCapacity: savedRecord.ticketCapacity || 0,
 
-  reservationEnabled: savedRecord.reservationEnabled || false,
-  reservationLink: savedRecord.reservationLink || '',
+        reservationEnabled: savedRecord.reservationEnabled || false,
+        reservationLink: savedRecord.reservationLink || '',
 
-  reservationPrice: savedRecord.reservationPrice || 0,
-  reservationDate: savedRecord.reservationDate || '',
-  reservationCapacity: savedRecord.reservationCapacity || 0,
+        reservationPrice: savedRecord.reservationPrice || 0,
+        reservationDate: savedRecord.reservationDate || '',
+        reservationCapacity: savedRecord.reservationCapacity || 0,
 
-  whatsappReservations: savedRecord.whatsappReservations || '',
-};
+        whatsappReservations: savedRecord.whatsappReservations || '',
+      };
 
       this.avatarPreview = null;
       this.newAvatar = null;
@@ -1069,14 +1071,14 @@ formData.append(
         this.loadPromotionsForPartner();
         this.isEditingPromo = false;
         this.editingPromoId = null;
-this.newPromo = {
-  name: '',
-  description: '',
-  date: '',
-  price: null,
-  files: [],
-  userId: '',
-};        this.promoImageFile = null;
+        this.newPromo = {
+          name: '',
+          description: '',
+          date: '',
+          price: null,
+          files: [],
+          userId: '',
+        }; this.promoImageFile = null;
         // Cierra modal y muestra toast igual que antes
         const modalEl = document.getElementById('promoModal');
         if (modalEl) {
@@ -1181,7 +1183,7 @@ this.newPromo = {
         description: promo.description,
         files: promo.files,
         userId: promo.userId,
-          price: Number(promo.price || 0)
+        price: Number(promo.price || 0)
 
       }));
     } catch (error) {
