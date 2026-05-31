@@ -354,7 +354,47 @@
   border: none;
   margin-bottom: 10px;
 }
+.active-subscription-card {
+  margin: 20px 0;
+  padding: 18px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #171b35, #2b124d);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .25);
 
+  span {
+    font-size: 12px;
+    opacity: .75;
+  }
+
+  h4 {
+    margin: 4px 0;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0;
+    font-size: 13px;
+    opacity: .8;
+  }
+
+  .subscription-status {
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: #3a3a4d;
+    font-size: 12px;
+    font-weight: 700;
+
+    &.active {
+      background: #22c55e;
+      color: #06130a;
+    }
+  }
+}
 .btn-gradient-pink:hover,
 .btn-gradient-purple:hover {
   opacity: 0.85;

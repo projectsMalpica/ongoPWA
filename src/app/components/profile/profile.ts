@@ -137,6 +137,14 @@ export class Profile implements OnInit, AfterViewInit, OnDestroy {
     await this.global.initPlanningClientsRealtime();
   }
   async subscribeClientPlan(plan: any): Promise<void> {
+    if (this.isFreePlan(plan)) {
+  Swal.fire({
+    icon: 'info',
+    title: 'Plan gratuito',
+    text: 'Este plan es informativo y no requiere pago.'
+  });
+  return;
+}
     if (this.subscribingPlanId) return;
 
     try {
@@ -249,6 +257,13 @@ export class Profile implements OnInit, AfterViewInit, OnDestroy {
     }
     return this.countries[0];
   }
+  isSubscriptionExpired(): boolean {
+  const expiresAt = this.profileData.subscriptionExpiresAt;
+
+  if (!expiresAt) return true;
+
+  return new Date(expiresAt).getTime() <= Date.now();
+}
   async fetchClientData(): Promise<void> {
     try {
       const userId = this.auth.getUserId();
@@ -271,105 +286,170 @@ export class Profile implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async loadProfile() {
-    const user = this.auth.getCurrentUser();
-    console.log('Cargando perfil de usuario:', user);
+  const user = this.auth.getCurrentUser();
+  console.log('Cargando perfil de usuario:', user);
 
-    if (!user?.id) {
-      console.error('No hay usuario autenticado');
-      return;
-    }
-
-    try {
-      const userData = await this.pb
-        .collection('usuariosClient')
-        .getFirstListItem(`userId="${user.id}"`);
-
-      const rawInterests = userData['interests'];
-      let interestsArray: string[] = [];
-
-      if (typeof rawInterests === 'string' && rawInterests.trim().startsWith('[')) {
-        try {
-          const parsed = JSON.parse(rawInterests);
-          interestsArray = Array.isArray(parsed)
-            ? parsed.map((item: any) => String(item).trim()).filter(Boolean)
-            : [];
-        } catch (e) {
-          console.warn('No se pudo parsear interests como JSON:', e);
-          interestsArray = [];
-        }
-      } else if (Array.isArray(rawInterests)) {
-        interestsArray = rawInterests
-          .map((item: any) => String(item).trim())
-          .filter(Boolean);
-      } else if (typeof rawInterests === 'string' && rawInterests.trim()) {
-        interestsArray = rawInterests
-          .split(',')
-          .map((item: string) => item.trim())
-          .filter(Boolean);
-      }
-
-      this.profileData = {
-        name: userData['name'] || '',
-        interestedIn: userData['interestedIn'] || '',
-        lookingFor: userData['lookingFor'] || '',
-        language: userData['language'] || '',
-        orientation: userData['orientation'] || '',
-        birthday: userData['birthday'] || '',
-        gender: userData['gender'] || '',
-        address: userData['address'] || '',
-        about: userData['about'] || '',
-        age: userData['age'] ?? null,
-        photos: userData['photos'] || [],
-        email: userData['email'] || '',
-        userId: userData['userId'] || '',
-        status: userData['status'] || '',
-        interests: interestsArray.join(', '),
-        avatar: userData['avatar'] || '',
-        subscriptions: userData['subscriptions'] || 'Sin plan',
-        subscriptionPlanId: userData['subscriptionPlanId'] || '',
-        subscriptionStatus: userData['subscriptionStatus'] || '',
-        subscriptionStartsAt: userData['subscriptionStartsAt'] || '',
-        subscriptionExpiresAt: userData['subscriptionExpiresAt'] || '',
-        subscriptionPlanName: userData['subscriptionPlanName'] || '',
-        subscriptionAutoRenew: userData['subscriptionAutoRenew'] || false,
-      };
-
-      this.selectedInterests = [...interestsArray];
-      this.photos = this.parsePhotos(userData['photos']);
-
-      this.global.profileData = { ...this.profileData };
-    } catch (error) {
-      console.error('Error cargando perfil:', error);
-
-      this.profileData = {
-        name: '',
-        gender: '',
-        userId: '',
-        status: '',
-        photos: [],
-        birthday: '',
-        interestedIn: '',
-        email: '',
-        orientation: '',
-        lookingFor: '',
-        address: '',
-        language: '',
-        about: '',
-        age: null,
-        interests: '',
-        avatar: '',
-
-      };
-
-      this.selectedInterests = [];
-      this.photos = Array(6).fill({ url: '' });
-    }
+  if (!user?.id) {
+    console.error('No hay usuario autenticado');
+    return;
   }
+
+  try {
+    const userData = await this.pb
+      .collection('usuariosClient')
+      .getFirstListItem(`userId="${user.id}"`);
+
+    const rawInterests = userData['interests'];
+    let interestsArray: string[] = [];
+
+    if (typeof rawInterests === 'string' && rawInterests.trim().startsWith('[')) {
+      try {
+        const parsed = JSON.parse(rawInterests);
+        interestsArray = Array.isArray(parsed)
+          ? parsed.map((item: any) => String(item).trim()).filter(Boolean)
+          : [];
+      } catch (e) {
+        console.warn('No se pudo parsear interests como JSON:', e);
+        interestsArray = [];
+      }
+    } else if (Array.isArray(rawInterests)) {
+      interestsArray = rawInterests
+        .map((item: any) => String(item).trim())
+        .filter(Boolean);
+    } else if (typeof rawInterests === 'string' && rawInterests.trim()) {
+      interestsArray = rawInterests
+        .split(',')
+        .map((item: string) => item.trim())
+        .filter(Boolean);
+    }
+
+    this.profileData = {
+      name: userData['name'] || '',
+      interestedIn: userData['interestedIn'] || '',
+      lookingFor: userData['lookingFor'] || '',
+      language: userData['language'] || '',
+      orientation: userData['orientation'] || '',
+      birthday: userData['birthday'] || '',
+      gender: userData['gender'] || '',
+      address: userData['address'] || '',
+      about: userData['about'] || '',
+      age: userData['age'] ?? null,
+      photos: userData['photos'] || [],
+      email: userData['email'] || '',
+      userId: userData['userId'] || '',
+      status: userData['status'] || '',
+      interests: interestsArray.join(', '),
+      avatar: userData['avatar'] || '',
+
+      subscriptions: userData['subscriptions'] || 'Sin plan',
+      subscriptionPlanName: userData['subscriptionPlanName'] || '',
+      subscriptionPlanId: userData['subscriptionPlanId'] || '',
+      subscriptionStatus: userData['subscriptionStatus'] || '',
+      subscriptionStartsAt: userData['subscriptionStartsAt'] || '',
+      subscriptionExpiresAt: userData['subscriptionExpiresAt'] || '',
+      subscriptionAutoRenew: userData['subscriptionAutoRenew'] || false,
+    };
+
+    if (
+      this.profileData.subscriptionStatus === 'active' &&
+      this.isSubscriptionExpired()
+    ) {
+      await this.pb.collection('usuariosClient').update(userData.id, {
+        subscriptionStatus: 'expired'
+      });
+
+      this.profileData.subscriptionStatus = 'expired';
+    }
+
+    this.selectedInterests = [...interestsArray];
+    this.photos = this.parsePhotos(userData['photos']);
+
+    this.global.profileData = { ...this.profileData };
+    this.auth.profile = { ...this.profileData };
+    localStorage.setItem('profile', JSON.stringify(this.profileData));
+
+  } catch (error) {
+    console.error('Error cargando perfil:', error);
+
+    this.profileData = {
+      name: '',
+      gender: '',
+      userId: '',
+      status: '',
+      photos: [],
+      birthday: '',
+      interestedIn: '',
+      email: '',
+      orientation: '',
+      lookingFor: '',
+      address: '',
+      language: '',
+      about: '',
+      age: null,
+      interests: '',
+      avatar: '',
+
+      subscriptions: 'Sin plan',
+      subscriptionPlanName: '',
+      subscriptionPlanId: '',
+      subscriptionStatus: '',
+      subscriptionStartsAt: '',
+      subscriptionExpiresAt: '',
+      subscriptionAutoRenew: false,
+    };
+
+    this.selectedInterests = [];
+    this.photos = Array(6).fill({ url: '' });
+  }
+}
   isClientPlanActive(plan: any): boolean {
   return (
     this.profileData.subscriptionStatus === 'active' &&
     this.profileData.subscriptionPlanId === plan.id &&
     new Date(this.profileData.subscriptionExpiresAt).getTime() > Date.now()
+  );
+}
+isFreePlan(plan: any): boolean {
+  return Number(plan.priceCOP || 0) <= 0;
+}
+
+hasActiveSubscription(): boolean {
+  return (
+    this.profileData.subscriptionStatus === 'active' &&
+    this.profileData.subscriptionExpiresAt &&
+    new Date(this.profileData.subscriptionExpiresAt).getTime() > Date.now()
+  );
+}
+
+getActivePlanLabel(): string {
+  if (!this.hasActiveSubscription()) return 'Sin plan activo';
+
+  return this.profileData.subscriptionPlanName || 'Plan activo';
+}
+
+getSubscriptionExpiresLabel(): string {
+  if (!this.profileData.subscriptionExpiresAt) return '';
+
+  return new Date(this.profileData.subscriptionExpiresAt).toLocaleDateString('es-CO', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
+getPlanButtonLabel(plan: any): string {
+  if (this.isFreePlan(plan)) return 'Plan gratuito';
+  if (this.isClientPlanActive(plan)) return 'Plan activo';
+  if (this.subscribingPlanId === plan.id) return 'Procesando...';
+
+  return 'Suscribirme';
+}
+
+isPlanButtonDisabled(plan: any): boolean {
+  return (
+    this.isFreePlan(plan) ||
+    this.isClientPlanActive(plan) ||
+    this.subscribingPlanId === plan.id
   );
 }
   ngAfterViewInit(): void {

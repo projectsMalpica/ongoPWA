@@ -155,7 +155,24 @@
           </div>
         </div>
       </div>
+<div class="active-subscription-card" *ngIf="profileData">
+  <div>
+    <span>Plan actual</span>
+    <h4>{{ getActivePlanLabel() }}</h4>
 
+    <p *ngIf="hasActiveSubscription()">
+      Vence el {{ getSubscriptionExpiresLabel() }}
+    </p>
+
+    <p *ngIf="!hasActiveSubscription()">
+      Actualmente estás usando el plan gratuito.
+    </p>
+  </div>
+
+  <div class="subscription-status" [class.active]="hasActiveSubscription()">
+    {{ hasActiveSubscription() ? 'Activo' : 'Free' }}
+  </div>
+</div>
       <div class="dz-subscribe-area">
         <div class="subscribe-area-top">
           <div class="swiper subscription-swiper2" #clientPlansSwiper>
@@ -176,11 +193,8 @@
 
                   <div class="plan-price">{{ planning.priceCOP }} <span>COP/mes</span></div>
                   <div class="plan-price">{{ planning.priceUSD }} <span>USD/mes</span></div>
+                  
                   <!-- <button type="button" class="btn btn-gradient-purple-2 w-100 rounded-pill mt-3"
-                    [disabled]="subscribingPlanId === planning.id" (click)="subscribeClientPlan(planning)">
-                    {{ subscribingPlanId === planning.id ? 'Procesando...' : 'Suscribirme' }}
-                  </button> -->
-                  <button type="button" class="btn btn-gradient-purple-2 w-100 rounded-pill mt-3"
                     [disabled]="subscribingPlanId === planning.id || isClientPlanActive(planning)"
                     (click)="subscribeClientPlan(planning)">
                     {{
@@ -190,7 +204,14 @@
                     ? 'Procesando...'
                     : 'Suscribirme'
                     }}
-                  </button>
+                  </button> -->
+                  <button
+  type="button"
+  class="btn btn-gradient-purple-2 w-100 rounded-pill mt-3"
+  [disabled]="isPlanButtonDisabled(planning)"
+  (click)="subscribeClientPlan(planning)">
+  {{ getPlanButtonLabel(planning) }}
+</button>
                 </div>
               </div>
             </div>
