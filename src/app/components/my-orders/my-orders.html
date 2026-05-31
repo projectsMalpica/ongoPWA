@@ -1,0 +1,68 @@
+<div class="page-content my-orders-page p-t50 p-b70">
+  <div class="container">
+
+    <div class="orders-header">
+      <span>OnGo Wallet</span>
+      <h2>Mis compras</h2>
+      <p>Consulta tus promociones, regalos, entradas y reservas.</p>
+    </div>
+
+    <div class="orders-loading" *ngIf="loading">
+      Cargando compras...
+    </div>
+
+    <div class="alert-error" *ngIf="error">
+      {{ error }}
+    </div>
+
+    <div class="empty-orders" *ngIf="!loading && !error && !orders.length">
+      <div class="empty-icon">🎟️</div>
+      <h3>Aún no tienes compras</h3>
+      <p>Cuando compres promociones, regalos o entradas aparecerán aquí.</p>
+    </div>
+
+    <div class="orders-list" *ngIf="!loading && orders.length">
+      <div class="order-card" *ngFor="let order of orders">
+
+        <div class="order-card-top">
+          <span class="order-badge">{{ getBadgeLabel(order) }}</span>
+          <span class="order-status">{{ getStatusLabel(order) }}</span>
+        </div>
+
+        <h3>{{ order.title }}</h3>
+
+        <p class="order-description">
+          {{ order.description }}
+        </p>
+
+        <div class="order-info">
+          <div>
+            <small>Local</small>
+            <strong>{{ order.partnerName || 'No especificado' }}</strong>
+          </div>
+
+          <div>
+            <small>Fecha</small>
+            <strong>{{ formatDate(order.date) }}</strong>
+          </div>
+        </div>
+
+        <div class="order-price">
+          <span>Total pagado</span>
+          <strong>{{ order.amount | currency:'COP':'symbol':'1.0-0' }}</strong>
+        </div>
+
+        <div class="redeem-box" *ngIf="order.redeemCode">
+          <small>Código para reclamar</small>
+          <strong>{{ order.redeemCode }}</strong>
+
+          <button type="button" (click)="copyCode(order.redeemCode)">
+            Copiar código
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>

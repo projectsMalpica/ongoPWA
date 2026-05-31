@@ -13,10 +13,11 @@ import { Subscription } from 'rxjs';
 import Swiper from 'swiper';
 import { Pagination } from 'swiper/modules';
 import 'swiper/css/pagination';
+import { RouterModule } from '@angular/router';
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, CommonModule],
+  imports: [FormsModule, ReactiveFormsModule, CommonModule,RouterModule],
   templateUrl: './profile.html',
   styleUrl: './profile.scss',
 })
@@ -26,7 +27,7 @@ clientPlansSwiperRef?: ElementRef<HTMLDivElement>;
 
 @ViewChild('clientPlansPagination', { static: false })
 clientPlansPaginationRef?: ElementRef<HTMLDivElement>;
-
+refreshKey = Date.now();
 private clientPlansSwiper?: Swiper;
 private clientPlansSwiperSub?: Subscription;
   profileData: any = {

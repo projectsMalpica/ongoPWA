@@ -79,6 +79,10 @@ goChats(): void {
     this.closeSidebar();
     this.router.navigate([this.auth.isPartner() ? '/wallet-partner' : '/wallet']);
   }
+  goOrders(): void {
+    this.closeSidebar();
+    this.router.navigate([this.auth.isPartner() ? '/orders-partner' : '/my-orders']);
+  }
 
   logout(): void {
     this.closeSidebar();

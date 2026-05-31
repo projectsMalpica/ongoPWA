@@ -140,6 +140,12 @@ export const routes: Routes = [
     title: 'Recuperar contraseña'
   },
   {
+  path: 'my-orders',
+  loadComponent: () =>
+    import('./components/my-orders/my-orders').then(m => m.MyOrders),
+      title: 'Mis ordenes'
+},
+  {
     path: 'reset-password',
     loadComponent: () =>
       import('./components/reset-password/reset-password').then(c => c.ResetPassword),
