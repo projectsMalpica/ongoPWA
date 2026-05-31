@@ -137,102 +137,102 @@ export class Profile implements OnInit, AfterViewInit, OnDestroy {
     await this.global.initPlanningClientsRealtime();
   }
   async subscribeClientPlan(plan: any): Promise<void> {
-  if (this.subscribingPlanId) return;
+    if (this.subscribingPlanId) return;
 
-  try {
-    this.subscribingPlanId = plan.id;
+    try {
+      this.subscribingPlanId = plan.id;
 
-    await this.auth.restoreSession();
+      await this.auth.restoreSession();
 
-    const user = this.auth.getCurrentUser();
+      const user = this.auth.getCurrentUser();
 
-    if (!user?.id) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Inicia sesión',
-        text: 'Debes iniciar sesión para comprar una suscripción.'
-      });
-      return;
-    }
+      if (!user?.id) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Inicia sesión',
+          text: 'Debes iniciar sesión para comprar una suscripción.'
+        });
+        return;
+      }
 
-    const clientRecord = await this.pb
-      .collection('usuariosClient')
-      .getFirstListItem(`userId="${user.id}"`);
+      const clientRecord = await this.pb
+        .collection('usuariosClient')
+        .getFirstListItem(`userId="${user.id}"`);
 
-    const amountCOP = Number(plan.priceCOP || 0);
+      const amountCOP = Number(plan.priceCOP || 0);
 
-    if (!amountCOP || amountCOP <= 0) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Plan no válido',
-        text: 'Este plan no tiene un precio válido.'
-      });
-      return;
-    }
+      if (!amountCOP || amountCOP <= 0) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Plan no válido',
+          text: 'Este plan no tiene un precio válido.'
+        });
+        return;
+      }
 
-    const intent = await firstValueFrom(
-      this.http.post<any>('https://db.ongomatch.com:5542/client/subscription-intent', {
-        userId: user.id,
-        clientId: clientRecord.id,
-        planId: plan.id,
-        planName: plan.name,
-        price: amountCOP,
-        customerEmail: user.email || clientRecord['email'] || ''
-      })
-    );
+      const intent = await firstValueFrom(
+        this.http.post<any>('https://db.ongomatch.com:5055/client/subscription-intent', {
+          userId: user.id,
+          clientId: clientRecord.id,
+          planId: plan.id,
+          planName: plan.name,
+          price: amountCOP,
+          customerEmail: user.email || clientRecord['email'] || ''
+        })
+      );
 
-    const result = await this.wompi.openCheckout({
-      amountInCents: intent.amountInCents,
-      reference: intent.reference,
-      currency: 'COP',
-      customerEmail: user.email || clientRecord['email'] || '',
-      signature: intent.signature,
-      publicKey: intent.publicKey,
-      redirectUrl: intent.redirectUrl
-    });
-
-    const transaction = result?.transaction;
-
-    await firstValueFrom(
-      this.http.post<any>('https://db.ongomatch.com:5542/client/confirm-subscription', {
+      const result = await this.wompi.openCheckout({
+        amountInCents: intent.amountInCents,
         reference: intent.reference,
-        status: transaction?.status || 'UNKNOWN',
-        transactionId: transaction?.id || '',
-        paymentData: result
-      })
-    );
-
-    if (transaction?.status === 'APPROVED') {
-      await this.loadProfile();
-
-      Swal.fire({
-        icon: 'success',
-        title: 'Suscripción activa',
-        text: `Tu plan ${plan.name} fue activado correctamente.`,
-        timer: 1800,
-        showConfirmButton: false
+        currency: 'COP',
+        customerEmail: user.email || clientRecord['email'] || '',
+        signature: intent.signature,
+        publicKey: intent.publicKey,
+        redirectUrl: intent.redirectUrl
       });
-    } else {
+
+      const transaction = result?.transaction;
+
+      await firstValueFrom(
+        this.http.post<any>('https://db.ongomatch.com:5055/client/confirm-subscription', {
+          reference: intent.reference,
+          status: transaction?.status || 'UNKNOWN',
+          transactionId: transaction?.id || '',
+          paymentData: result
+        })
+      );
+
+      if (transaction?.status === 'APPROVED') {
+        await this.loadProfile();
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Suscripción activa',
+          text: `Tu plan ${plan.name} fue activado correctamente.`,
+          timer: 1800,
+          showConfirmButton: false
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Pago no aprobado',
+          text: 'La suscripción no fue activada porque el pago no fue aprobado.'
+        });
+      }
+
+    } catch (error: any) {
+      console.error('Error creando suscripción:', error);
+
       Swal.fire({
         icon: 'error',
-        title: 'Pago no aprobado',
-        text: 'La suscripción no fue activada porque el pago no fue aprobado.'
+        title: 'No se pudo procesar',
+        text: error?.error?.error || error?.message || 'Ocurrió un error al procesar la suscripción.'
       });
+
+    } finally {
+      this.subscribingPlanId = null;
     }
-
-  } catch (error: any) {
-    console.error('Error creando suscripción:', error);
-
-    Swal.fire({
-      icon: 'error',
-      title: 'No se pudo procesar',
-      text: error?.error?.error || error?.message || 'Ocurrió un error al procesar la suscripción.'
-    });
-
-  } finally {
-    this.subscribingPlanId = null;
   }
-}
   countries = [
     { code: '+57', name: 'Colombia', flag: '🇦🇷' },
     { code: '+56', name: 'Chile', flag: '🇨🇱' },
@@ -330,6 +330,8 @@ export class Profile implements OnInit, AfterViewInit, OnDestroy {
         subscriptionStatus: userData['subscriptionStatus'] || '',
         subscriptionStartsAt: userData['subscriptionStartsAt'] || '',
         subscriptionExpiresAt: userData['subscriptionExpiresAt'] || '',
+        subscriptionPlanName: userData['subscriptionPlanName'] || '',
+        subscriptionAutoRenew: userData['subscriptionAutoRenew'] || false,
       };
 
       this.selectedInterests = [...interestsArray];
@@ -363,6 +365,13 @@ export class Profile implements OnInit, AfterViewInit, OnDestroy {
       this.photos = Array(6).fill({ url: '' });
     }
   }
+  isClientPlanActive(plan: any): boolean {
+  return (
+    this.profileData.subscriptionStatus === 'active' &&
+    this.profileData.subscriptionPlanId === plan.id &&
+    new Date(this.profileData.subscriptionExpiresAt).getTime() > Date.now()
+  );
+}
   ngAfterViewInit(): void {
     this.bindClientPlansSwiper();
   }
