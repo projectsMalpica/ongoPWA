@@ -2,17 +2,67 @@
   <div class="container fixed-full-area">
 
     <!-- Header Radar -->
-    <section class="radar-header">
-      <div>
-        <span class="radar-label">⚡ Conecta cerca de ti</span>
-        <p>Desliza para conectar o toca dos veces para abrir chat.</p>
+   <section class="radar-header">
+
+  <div class="radar-header-info">
+    <span class="radar-label">⚡ Conecta cerca de ti</span>
+    <p>Desliza para conectar o toca dos veces para abrir chat.</p>
+  </div>
+
+  <div class="radar-header-actions">
+
+    <button
+      type="button"
+      class="filter-main-btn compact"
+      (click)="toggleFilters()">
+
+      <i class="fa-solid fa-sliders"></i>
+
+      <strong *ngIf="getActiveFiltersCount()">
+        {{ getActiveFiltersCount() }}
+      </strong>
+    </button>
+
+    <button
+      type="button"
+      class="radar-map-btn"
+      routerLink="/maps">
+
+      <i class="fas fa-map-marker-alt"></i>
+
+    </button>
+
+  </div>
+
+</section>
+
+    <!-- <section class="filters-panel" *ngIf="showFilters">
+      <div class="filter-group">
+        <label>Intereses</label>
+        <input type="text" [(ngModel)]="filters.interests" placeholder="Ej: bailar, música, viajes"
+          (input)="applyClientFilters()" />
       </div>
 
-      <button type="button" class="radar-map-btn" routerLink="/maps">
-        <i class="fas fa-map-marker-alt"></i>
-      </button>
-    </section>
+      <div class="filter-group">
+        <label>Género</label>
+        <select [(ngModel)]="filters.gender" (change)="applyClientFilters()">
+          <option value="">Todos</option>
+          <option value="Masculino">Masculino</option>
+          <option value="Femenino">Femenino</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
 
+      <div class="filter-group">
+        <label>Ubicación</label>
+        <input type="text" [(ngModel)]="filters.address" placeholder="Ej: Medellín, Laureles, Poblado"
+          (input)="applyClientFilters()" />
+      </div>
+
+      <button type="button" class="clear-filters-btn" (click)="clearClientFilters()">
+        Limpiar filtros
+      </button>
+    </section> -->
     <div *ngIf="loadingClients" class="empty-state">
       Cargando perfiles...
     </div>
@@ -108,10 +158,10 @@
               </span>
             </h2>
 
-           <!--  <p class="bio-preview">
+            <!--  <p class="bio-preview">
               {{ clientes[currentIndex]?.Biography || clientes[currentIndex]?.bio || 'Sin biografía disponible.' }}
             </p> -->
-           
+
             <div class="profile-summary">
 
               <div class="summary-chip" *ngIf="clientes[currentIndex]?.gender">
@@ -150,36 +200,28 @@
               </div>
 
             </div>
-           <div class="profile-actions">
+            <div class="profile-actions">
 
-  <button
-    class="view-profile-btn"
-    type="button"
-    (mousedown)="$event.stopPropagation()"
-    (mouseup)="$event.stopPropagation()"
-    (touchstart)="$event.stopPropagation()"
-    (touchend)="$event.stopPropagation()"
-    (click)="openProfile($event, clientes[currentIndex])">
+              <button class="view-profile-btn" type="button" (mousedown)="$event.stopPropagation()"
+                (mouseup)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()"
+                (touchend)="$event.stopPropagation()" (click)="openProfile($event, clientes[currentIndex])">
 
-    Ver perfil completo
-  </button>
+                Ver perfil completo
+              </button>
 
-  <button
-    class="gift-floating-btn"
-    type="button"
-    (click)="onGiftClick($event, clientes[currentIndex])">
+              <button class="gift-floating-btn" type="button" (click)="onGiftClick($event, clientes[currentIndex])">
 
-    <i class="fa-solid fa-martini-glass-citrus"></i>
+                <i class="fa-solid fa-martini-glass-citrus"></i>
 
-    <div class="gift-btn-text">
-      <strong>Invitar un trago</strong>
-      <span>Seleccionar regalo</span>
-    </div>
+                <div class="gift-btn-text">
+                  <strong>Invitar un trago</strong>
+                  <span>Seleccionar regalo</span>
+                </div>
 
-    <div class="gift-glow"></div>
-  </button>
+                <div class="gift-glow"></div>
+              </button>
 
-</div>
+            </div>
           </div>
         </div>
 
@@ -236,6 +278,60 @@
     </div>
 
   </div>
+  <div class="filters-backdrop" *ngIf="showFilters" (click)="toggleFilters()"></div>
+
+<section class="filters-sheet" *ngIf="showFilters">
+  <div class="filters-sheet-handle"></div>
+
+  <div class="filters-sheet-header">
+    <div>
+      <span>Radar OnGo</span>
+      <h3>Filtrar perfiles</h3>
+    </div>
+
+    <button type="button" (click)="toggleFilters()">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+  <div class="filter-group">
+    <label>Intereses</label>
+    <input
+      type="text"
+      [(ngModel)]="filters.interests"
+      placeholder="Ej: bailar, música, viajes"
+      (input)="applyClientFilters()" />
+  </div>
+
+  <div class="filter-group">
+    <label>Género</label>
+    <select [(ngModel)]="filters.gender" (change)="applyClientFilters()">
+      <option value="">Todos</option>
+      <option value="Masculino">Masculino</option>
+      <option value="Femenino">Femenino</option>
+      <option value="Otro">Otro</option>
+    </select>
+  </div>
+
+  <div class="filter-group">
+    <label>Ubicación</label>
+    <input
+      type="text"
+      [(ngModel)]="filters.address"
+      placeholder="Ej: Medellín, Laureles, Poblado"
+      (input)="applyClientFilters()" />
+  </div>
+
+  <div class="filters-actions">
+    <button type="button" class="clear-filters-btn" (click)="clearClientFilters()">
+      Limpiar filtros
+    </button>
+
+    <button type="button" class="apply-filters-btn" (click)="toggleFilters()">
+      Aplicar filtros
+    </button>
+  </div>
+</section>
 </div>
 <div class="ongo-match-overlay" *ngIf="showMatchOverlay">
 
@@ -297,110 +393,88 @@
 
   <div class="gift-modal-card" (click)="$event.stopPropagation()">
 
-  <div class="gift-success-card" *ngIf="giftSentSuccess; else giftForm">
+    <div class="gift-success-card" *ngIf="giftSentSuccess; else giftForm">
 
-  <div class="gift-success-icon">
-    <i class="fa-solid fa-check"></i>
-  </div>
+      <div class="gift-success-icon">
+        <i class="fa-solid fa-check"></i>
+      </div>
 
-  <h3>Regalo listo para reclamar 🎁</h3>
-
-  <p>
-    Comparte este código con el cliente. El local deberá validarlo antes de entregar el producto.
-  </p>
-
-  <div class="redeem-code-box">
-    <small>Código de retiro</small>
-    <strong>{{ lastRedeemCode }}</strong>
-  </div>
-
-  <button type="button" class="send-gift-btn" (click)="copyRedeemCode()">
-    Copiar código
-  </button>
-
-  <button type="button" class="send-gift-btn secondary" (click)="closeGiftModal(true)">
-    Cerrar
-  </button>
-
-</div>
-
-  <ng-template #giftForm>
-
-    <button
-      type="button"
-      class="gift-close"
-      (click)="closeGiftModal()"
-    >
-      <i class="fa-solid fa-xmark"></i>
-    </button>
-
-    <div class="gift-header">
-
-      <h3>Invitar un trago 🍸</h3>
+      <h3>Regalo listo para reclamar 🎁</h3>
 
       <p>
-        Para:
-        <strong>{{ giftReceiver?.name }}</strong>
+        Comparte este código con el cliente. El local deberá validarlo antes de entregar el producto.
       </p>
 
-      <span class="wallet-balance">
-        Saldo:
-        {{ walletBalance | currency:'COP':'symbol':'1.0-0' }}
-      </span>
+      <div class="redeem-code-box">
+        <small>Código de retiro</small>
+        <strong>{{ lastRedeemCode }}</strong>
+      </div>
 
-    </div>
+      <button type="button" class="send-gift-btn" (click)="copyRedeemCode()">
+        Copiar código
+      </button>
 
-    <div class="gift-products">
-
-      <button
-        type="button"
-        class="gift-product"
-        *ngFor="let product of partnerProducts"
-        [class.active]="selectedGiftProduct?.id === product.id"
-        (click)="selectedGiftProduct = product"
-      >
-
-        <img
-          *ngIf="product.image"
-          [src]="product.image"
-          alt="gift"
-        >
-
-        <div class="gift-info">
-
-          <strong>{{ product.name }}</strong>
-
-          <small>{{ product.partnerName }}</small>
-
-          <span>
-            {{ product.price | currency:'COP':'symbol':'1.0-0' }}
-          </span>
-
-        </div>
-
+      <button type="button" class="send-gift-btn secondary" (click)="closeGiftModal(true)">
+        Cerrar
       </button>
 
     </div>
 
-    <textarea
-      [(ngModel)]="giftMessage"
-      placeholder="Mensaje opcional..."
-    >
+    <ng-template #giftForm>
+
+      <button type="button" class="gift-close" (click)="closeGiftModal()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="gift-header">
+
+        <h3>Invitar un trago 🍸</h3>
+
+        <p>
+          Para:
+          <strong>{{ giftReceiver?.name }}</strong>
+        </p>
+
+        <span class="wallet-balance">
+          Saldo:
+          {{ walletBalance | currency:'COP':'symbol':'1.0-0' }}
+        </span>
+
+      </div>
+
+      <div class="gift-products">
+
+        <button type="button" class="gift-product" *ngFor="let product of partnerProducts"
+          [class.active]="selectedGiftProduct?.id === product.id" (click)="selectedGiftProduct = product">
+
+          <img *ngIf="product.image" [src]="product.image" alt="gift">
+
+          <div class="gift-info">
+
+            <strong>{{ product.name }}</strong>
+
+            <small>{{ product.partnerName }}</small>
+
+            <span>
+              {{ product.price | currency:'COP':'symbol':'1.0-0' }}
+            </span>
+
+          </div>
+
+        </button>
+
+      </div>
+
+      <textarea [(ngModel)]="giftMessage" placeholder="Mensaje opcional...">
     </textarea>
 
-    <button
-      type="button"
-      class="send-gift-btn" 
-     [disabled]="isSendingGift"
-      (click)="sendGiftFromHome()"
-    >
+      <button type="button" class="send-gift-btn" [disabled]="isSendingGift" (click)="sendGiftFromHome()">
 
-      {{ isSendingGift ? 'Enviando...' : 'Enviar regalo ' }}
+        {{ isSendingGift ? 'Enviando...' : 'Enviar regalo ' }}
 
-    </button>
+      </button>
 
-  </ng-template>
+    </ng-template>
 
+  </div>
 </div>
-</div>
-

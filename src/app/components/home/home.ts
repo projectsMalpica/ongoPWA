@@ -50,6 +50,15 @@ export class Home implements OnInit {
   lastGiftOrder: any = null;
   lastRedeemCode = '';
   lastRedeemQr = '';
+  showFilters = false;
+
+allClientes: any[] = [];
+
+filters = {
+  interests: '',
+  gender: '',
+  address: ''
+};
 
   constructor(
     public global: GlobalService,
@@ -828,4 +837,55 @@ closeGiftModal(force = false): void {
       this.currentPhotoIndex === 0 ? total - 1 : this.currentPhotoIndex - 1;
   }
 
+  toggleFilters(): void {
+  this.showFilters = !this.showFilters;
+}
+
+hasActiveFilters(): boolean {
+  return !!(
+    this.filters.interests ||
+    this.filters.gender ||
+    this.filters.address
+  );
+}
+
+applyClientFilters(): void {
+  const interests = this.filters.interests.trim().toLowerCase();
+  const gender = this.filters.gender.trim().toLowerCase();
+  const address = this.filters.address.trim().toLowerCase();
+
+  this.clientes = this.allClientes.filter((client: any) => {
+    const clientInterests = String(client.interests || '').toLowerCase();
+    const clientGender = String(client.gender || '').toLowerCase();
+    const clientAddress = String(client.address || '').toLowerCase();
+
+    const matchInterests = !interests || clientInterests.includes(interests);
+    const matchGender = !gender || clientGender === gender;
+    const matchAddress = !address || clientAddress.includes(address);
+
+    return matchInterests && matchGender && matchAddress;
+  });
+
+  this.currentIndex = 0;
+  this.currentPhotoIndex = 0;
+}
+
+clearClientFilters(): void {
+  this.filters = {
+    interests: '',
+    gender: '',
+    address: ''
+  };
+
+  this.clientes = [...this.allClientes];
+  this.currentIndex = 0;
+  this.currentPhotoIndex = 0;
+}
+getActiveFiltersCount(): number {
+  return [
+    this.filters.interests,
+    this.filters.gender,
+    this.filters.address
+  ].filter(value => String(value || '').trim()).length;
+}
 }
