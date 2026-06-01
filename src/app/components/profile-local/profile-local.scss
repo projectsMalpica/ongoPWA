@@ -1015,3 +1015,57 @@
   font-weight: 900;
   background: linear-gradient(135deg, #ffb540, #8b2cff, #ff149d);
 }
+
+.active-subscription-card {
+  margin: 18px 0;
+  padding: 18px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #101935, #341164);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .28);
+
+  span {
+    font-size: 12px;
+    opacity: .75;
+  }
+
+  h4 {
+    margin: 4px 0;
+    font-size: 20px;
+    font-weight: 800;
+  }
+
+  p {
+    margin: 0;
+    font-size: 13px;
+    opacity: .8;
+  }
+
+  .subscription-status {
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: #3a3a4d;
+    font-size: 12px;
+    font-weight: 800;
+
+    &.active {
+      background: #22c55e;
+      color: #06130a;
+    }
+  }
+}
+
+.subscription-free-label {
+  width: 100%;
+  margin-top: 16px;
+  padding: 14px 18px;
+  border-radius: 999px;
+  text-align: center;
+  font-weight: 800;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}

@@ -43,7 +43,6 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
     userId: '',
     partnerId: ''
   };
-
   subscribingPlanId: string | null = null;
   productImageFile: File | null = null;
   isEditingProduct: boolean = false;
@@ -680,9 +679,19 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
         subscriptionStatus: userData['subscriptionStatus'] || '',
         subscriptionStartsAt: userData['subscriptionStartsAt'] || '',
         subscriptionExpiresAt: userData['subscriptionExpiresAt'] || '',
+        subscriptionAutoRenew: userData['subscriptionAutoRenew'] || false,
       };
       this.global.profileDataPartner.avatar = this.pb.files.getUrl(userData, userData['avatar']);
+      if (
+        this.global.profileDataPartner.subscriptionStatus === 'active' &&
+        this.isPartnerSubscriptionExpired()
+      ) {
+        await this.pb.collection('usuariosPartner').update(userData.id, {
+          subscriptionStatus: 'expired'
+        });
 
+        this.global.profileDataPartner.subscriptionStatus = 'expired';
+      }
       // Cargar fotos si existen
       if (userData['files']) {
 
@@ -710,6 +719,67 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
 
     } catch (error) {
     }
+  }
+  isPartnerSubscriptionExpired(): boolean {
+    const expiresAt = this.global.profileDataPartner.subscriptionExpiresAt;
+
+    if (!expiresAt) return true;
+
+    return new Date(expiresAt).getTime() <= Date.now();
+  }
+
+  hasActivePartnerSubscription(): boolean {
+    return (
+      this.global.profileDataPartner.subscriptionStatus === 'active' &&
+      this.global.profileDataPartner.subscriptionExpiresAt &&
+      new Date(this.global.profileDataPartner.subscriptionExpiresAt).getTime() > Date.now()
+    );
+  }
+
+  isPartnerPlanActive(plan: any): boolean {
+    return (
+      this.global.profileDataPartner.subscriptionStatus === 'active' &&
+      this.global.profileDataPartner.subscriptionPlanId === plan.id &&
+      new Date(this.global.profileDataPartner.subscriptionExpiresAt).getTime() > Date.now()
+    );
+  }
+
+  isFreePartnerPlan(plan: any): boolean {
+    return Number(plan.priceCOP || 0) <= 0;
+  }
+
+  getPartnerActivePlanLabel(): string {
+    if (!this.hasActivePartnerSubscription()) return 'Sin plan activo';
+
+    return this.global.profileDataPartner.subscriptionPlanName || 'Plan activo';
+  }
+
+  getPartnerSubscriptionExpiresLabel(): string {
+    const expiresAt = this.global.profileDataPartner.subscriptionExpiresAt;
+
+    if (!expiresAt) return '';
+
+    return new Date(expiresAt).toLocaleDateString('es-CO', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  getPartnerPlanButtonLabel(plan: any): string {
+    if (this.isFreePartnerPlan(plan)) return 'Plan gratuito';
+    if (this.isPartnerPlanActive(plan)) return 'Plan activo';
+    if (this.subscribingPlanId === plan.id) return 'Procesando...';
+
+    return 'Suscribirme';
+  }
+
+  isPartnerPlanButtonDisabled(plan: any): boolean {
+    return (
+      this.isFreePartnerPlan(plan) ||
+      this.isPartnerPlanActive(plan) ||
+      this.subscribingPlanId === plan.id
+    );
   }
   private toDateTimeLocal(value: string): string {
     if (!value) return '';
@@ -1499,44 +1569,120 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
     this.editingProductId = null;
   }
 
-
+/* 
   private toAmountInCents(priceCOP: string | number): number {
     if (typeof priceCOP === 'number') return Math.round(priceCOP * 100);
     // elimina todo lo que no sea dígito (soporta puntos y comas de miles)
     const onlyDigits = priceCOP.replace(/\D/g, '');
     return Number(onlyDigits) * 100;
-  }
+  } */
 
-  async subscribeToPlan(planning: any) {
-    // planning.priceCOP podría venir como "49.500", "49500" o número
-    const amountInCents = this.toAmountInCents(planning?.priceCOP ?? 0);
-    if (!amountInCents || amountInCents <= 0) {
-      console.warn('Precio inválido para el plan:', planning);
+  async subscribeToPlan(plan: any): Promise<void> {
+  if (this.subscribingPlanId) return;
+    if (this.isFreePartnerPlan(plan)) {
+  Swal.fire({
+    icon: 'info',
+    title: 'Plan gratuito',
+    text: 'Este plan ya está incluido al registrarte.'
+  });
+  return;
+}
+
+  try {
+    this.subscribingPlanId = plan.id;
+
+    await this.auth.restoreSession();
+
+    const user = this.auth.getCurrentUser();
+
+    if (!user?.id) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Inicia sesión',
+        text: 'Debes iniciar sesión para comprar una suscripción.'
+      });
       return;
     }
 
-    const reference = `partner_${planning?.id || 'plan'}_${Date.now()}`;
-    const redirectUrl = window.location.origin + '/pago-completado';
-    const customerEmail = (planning?.email) || ''; // opcional: carga tu email real del perfil
+    const partnerRecord = await this.pb
+      .collection('usuariosPartner')
+      .getFirstListItem(`userId="${user.id}"`, { requestKey: null });
 
-    try {
-      const result = await this.wompi.openCheckout({
-        amountInCents,
-        reference,
-        redirectUrl,
-        customerEmail,
+    const amountCOP = Number(plan.priceCOP || 0);
+
+    if (!amountCOP || amountCOP <= 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Plan no válido',
+        text: 'Este plan no tiene un precio válido.'
       });
-
-      // result.transaction: { id, status, reference, ... }
-      console.log('Wompi result:', result);
-      const tx = result?.transaction;
-      if (tx?.id) {
-        // Aquí puedes: (1) mostrar feedback, (2) notificar a tu backend para validar por ID
-        // Ejemplo: this.paymentsService.verify(tx.id).subscribe(...)
-      }
-    } catch (e) {
-      console.error('No se pudo abrir el widget Wompi:', e);
+      return;
     }
+
+    const intent = await firstValueFrom(
+      this.http.post<any>('https://db.ongomatch.com:5055/partner/subscription-intent', {
+        userId: user.id,
+        partnerId: partnerRecord.id,
+        planId: plan.id,
+        planName: plan.name,
+        price: amountCOP,
+        customerEmail: user.email || partnerRecord['email'] || ''
+      })
+    );
+
+    const result = await this.wompi.openCheckout({
+      amountInCents: intent.amountInCents,
+      reference: intent.reference,
+      currency: 'COP',
+      customerEmail: user.email || partnerRecord['email'] || '',
+      signature: intent.signature,
+      publicKey: intent.publicKey,
+      redirectUrl: intent.redirectUrl
+    });
+
+    const transaction = result?.transaction;
+
+    await firstValueFrom(
+      this.http.post<any>('https://db.ongomatch.com:5055/partner/confirm-subscription', {
+        reference: intent.reference,
+        status: transaction?.status || 'UNKNOWN',
+        transactionId: transaction?.id || '',
+        paymentData: result
+      })
+    );
+
+    if (transaction?.status === 'APPROVED') {
+      await this.loadProfileDataPartner();
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Suscripción activa',
+        text: `Tu plan ${plan.name} fue activado correctamente.`,
+        timer: 1800,
+        showConfirmButton: false,
+        background: '#101935',
+        color: '#fff'
+      });
+    } else {
+      Swal.fire({
+        icon: 'error',
+        title: 'Pago no aprobado',
+        text: 'La suscripción no fue activada porque el pago no fue aprobado.'
+      });
+    }
+
+  } catch (error: any) {
+    console.error('Error creando suscripción partner:', error);
+
+    Swal.fire({
+      icon: 'error',
+      title: 'No se pudo procesar',
+      text: error?.error?.error || error?.message || 'Ocurrió un error al procesar la suscripción.'
+    });
+
+  } finally {
+    this.subscribingPlanId = null;
   }
+}
 
 }

@@ -12,6 +12,7 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-home-local',
@@ -43,16 +44,79 @@ ambientLevel = 'Chill';
     public wompi: WompiService,
     public router: Router
   ) { }
+openPremiumPromo(): void {
+  if (!this.requirePartnerSubscription('Crear promociones')) {
+    return;
+  }
 
+  this.router.navigate(['/profile-local']);
+}
+goToProfileLocal(): void {
+  this.router.navigate(['/profile-local']);
+}
+async ngOnInit(): Promise<void> {
+  await this.auth.restoreSession();
 
-  async ngOnInit(): Promise<void> {
+  await this.loadPartnerProfileForHome();
+
   this.global.initPlanningPartnersRealtime();
 
   setTimeout(() => {
     this.loadGiftOrders();
   }, 500);
 }
+async loadPartnerProfileForHome(): Promise<void> {
+  const user = this.auth.getCurrentUser();
 
+  if (!user?.id) {
+    console.warn('No hay usuario autenticado en HomeLocal');
+    return;
+  }
+
+  try {
+    const partner = await this.global.pb
+      .collection('usuariosPartner')
+      .getFirstListItem(`userId="${user.id}"`, {
+        requestKey: null
+      });
+
+    this.global.profileDataPartner = {
+      ...this.global.profileDataPartner,
+
+      id: partner.id,
+      userId: partner['userId'] || '',
+      name: partner['name'] || '',
+      venueName: partner['venueName'] || '',
+      email: partner['email'] || '',
+      phone: partner['phone'] || '',
+      avatar: partner['avatar']
+        ? this.global.pb.files.getUrl(partner, partner['avatar'])
+        : this.global.profileDataPartner?.avatar || '',
+
+      subscriptionPlanName: partner['subscriptionPlanName'] || '',
+      subscriptionPlanId: partner['subscriptionPlanId'] || '',
+      subscriptionStatus: partner['subscriptionStatus'] || '',
+      subscriptionStartsAt: partner['subscriptionStartsAt'] || '',
+      subscriptionExpiresAt: partner['subscriptionExpiresAt'] || '',
+      subscriptionAutoRenew: partner['subscriptionAutoRenew'] || false,
+    };
+
+    if (
+      this.global.profileDataPartner.subscriptionStatus === 'active' &&
+      this.global.profileDataPartner.subscriptionExpiresAt &&
+      new Date(this.global.profileDataPartner.subscriptionExpiresAt).getTime() <= Date.now()
+    ) {
+      await this.global.pb.collection('usuariosPartner').update(partner.id, {
+        subscriptionStatus: 'expired'
+      }, { requestKey: null });
+
+      this.global.profileDataPartner.subscriptionStatus = 'expired';
+    }
+
+  } catch (error) {
+    console.error('Error cargando perfil partner en home:', error);
+  }
+}
 async loadGiftOrders(): Promise<void> {
   const partnerId = this.global.profileDataPartner?.id;
 
@@ -207,6 +271,47 @@ async markGiftAsRedeemed(order: any): Promise<void> {
     this.tx = undefined; this.txError = undefined;
   }
 
+hasActivePartnerSubscription(): boolean {
+  return (
+    this.global.profileDataPartner?.subscriptionStatus === 'active' &&
+    this.global.profileDataPartner?.subscriptionExpiresAt &&
+    new Date(this.global.profileDataPartner.subscriptionExpiresAt).getTime() > Date.now()
+  );
+}
 
+getPartnerPlanName(): string {
+  return this.global.profileDataPartner?.subscriptionPlanName || 'Plan gratuito';
+}
+
+getPartnerPlanExpiresLabel(): string {
+  const expiresAt = this.global.profileDataPartner?.subscriptionExpiresAt;
+
+  if (!expiresAt) return '';
+
+  return new Date(expiresAt).toLocaleDateString('es-CO', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
+requirePartnerSubscription(featureName: string): boolean {
+  if (this.hasActivePartnerSubscription()) {
+    return true;
+  }
+
+  Swal.fire({
+    icon: 'info',
+    title: 'Función VIP',
+    text: `${featureName} requiere una suscripción activa.`,
+    confirmButtonText: 'Ver planes'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      this.router.navigate(['/profile-local']);
+    }
+  });
+
+  return false;
+}
 }
 

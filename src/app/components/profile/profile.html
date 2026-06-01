@@ -155,25 +155,25 @@
           </div>
         </div>
       </div>
-<div class="active-subscription-card" *ngIf="profileData">
-  <div>
-    <span>Plan actual</span>
-    <h4>{{ getActivePlanLabel() }}</h4>
+      <div class="active-subscription-card" *ngIf="profileData">
+        <div>
+          <span>Plan actual</span>
+          <h4>{{ getActivePlanLabel() }}</h4>
 
-    <p *ngIf="hasActiveSubscription()">
-      Vence el {{ getSubscriptionExpiresLabel() }}
-    </p>
+          <p *ngIf="hasActiveSubscription()">
+            Vence el {{ getSubscriptionExpiresLabel() }}
+          </p>
 
-    <p *ngIf="!hasActiveSubscription()">
-      Actualmente estás usando el plan gratuito.
-    </p>
-  </div>
+          <p *ngIf="!hasActiveSubscription()">
+            Actualmente estás usando el plan gratuito.
+          </p>
+        </div>
 
-  <div class="subscription-status" [class.active]="hasActiveSubscription()">
-    {{ hasActiveSubscription() ? 'Activo' : 'Free' }}
-  </div>
-</div>
-      <div class="dz-subscribe-area">
+        <div class="subscription-status" [class.active]="hasActiveSubscription()">
+          {{ hasActiveSubscription() ? 'Activo' : 'Free' }}
+        </div>
+      </div>
+      <!-- <div class="dz-subscribe-area">
         <div class="subscribe-area-top">
           <div class="swiper subscription-swiper2" #clientPlansSwiper>
             <div class="swiper-wrapper">
@@ -194,17 +194,7 @@
                   <div class="plan-price">{{ planning.priceCOP }} <span>COP/mes</span></div>
                   <div class="plan-price">{{ planning.priceUSD }} <span>USD/mes</span></div>
                   
-                  <!-- <button type="button" class="btn btn-gradient-purple-2 w-100 rounded-pill mt-3"
-                    [disabled]="subscribingPlanId === planning.id || isClientPlanActive(planning)"
-                    (click)="subscribeClientPlan(planning)">
-                    {{
-                    isClientPlanActive(planning)
-                    ? 'Plan activo'
-                    : subscribingPlanId === planning.id
-                    ? 'Procesando...'
-                    : 'Suscribirme'
-                    }}
-                  </button> -->
+                  
                   <button
   type="button"
   class="btn btn-gradient-purple-2 w-100 rounded-pill mt-3"
@@ -221,7 +211,67 @@
             </div>
           </div>
         </div>
-      </div>
+      </div> -->
+      <section class="client-subscription-panel">
+
+        <div class="client-plan-header">
+          <div>
+            <span>OnGo Premium</span>
+            <h3>Planes para clientes</h3>
+          </div>
+        </div>
+
+        <div class="swiper client-plans-swiper" #clientPlansSwiper>
+          <div class="swiper-wrapper">
+
+            <div class="swiper-slide" *ngFor="let planning of global.planningClients$ | async">
+              <div class="client-plan-card">
+
+                <div class="client-plan-top">
+                  <div class="client-plan-icon">
+                    <i class="fa-solid fa-crown"></i>
+                  </div>
+
+                  <div>
+                    <h4>{{ planning.name }}</h4>
+                    <p>Plan cliente</p>
+                  </div>
+                </div>
+
+                <div class="client-plan-price">
+                  {{ planning.priceCOP | currency:'COP':'symbol':'1.0-0' }}
+                  <small>/ mes</small>
+                </div>
+
+                <ul class="client-plan-benefits">
+                  <li *ngFor="let item of planning.items.split(',')">
+                    <i class="fa-solid fa-check"></i>
+                    {{ item.trim() }}
+                  </li>
+                </ul>
+
+                <ng-container *ngIf="isFreePlan(planning); else paidClientPlanButton">
+                  <div class="client-free-label">
+                    Plan incluido al registrarte
+                  </div>
+                </ng-container>
+
+                <ng-template #paidClientPlanButton>
+                  <button type="button" class="client-plan-btn" [disabled]="isPlanButtonDisabled(planning)"
+                    (click)="subscribeClientPlan(planning)">
+                    {{ getPlanButtonLabel(planning) }}
+                  </button>
+                </ng-template>
+
+              </div>
+            </div>
+
+          </div>
+
+          <div class="swiper-pagination client-plan-pagination" #clientPlansPagination></div>
+        </div>
+
+      </section>
     </div>
   </div>
 </div>

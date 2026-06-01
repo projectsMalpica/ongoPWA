@@ -50,6 +50,24 @@
         Wallet
       </button>
     </section>
+    <div class="active-subscription-card" *ngIf="global.profileDataPartner">
+      <div>
+        <span>Plan actual del local</span>
+        <h4>{{ getPartnerActivePlanLabel() }}</h4>
+
+        <p *ngIf="hasActivePartnerSubscription()">
+          Vence el {{ getPartnerSubscriptionExpiresLabel() }}
+        </p>
+
+        <p *ngIf="!hasActivePartnerSubscription()">
+          Actualmente el local está usando el plan gratuito.
+        </p>
+      </div>
+
+      <div class="subscription-status" [class.active]="hasActivePartnerSubscription()">
+        {{ hasActivePartnerSubscription() ? 'Activo' : 'Free' }}
+      </div>
+    </div>
     <section class="subscription-neon-panel">
 
       <div class="panel-header">
@@ -96,9 +114,22 @@
                 </li>
               </ul>
 
-              <button type="button" class="subscription-btn" (click)="subscribeToPlan(plan)">
-                Suscribirme
-              </button>
+              <!-- <button type="button" class="subscription-btn" [disabled]="isPartnerPlanButtonDisabled(plan)"
+                (click)="subscribeToPlan(plan)">
+                {{ getPartnerPlanButtonLabel(plan) }}
+              </button> -->
+              <ng-container *ngIf="isFreePartnerPlan(plan); else paidPartnerPlanButton">
+                <div class="subscription-free-label">
+                  Plan incluido al registrarte
+                </div>
+              </ng-container>
+
+              <ng-template #paidPartnerPlanButton>
+                <button type="button" class="subscription-btn" [disabled]="isPartnerPlanButtonDisabled(plan)"
+                  (click)="subscribeToPlan(plan)">
+                  {{ getPartnerPlanButtonLabel(plan) }}
+                </button>
+              </ng-template>
 
             </div>
 
@@ -817,8 +848,8 @@
                     <h6 class="title">{{ promo.name }}</h6>
                     <span class="about">{{ promo.description }}</span>
                     <strong *ngIf="promo.price">
-  {{ promo.price | number:'1.0-0' }} COP
-</strong>
+                      {{ promo.price | number:'1.0-0' }} COP
+                    </strong>
                   </div>
 
                   <div class="meta-btn">
@@ -925,13 +956,11 @@
             </li>
           </ul>
 
-          <button
-  type="button"
-  class="subscription-btn"
-  [disabled]="subscribingPlanId === plan.id"
-  (click)="subscribeToPlan(plan)">
-  {{ subscribingPlanId === plan.id ? 'Procesando...' : 'Suscribirme' }}
-</button>
+
+          <button type="button" class="subscription-btn" [disabled]="isPartnerPlanButtonDisabled(plan)"
+            (click)="subscribeToPlan(plan)">
+            {{ getPartnerPlanButtonLabel(plan) }}
+          </button>
         </div>
 
       </div>

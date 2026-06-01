@@ -301,16 +301,16 @@ export class Maps implements AfterViewInit, OnDestroy {
             }
 
             ${
-              local['name']
+              local['venueName']
                 ? `
                   <div style="font-size:13px;color:#666;">
-                    ${local['name']}
+                    ${local['venueName']}
                   </div>
                 `
                 : ''
             }
 
-            ${
+            /* ${
               local['email']
                 ? `
                   <div style="font-size:13px;color:#666;">
@@ -318,7 +318,7 @@ export class Maps implements AfterViewInit, OnDestroy {
                   </div>
                 `
                 : ''
-            }
+            } */
 
             ${
               local['phone']

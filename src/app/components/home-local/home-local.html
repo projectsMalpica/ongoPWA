@@ -1,181 +1,227 @@
 <div class="page-content space-top p-b60">
-    <div class="local-dashboard">
+  <div class="local-dashboard">
 
-  <!-- HERO PERFIL -->
-  <section class="local-hero">
-    <div class="hero-glow"></div>
+    <!-- HERO PERFIL -->
+    <section class="local-hero">
+      <div class="hero-glow"></div>
 
-    <div class="local-profile">
-      <div class="local-avatar">
-        <img
-          *ngIf="global.profileDataPartner?.avatar"
-          [src]="global.profileDataPartner?.avatar"
-          alt="local"
-        />
-        <i *ngIf="!global.profileDataPartner?.avatar" class="fa-solid fa-store"></i>
+      <div class="local-profile">
+        <div class="local-avatar">
+          <img *ngIf="global.profileDataPartner?.avatar" [src]="global.profileDataPartner?.avatar" alt="local" />
+          <i *ngIf="!global.profileDataPartner?.avatar" class="fa-solid fa-store"></i>
+        </div>
+
+        <div class="local-info">
+          <span class="local-badge">OnGo Local</span>
+          <h2>{{ global.profileDataPartner?.venueName || global.profileDataPartner?.name || 'Tu local' }}</h2>
+          <p>
+            <i class="fa-solid fa-location-dot"></i>
+            Panel comercial
+          </p>
+
+          <button type="button" class="neon-outline-btn" routerLink="/profile-local">
+            <i class="fa-solid fa-pen"></i>
+            Configurar perfil
+          </button>
+        </div>
       </div>
+    </section>
+    <section class="partner-plan-home-card" [class.active]="hasActivePartnerSubscription()">
+      <div>
+        <span>Plan actual</span>
+        <h3>{{ getPartnerPlanName() }}</h3>
 
-      <div class="local-info">
-        <span class="local-badge">OnGo Local</span>
-        <h2>{{ global.profileDataPartner?.name || 'Tu local' }}</h2>
-        <p>
-          <i class="fa-solid fa-location-dot"></i>
-          Panel comercial
+        <p *ngIf="hasActivePartnerSubscription()">
+          Activo hasta {{ getPartnerPlanExpiresLabel() }}
         </p>
 
-        <button type="button" class="neon-outline-btn" routerLink="/profile-local">
-          <i class="fa-solid fa-pen"></i>
-          Configurar perfil
-        </button>
-      </div>
-    </div>
-  </section>
-
-  <!-- MÉTRICAS -->
-  <section class="local-stats-grid">
-    <div class="stat-card cyan">
-      <i class="fa-solid fa-users"></i>
-      <span>Personas dentro</span>
-      <strong>{{ peopleInside || 0 }}</strong>
-      <small>En tiempo real</small>
-    </div>
-
-    <div class="stat-card pink">
-      <i class="fa-solid fa-fire"></i>
-      <span>Ambiente</span>
-      <strong>{{ ambientLevel || 'Chill' }}</strong>
-      <small>Chill / Activo / Full</small>
-    </div>
-
-    <div class="stat-card gold">
-      <i class="fa-solid fa-gift"></i>
-      <span>Regalos pendientes</span>
-      <strong>{{ giftOrders.length || 0 }}</strong>
-      <small>Por reclamar</small>
-    </div>
-  </section>
-
-  <!-- ACCIONES RÁPIDAS -->
-  <section class="quick-actions" routerLink="/profile-local">
-    <button type="button">
-      <i class="fa-solid fa-qrcode"></i>
-      Validar QR
-    </button>
-
-    <button type="button" routerLink="/profile-local">
-      <i class="fa-solid fa-bullhorn"></i>
-      Crear promo
-    </button>
-
-    <button type="button">
-      <i class="fa-solid fa-moon"></i>
-      OnGo Night
-    </button>
-
-    <button type="button" routerLink="/wallet-partner">
-      <i class="fa-solid fa-wallet"></i>
-      Wallet
-    </button>
-  </section>
-
-  <!-- REGALOS PENDIENTES -->
-  <section class="gift-orders-panel" *ngIf="giftOrders.length > 0 || loadingGiftOrders">
-    <div class="panel-header">
-      <div>
-        <span>Barra / Caja</span>
-        <h3>Regalos por reclamar</h3>
+        <p *ngIf="!hasActivePartnerSubscription()">
+          Activa un plan para desbloquear herramientas VIP.
+        </p>
       </div>
 
-      <button type="button" (click)="loadGiftOrders()">
-        <i class="fa-solid fa-rotate-right"></i>
+      <button type="button" routerLink="/profile-local">
+        {{ hasActivePartnerSubscription() ? 'Gestionar plan' : 'Ver planes' }}
       </button>
-    </div>
-
-    <div class="gift-loading" *ngIf="loadingGiftOrders">
-      Cargando regalos...
-    </div>
-
-    <article class="gift-ticket" *ngFor="let order of giftOrders">
-      <div class="ticket-left">
-        <div class="ticket-icon">
-          <img *ngIf="order.productImage" [src]="order.productImage" alt="producto">
-          <i *ngIf="!order.productImage" class="fa-solid fa-gift"></i>
-        </div>
-
-        <div>
-          <h4>{{ order.productName }}</h4>
-          <p>Código</p>
-          <strong>{{ order.redeemCode }}</strong>
-        </div>
+    </section>
+    <!-- MÉTRICAS -->
+    <section class="local-stats-grid">
+      <div class="stat-card cyan">
+        <i class="fa-solid fa-users"></i>
+        <span>Personas dentro</span>
+        <strong>{{ peopleInside || 0 }}</strong>
+        <small>En tiempo real</small>
       </div>
 
-      <div class="ticket-right">
-        <span>{{ order.amount | currency:'COP':'symbol':'1.0-0' }}</span>
+      <div class="stat-card pink">
+        <i class="fa-solid fa-fire"></i>
+        <span>Ambiente</span>
+        <strong>{{ ambientLevel || 'Chill' }}</strong>
+        <small>Chill / Activo / Full</small>
+      </div>
 
-        <button type="button" (click)="markGiftAsRedeemed(order)">
-          <i class="fa-solid fa-circle-check"></i>
-          Entregado
+      <div class="stat-card gold">
+        <i class="fa-solid fa-gift"></i>
+        <span>Regalos pendientes</span>
+        <strong>{{ giftOrders.length || 0 }}</strong>
+        <small>Por reclamar</small>
+      </div>
+
+    </section>
+
+    <!-- ACCIONES RÁPIDAS -->
+    <section class="quick-actions">
+       <button type="button" (click)="goToProfileLocal()">
+    <i class="fa-solid fa-qrcode"></i>
+    Validar código
+  </button>
+
+      <button type="button" (click)="openPremiumPromo()">
+        <i class="fa-solid fa-bullhorn"></i>
+        Crear promo
+      </button>
+
+      <button
+    type="button"
+    (click)="requirePartnerSubscription('OnGo Night')">
+    <i class="fa-solid fa-moon"></i>
+    OnGo Night
+  </button>
+
+      <button type="button" routerLink="/wallet-partner">
+        <i class="fa-solid fa-wallet"></i>
+        Wallet
+      </button>
+    </section>
+
+    <!-- REGALOS PENDIENTES -->
+    <section class="gift-orders-panel" *ngIf="giftOrders.length > 0 || loadingGiftOrders">
+      <div class="panel-header">
+        <div>
+          <span>Barra / Caja</span>
+          <h3>Regalos por reclamar</h3>
+        </div>
+
+        <button type="button" (click)="loadGiftOrders()">
+          <i class="fa-solid fa-rotate-right"></i>
         </button>
       </div>
-    </article>
 
-    <div class="gift-tip">
-      <i class="fa-regular fa-lightbulb"></i>
-      Pide el código al cliente antes de entregar el producto.
-    </div>
-  </section>
+      <div class="gift-loading" *ngIf="loadingGiftOrders">
+        Cargando regalos...
+      </div>
 
-  <!-- ROADMAP VISUAL -->
-  <section class="coming-soon-panel">
-    <div class="panel-header">
+      <article class="gift-ticket" *ngFor="let order of giftOrders">
+        <div class="ticket-left">
+          <div class="ticket-icon">
+            <img *ngIf="order.productImage" [src]="order.productImage" alt="producto">
+            <i *ngIf="!order.productImage" class="fa-solid fa-gift"></i>
+          </div>
+
+          <div>
+            <h4>{{ order.productName }}</h4>
+            <p>Código</p>
+            <strong>{{ order.redeemCode }}</strong>
+          </div>
+        </div>
+
+        <div class="ticket-right">
+          <span>{{ order.amount | currency:'COP':'symbol':'1.0-0' }}</span>
+
+          <button type="button" (click)="markGiftAsRedeemed(order)">
+            <i class="fa-solid fa-circle-check"></i>
+            Entregado
+          </button>
+        </div>
+      </article>
+
+      <div class="gift-tip">
+        <i class="fa-regular fa-lightbulb"></i>
+        Pide el código al cliente antes de entregar el producto.
+      </div>
+    </section>
+
+    <!-- ROADMAP VISUAL -->
+    <section class="coming-soon-panel">
+      <!-- <div class="panel-header">
       <div>
         <span>Próximamente</span>
         <h3>Herramientas para tu local</h3>
       </div>
-    </div>
+    </div> -->
 
-    <div class="feature-grid">
-      <div><i class="fa-solid fa-music"></i> Música / ambiente</div>
-      <div><i class="fa-solid fa-chart-line"></i> Estadísticas</div>
-      <div><i class="fa-solid fa-crown"></i> Beneficios VIP</div>
-      <div><i class="fa-solid fa-map-location-dot"></i> Destacar en mapa</div>
-      <div><i class="fa-solid fa-tags"></i> Promos por horario</div>
-      <div><i class="fa-solid fa-shield-halved"></i> Anti-fraude</div>
-    </div>
-  </section>
+      <div class="feature-grid">
+        <div [class.locked]="!hasActivePartnerSubscription()">
+          <i class="fa-solid fa-music"></i>
+          Música / ambiente
+          <small *ngIf="!hasActivePartnerSubscription()">VIP</small>
+        </div>
 
-</div>
+        <div [class.locked]="!hasActivePartnerSubscription()" (click)="requirePartnerSubscription('Estadísticas')">
+          <i class="fa-solid fa-chart-line"></i>
+          Estadísticas
+          <small *ngIf="!hasActivePartnerSubscription()">VIP</small>
+        </div>
+
+        <div [class.locked]="!hasActivePartnerSubscription()" (click)="requirePartnerSubscription('Beneficios VIP')">
+          <i class="fa-solid fa-crown"></i>
+          Beneficios VIP
+          <small *ngIf="!hasActivePartnerSubscription()">VIP</small>
+        </div>
+
+        <div [class.locked]="!hasActivePartnerSubscription()" (click)="requirePartnerSubscription('Destacar en mapa')">
+          <i class="fa-solid fa-map-location-dot"></i>
+          Destacar en mapa
+          <small *ngIf="!hasActivePartnerSubscription()">VIP</small>
+        </div>
+
+        <div [class.locked]="!hasActivePartnerSubscription()"
+          (click)="requirePartnerSubscription('Promos por horario')">
+          <i class="fa-solid fa-tags"></i>
+          Promos por horario
+          <small *ngIf="!hasActivePartnerSubscription()">VIP</small>
+        </div>
+
+        <div [class.locked]="!hasActivePartnerSubscription()" (click)="requirePartnerSubscription('Anti-fraude')">
+          <i class="fa-solid fa-shield-halved"></i>
+          Anti-fraude
+          <small *ngIf="!hasActivePartnerSubscription()">VIP</small>
+        </div>
+      </div>
+    </section>
+
+  </div>
 </div>
 <!-- MODAL DE RESULTADO -->
 <div class="modal-backdrop" *ngIf="paymentModalOpen" (click)="closePaymentModal()"></div>
 <div class="modal" *ngIf="paymentModalOpen" role="dialog" aria-modal="true">
-    <div class="modal-card" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-            <h5 class="modal-title">Resultado del pago</h5>
-            <button class="close" (click)="closePaymentModal()">&times;</button>
-        </div>
-
-        <div class="modal-body">
-            <div *ngIf="loadingTx">Consultando transacción…</div>
-            <div *ngIf="txError" class="text-danger">{{ txError }}</div>
-
-            <div *ngIf="!loadingTx && tx">
-                <h4 class="mb-2">Transacción {{ tx.id }}</h4>
-                <p><b>Estado:</b> {{ tx.status }}</p>
-                <p><b>Referencia:</b> {{ tx.reference }}</p>
-                <p><b>Monto:</b> {{ tx.amount_in_cents/100 | currency:'COP' }}</p>
-
-                <div *ngIf="tx.status === 'APPROVED'" class="alert alert-success mt-2">
-                    ¡Pago aprobado! Tu suscripción será activada en minutos.
-                </div>
-                <div *ngIf="tx.status !== 'APPROVED'" class="alert alert-warning mt-2">
-                    Estado: {{ tx.status }}. Si es <i>PENDING</i>, te avisaremos al confirmarse.
-                </div>
-            </div>
-        </div>
-
-        <div class="modal-footer">
-            <button class="btn btn-secondary" (click)="closePaymentModal()">Cerrar</button>
-        </div>
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h5 class="modal-title">Resultado del pago</h5>
+      <button class="close" (click)="closePaymentModal()">&times;</button>
     </div>
+
+    <div class="modal-body">
+      <div *ngIf="loadingTx">Consultando transacción…</div>
+      <div *ngIf="txError" class="text-danger">{{ txError }}</div>
+
+      <div *ngIf="!loadingTx && tx">
+        <h4 class="mb-2">Transacción {{ tx.id }}</h4>
+        <p><b>Estado:</b> {{ tx.status }}</p>
+        <p><b>Referencia:</b> {{ tx.reference }}</p>
+        <p><b>Monto:</b> {{ tx.amount_in_cents/100 | currency:'COP' }}</p>
+
+        <div *ngIf="tx.status === 'APPROVED'" class="alert alert-success mt-2">
+          ¡Pago aprobado! Tu suscripción será activada en minutos.
+        </div>
+        <div *ngIf="tx.status !== 'APPROVED'" class="alert alert-warning mt-2">
+          Estado: {{ tx.status }}. Si es <i>PENDING</i>, te avisaremos al confirmarse.
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closePaymentModal()">Cerrar</button>
+    </div>
+  </div>
 </div>
