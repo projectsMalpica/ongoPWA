@@ -2,67 +2,33 @@
   <div class="container fixed-full-area">
 
     <!-- Header Radar -->
-   <section class="radar-header">
+    <section class="radar-header">
 
-  <div class="radar-header-info">
-    <span class="radar-label">⚡ Conecta cerca de ti</span>
-    <p>Desliza para conectar o toca dos veces para abrir chat.</p>
-  </div>
-
-  <div class="radar-header-actions">
-
-    <button
-      type="button"
-      class="filter-main-btn compact"
-      (click)="toggleFilters()">
-
-      <i class="fa-solid fa-sliders"></i>
-
-      <strong *ngIf="getActiveFiltersCount()">
-        {{ getActiveFiltersCount() }}
-      </strong>
-    </button>
-
-    <button
-      type="button"
-      class="radar-map-btn"
-      routerLink="/maps">
-
-      <i class="fas fa-map-marker-alt"></i>
-
-    </button>
-
-  </div>
-
-</section>
-
-    <!-- <section class="filters-panel" *ngIf="showFilters">
-      <div class="filter-group">
-        <label>Intereses</label>
-        <input type="text" [(ngModel)]="filters.interests" placeholder="Ej: bailar, música, viajes"
-          (input)="applyClientFilters()" />
+      <div class="radar-header-info">
+        <span class="radar-label">⚡ Conecta cerca de ti</span>
+        <p>Desliza para conectar o toca dos veces para abrir chat.</p>
       </div>
 
-      <div class="filter-group">
-        <label>Género</label>
-        <select [(ngModel)]="filters.gender" (change)="applyClientFilters()">
-          <option value="">Todos</option>
-          <option value="Masculino">Masculino</option>
-          <option value="Femenino">Femenino</option>
-          <option value="Otro">Otro</option>
-        </select>
+      <div class="radar-header-actions">
+
+        <button type="button" class="filter-main-btn compact" (click)="toggleFilters()">
+
+          <i class="fa-solid fa-sliders"></i>
+
+          <strong *ngIf="getActiveFiltersCount()">
+            {{ getActiveFiltersCount() }}
+          </strong>
+        </button>
+
+        <button type="button" class="radar-map-btn" routerLink="/maps">
+
+          <i class="fas fa-map-marker-alt"></i>
+
+        </button>
+
       </div>
 
-      <div class="filter-group">
-        <label>Ubicación</label>
-        <input type="text" [(ngModel)]="filters.address" placeholder="Ej: Medellín, Laureles, Poblado"
-          (input)="applyClientFilters()" />
-      </div>
-
-      <button type="button" class="clear-filters-btn" (click)="clearClientFilters()">
-        Limpiar filtros
-      </button>
-    </section> -->
+    </section>
     <div *ngIf="loadingClients" class="empty-state">
       Cargando perfiles...
     </div>
@@ -273,65 +239,83 @@
 
     </div>
 
-    <div *ngIf="!loadingClients && clientes.length === 0" class="empty-state">
-      No hay perfiles cerca por ahora.
+    <!-- Usuario NO está dentro de ningún local -->
+    <div *ngIf="!loadingClients && !currentLocalId" class="empty-state">
+
+      <h3>No estás dentro de un local OnGo</h3>
+
+      <p>
+        Acércate a un local participante o explora el mapa para conectar.
+      </p>
+
+      <button class="apply-filters-btn" routerLink="/maps">
+
+        Ver locales cercanos
+
+      </button>
+
+    </div>
+
+    <!-- Está dentro de un local pero no hay personas -->
+    <div *ngIf="!loadingClients && currentLocalId && clientes.length === 0" class="empty-state">
+
+      <h3>🍸 Aún no hay personas en este local</h3>
+
+      <p>
+        Cuando otros usuarios entren aparecerán aquí.
+      </p>
+
     </div>
 
   </div>
   <div class="filters-backdrop" *ngIf="showFilters" (click)="toggleFilters()"></div>
 
-<section class="filters-sheet" *ngIf="showFilters">
-  <div class="filters-sheet-handle"></div>
+  <section class="filters-sheet" *ngIf="showFilters">
+    <div class="filters-sheet-handle"></div>
 
-  <div class="filters-sheet-header">
-    <div>
-      <span>Radar OnGo</span>
-      <h3>Filtrar perfiles</h3>
+    <div class="filters-sheet-header">
+      <div>
+        <span>Radar OnGo</span>
+        <h3>Filtrar perfiles</h3>
+      </div>
+
+      <button type="button" (click)="toggleFilters()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
     </div>
 
-    <button type="button" (click)="toggleFilters()">
-      <i class="fa-solid fa-xmark"></i>
-    </button>
-  </div>
+    <div class="filter-group">
+      <label>Intereses</label>
+      <input type="text" [(ngModel)]="filters.interests" placeholder="Ej: bailar, música, viajes"
+        (input)="applyClientFilters()" />
+    </div>
 
-  <div class="filter-group">
-    <label>Intereses</label>
-    <input
-      type="text"
-      [(ngModel)]="filters.interests"
-      placeholder="Ej: bailar, música, viajes"
-      (input)="applyClientFilters()" />
-  </div>
+    <div class="filter-group">
+      <label>Género</label>
+      <select [(ngModel)]="filters.gender" (change)="applyClientFilters()">
+        <option value="">Todos</option>
+        <option value="Masculino">Masculino</option>
+        <option value="Femenino">Femenino</option>
+        <option value="Otro">Otro</option>
+      </select>
+    </div>
 
-  <div class="filter-group">
-    <label>Género</label>
-    <select [(ngModel)]="filters.gender" (change)="applyClientFilters()">
-      <option value="">Todos</option>
-      <option value="Masculino">Masculino</option>
-      <option value="Femenino">Femenino</option>
-      <option value="Otro">Otro</option>
-    </select>
-  </div>
+    <div class="filter-group">
+      <label>Ubicación</label>
+      <input type="text" [(ngModel)]="filters.address" placeholder="Ej: Medellín, Laureles, Poblado"
+        (input)="applyClientFilters()" />
+    </div>
 
-  <div class="filter-group">
-    <label>Ubicación</label>
-    <input
-      type="text"
-      [(ngModel)]="filters.address"
-      placeholder="Ej: Medellín, Laureles, Poblado"
-      (input)="applyClientFilters()" />
-  </div>
+    <div class="filters-actions">
+      <button type="button" class="clear-filters-btn" (click)="clearClientFilters()">
+        Limpiar filtros
+      </button>
 
-  <div class="filters-actions">
-    <button type="button" class="clear-filters-btn" (click)="clearClientFilters()">
-      Limpiar filtros
-    </button>
-
-    <button type="button" class="apply-filters-btn" (click)="toggleFilters()">
-      Aplicar filtros
-    </button>
-  </div>
-</section>
+      <button type="button" class="apply-filters-btn" (click)="toggleFilters()">
+        Aplicar filtros
+      </button>
+    </div>
+  </section>
 </div>
 <div class="ongo-match-overlay" *ngIf="showMatchOverlay">
 

@@ -1684,5 +1684,50 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
     this.subscribingPlanId = null;
   }
 }
+usarMiUbicacionActual(): void {
+  if (!navigator.geolocation) {
+    this.showAppToast('Tu navegador no soporta geolocalización.', 'error');
+    return;
+  }
+
+  this.showAppToast('Obteniendo tu ubicación actual...', 'info');
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+
+      this.selectedLat = lat;
+      this.selectedLng = lng;
+
+      this.global.profileDataPartner.lat = lat;
+      this.global.profileDataPartner.lng = lng;
+
+      if (this.map) {
+        this.map.flyTo({
+          center: [lng, lat],
+          zoom: 17,
+          speed: 0.8,
+          essential: true
+        });
+
+        this.placeMarker(lng, lat);
+      }
+
+      await this.guardarUbicacion();
+
+      this.showAppToast('Ubicación actual guardada correctamente.', 'success');
+    },
+    (error) => {
+      console.error('Error obteniendo ubicación:', error);
+      this.showAppToast('No se pudo obtener tu ubicación actual.', 'error');
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    }
+  );
+}
 
 }

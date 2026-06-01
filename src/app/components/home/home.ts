@@ -4,14 +4,14 @@ import { CommonModule } from '@angular/common';
 import PocketBase from 'pocketbase';
 import { AuthPocketbaseService } from '../../services/authPocketbase.service';
 import { SwipesService } from '../../services/SwipesService.service';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import Swal from 'sweetalert2';
 import { ToastService } from '../../services/ToastService.service';
 import { FormsModule } from '@angular/forms';
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './home.html',
   styleUrl: './home.scss',
 })
@@ -52,14 +52,18 @@ export class Home implements OnInit {
   lastRedeemQr = '';
   showFilters = false;
 
-allClientes: any[] = [];
+  allClientes: any[] = [];
 
-filters = {
-  interests: '',
-  gender: '',
-  address: ''
-};
-
+  filters = {
+    interests: '',
+    gender: '',
+    address: ''
+  };
+  currentLocalId = '';
+  currentLocalName = '';
+  isInsideLocal = false;
+  currentPartnerId = ''
+  currentPartnerName = ''
   constructor(
     public global: GlobalService,
     public authPocketbaseService: AuthPocketbaseService,
@@ -71,21 +75,21 @@ filters = {
  */    this.pb = this.authPocketbaseService.pb;
   }
   async openGiftFromHome(cliente: any): Promise<void> {
-  if (!cliente?.id) return;
+    if (!cliente?.id) return;
 
-  this.giftReceiver = cliente;
-  this.giftSentSuccess = false;
-  this.lastGiftOrder = null;
-  this.lastRedeemCode = '';
-  this.lastRedeemQr = '';
-  this.selectedGiftProduct = null;
-  this.giftMessage = '';
+    this.giftReceiver = cliente;
+    this.giftSentSuccess = false;
+    this.lastGiftOrder = null;
+    this.lastRedeemCode = '';
+    this.lastRedeemQr = '';
+    this.selectedGiftProduct = null;
+    this.giftMessage = '';
 
-  this.showGiftModal = true;
+    this.showGiftModal = true;
 
-  await this.loadProductsForPartner(cliente.currentPartnerId || undefined);
-  await this.loadWallet();
-}
+    await this.loadProductsForPartner(cliente.currentPartnerId || undefined);
+    await this.loadWallet();
+  }
   getReceiverUserId(cliente: any): string {
     return cliente?.userId || cliente?.id || '';
   }
@@ -94,17 +98,43 @@ filters = {
 
     this.global.clientes$.subscribe((clientes: any[]) => {
 
-      const myProfileId = this.global.profileData?.id;
+      const myProfile = this.authPocketbaseService.getCurrentProfile();
 
-      this.clientes = (clientes || []).filter(
-        c => c.id !== myProfileId
+      const myProfileId = myProfile?.id;
+
+      this.currentLocalId =
+        myProfile?.currentPartnerId || '';
+
+      this.currentLocalName =
+        myProfile?.currentPartnerName || '';
+
+      this.isInsideLocal =
+        !!this.currentLocalId;
+
+      if (!this.currentLocalId) {
+
+        this.clientes = [];
+        this.allClientes = [];
+        this.loadingClients = false;
+
+        return;
+      }
+
+      this.clientes = (clientes || []).filter(client =>
+
+        client.id !== myProfileId &&
+        client.currentPartnerId === this.currentLocalId
+
       );
+
+      this.allClientes = [...this.clientes];
 
       this.loadingClients = false;
 
       if (this.currentIndex >= this.clientes.length) {
         this.currentIndex = 0;
       }
+
     });
 
     await this.updateClientLocation();
@@ -192,260 +222,260 @@ filters = {
 
     this.lastTapTime = now;
   }
- async loadWallet(): Promise<void> {
-  const userId = this.authPocketbaseService.currentUser?.id;
-  if (!userId) return;
+  async loadWallet(): Promise<void> {
+    const userId = this.authPocketbaseService.currentUser?.id;
+    if (!userId) return;
 
-  try {
-    const wallet = await this.pb.collection('wallet').getFirstListItem(
-      `userId="${userId}"`,
-      { requestKey: null }
-    );
+    try {
+      const wallet = await this.pb.collection('wallet').getFirstListItem(
+        `userId="${userId}"`,
+        { requestKey: null }
+      );
 
-    this.currentWallet = wallet;
-    this.walletBalance = Number(wallet['balance'] || 0);
-  } catch {
-    const wallet = await this.pb.collection('wallet').create({
-      userId,
-      balance: 0,
-      currency: 'COP',
-      status: 'active'
-    }, { requestKey: null });
+      this.currentWallet = wallet;
+      this.walletBalance = Number(wallet['balance'] || 0);
+    } catch {
+      const wallet = await this.pb.collection('wallet').create({
+        userId,
+        balance: 0,
+        currency: 'COP',
+        status: 'active'
+      }, { requestKey: null });
 
-    this.currentWallet = wallet;
-    this.walletBalance = 0;
+      this.currentWallet = wallet;
+      this.walletBalance = 0;
+    }
   }
-}
   async sendGiftFromHome(): Promise<void> {
-  if (this.isSendingGift) return;
+    if (this.isSendingGift) return;
 
-  const product = this.selectedGiftProduct;
+    const product = this.selectedGiftProduct;
 
-  if (!product) {
-    this.toastService.show('Selecciona un producto.', 'error');
-    return;
-  }
-
-  const buyerUserId = this.authPocketbaseService.currentUser?.id;
-  const receiverUserId = this.giftReceiver?.userId || this.giftReceiver?.id;
-  const partnerId = product.partnerId || this.giftReceiver?.currentPartnerId;
-
-  if (!buyerUserId) {
-    this.toastService.show('Debes iniciar sesión.', 'error');
-    return;
-  }
-
-  if (!receiverUserId) {
-    this.toastService.show('No se encontró el receptor.', 'error');
-    return;
-  }
-
-  if (!partnerId) {
-    this.toastService.show('Este producto no tiene local asociado.', 'error');
-    return;
-  }
-
-  this.isSendingGift = true;
-
-  try {
-    await this.loadWallet();
-
-    const amount = Number(product.price || 0);
-    const balanceBefore = Number(this.currentWallet?.balance || 0);
-
-    if (balanceBefore < amount) {
-      this.toastService.show('Saldo insuficiente.', 'error');
+    if (!product) {
+      this.toastService.show('Selecciona un producto.', 'error');
       return;
     }
 
-    const balanceAfter = balanceBefore - amount;
-    const redeemCode = `ONGO-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
-    const redeemQr = `${window.location.origin}/redeem/${redeemCode}`;
+    const buyerUserId = this.authPocketbaseService.currentUser?.id;
+    const receiverUserId = this.giftReceiver?.userId || this.giftReceiver?.id;
+    const partnerId = product.partnerId || this.giftReceiver?.currentPartnerId;
 
-    await this.pb.collection('wallet').update(this.currentWallet.id, {
-      balance: balanceAfter
-    }, { requestKey: null });
+    if (!buyerUserId) {
+      this.toastService.show('Debes iniciar sesión.', 'error');
+      return;
+    }
 
-    const order = await this.pb.collection('product_orders').create({
-      buyerUserId,
-      receiverUserId,
-      partnerId,
-      productId: product.id,
-      productName: product.name,
-      productImage: product.image || '',
-      amount,
-      paymentMethod: 'wallet',
-      status: 'paid',
-      orderStatus: 'pending_redeem',
-      message: this.giftMessage || '',
-      orderType: 'gift',
-      redeemCode,
-      redeemQr
-    }, { requestKey: null });
-await this.creditPartnerWallet(
-  partnerId,
-  amount,
-  order.id,
-  product.name
-);
-    await this.pb.collection('wallet_transactions').create({
-      walletId: this.currentWallet.id,
-      userId: buyerUserId,
-      partnerId,
-      type: 'gift_sent',
-      amount,
-      direction: 'debit',
-      balanceBefore,
-      balanceAfter,
-      referenceType: 'product_order',
-      referenceId: order.id,
-      status: 'completed',
-      description: `Regalo enviado: ${product.name}`
-    }, { requestKey: null });
+    if (!receiverUserId) {
+      this.toastService.show('No se encontró el receptor.', 'error');
+      return;
+    }
 
-    this.walletBalance = balanceAfter;
-    this.lastGiftOrder = order;
-    this.lastRedeemCode = redeemCode;
-    this.lastRedeemQr = redeemQr;
+    if (!partnerId) {
+      this.toastService.show('Este producto no tiene local asociado.', 'error');
+      return;
+    }
 
-    this.closeGiftModal(true);
+    this.isSendingGift = true;
 
-    setTimeout(async () => {
-      const result = await Swal.fire({
-        icon: 'success',
-        title: 'Regalo creado 🎁',
-        html: `
+    try {
+      await this.loadWallet();
+
+      const amount = Number(product.price || 0);
+      const balanceBefore = Number(this.currentWallet?.balance || 0);
+
+      if (balanceBefore < amount) {
+        this.toastService.show('Saldo insuficiente.', 'error');
+        return;
+      }
+
+      const balanceAfter = balanceBefore - amount;
+      const redeemCode = `ONGO-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const redeemQr = `${window.location.origin}/redeem/${redeemCode}`;
+
+      await this.pb.collection('wallet').update(this.currentWallet.id, {
+        balance: balanceAfter
+      }, { requestKey: null });
+
+      const order = await this.pb.collection('product_orders').create({
+        buyerUserId,
+        receiverUserId,
+        partnerId,
+        productId: product.id,
+        productName: product.name,
+        productImage: product.image || '',
+        amount,
+        paymentMethod: 'wallet',
+        status: 'paid',
+        orderStatus: 'pending_redeem',
+        message: this.giftMessage || '',
+        orderType: 'gift',
+        redeemCode,
+        redeemQr
+      }, { requestKey: null });
+      await this.creditPartnerWallet(
+        partnerId,
+        amount,
+        order.id,
+        product.name
+      );
+      await this.pb.collection('wallet_transactions').create({
+        walletId: this.currentWallet.id,
+        userId: buyerUserId,
+        partnerId,
+        type: 'gift_sent',
+        amount,
+        direction: 'debit',
+        balanceBefore,
+        balanceAfter,
+        referenceType: 'product_order',
+        referenceId: order.id,
+        status: 'completed',
+        description: `Regalo enviado: ${product.name}`
+      }, { requestKey: null });
+
+      this.walletBalance = balanceAfter;
+      this.lastGiftOrder = order;
+      this.lastRedeemCode = redeemCode;
+      this.lastRedeemQr = redeemQr;
+
+      this.closeGiftModal(true);
+
+      setTimeout(async () => {
+        const result = await Swal.fire({
+          icon: 'success',
+          title: 'Regalo creado 🎁',
+          html: `
           <p>Comparte este código para reclamar en el local:</p>
           <h2 style="color:#7c3aed;">${redeemCode}</h2>
         `,
-        confirmButtonText: 'Copiar código',
-        showCancelButton: true,
-        cancelButtonText: 'Cerrar'
-      });
+          confirmButtonText: 'Copiar código',
+          showCancelButton: true,
+          cancelButtonText: 'Cerrar'
+        });
 
-      if (result.isConfirmed) {
-        await navigator.clipboard.writeText(redeemCode);
-        this.toastService.show('Código copiado ✅', 'success');
-      }
-    }, 400);
+        if (result.isConfirmed) {
+          await navigator.clipboard.writeText(redeemCode);
+          this.toastService.show('Código copiado ✅', 'success');
+        }
+      }, 400);
 
-  } catch (error) {
-    console.error('Error enviando regalo:', error);
-    this.toastService.show('No se pudo enviar el regalo.', 'error');
-  } finally {
-    this.isSendingGift = false;
+    } catch (error) {
+      console.error('Error enviando regalo:', error);
+      this.toastService.show('No se pudo enviar el regalo.', 'error');
+    } finally {
+      this.isSendingGift = false;
+    }
   }
-}
-async creditPartnerWallet(
-  partnerId: string,
-  amount: number,
-  orderId: string,
-  productName: string
-): Promise<void> {
-  let partnerWallet: any;
+  async creditPartnerWallet(
+    partnerId: string,
+    amount: number,
+    orderId: string,
+    productName: string
+  ): Promise<void> {
+    let partnerWallet: any;
 
-  try {
-    partnerWallet = await this.pb.collection('partner_wallet').getFirstListItem(
-      `partnerId="${partnerId}"`,
-      { requestKey: null }
-    );
-  } catch {
-    partnerWallet = await this.pb.collection('partner_wallet').create({
+    try {
+      partnerWallet = await this.pb.collection('partner_wallet').getFirstListItem(
+        `partnerId="${partnerId}"`,
+        { requestKey: null }
+      );
+    } catch {
+      partnerWallet = await this.pb.collection('partner_wallet').create({
+        partnerId,
+        currency: 'COP',
+        status: 'active',
+        balance: 0,
+        pendingBalance: 0,
+        paidBalance: 0
+      }, { requestKey: null });
+    }
+
+    const balanceBefore = Number(partnerWallet.balance || 0);
+    const pendingBefore = Number(partnerWallet.pendingBalance || 0);
+
+    const balanceAfter = balanceBefore + amount;
+    const pendingAfter = pendingBefore + amount;
+
+    await this.pb.collection('partner_wallet').update(partnerWallet.id, {
+      balance: balanceAfter,
+      pendingBalance: pendingAfter
+    }, { requestKey: null });
+
+    await this.pb.collection('partner_wallet_transactions').create({
+      partnerWalletId: partnerWallet.id,
       partnerId,
-      currency: 'COP',
-      status: 'active',
-      balance: 0,
-      pendingBalance: 0,
-      paidBalance: 0
+      productOrderId: orderId,
+      type: 'product_sale',
+      amount,
+      netAmount: amount,
+      direction: 'credit',
+      status: 'pending',
+      description: `Regalo comprado: ${productName}`,
+      commission: 0
     }, { requestKey: null });
   }
-
-  const balanceBefore = Number(partnerWallet.balance || 0);
-  const pendingBefore = Number(partnerWallet.pendingBalance || 0);
-
-  const balanceAfter = balanceBefore + amount;
-  const pendingAfter = pendingBefore + amount;
-
-  await this.pb.collection('partner_wallet').update(partnerWallet.id, {
-    balance: balanceAfter,
-    pendingBalance: pendingAfter
-  }, { requestKey: null });
-
-  await this.pb.collection('partner_wallet_transactions').create({
-    partnerWalletId: partnerWallet.id,
-    partnerId,
-    productOrderId: orderId,
-    type: 'product_sale',
-    amount,
-    netAmount: amount,
-    direction: 'credit',
-    status: 'pending',
-    description: `Regalo comprado: ${productName}`,
-    commission: 0
-  }, { requestKey: null });
-}
-async notifyPartnerGiftOrder(
-  partnerId: string,
-  orderId: string,
-  productName: string,
-  redeemCode: string
-): Promise<void> {
-  try {
-    await this.pb.collection('notifications').create({
-      partnerId,
-      title: 'Nuevo regalo vendido 🎁',
-      message: `Producto: ${productName}. Código: ${redeemCode}`,
-      type: 'gift_order',
-      referenceId: orderId,
-      read: false
-    }, { requestKey: null });
-  } catch (error) {
-    console.error('Error creando notificación al local:', error);
+  async notifyPartnerGiftOrder(
+    partnerId: string,
+    orderId: string,
+    productName: string,
+    redeemCode: string
+  ): Promise<void> {
+    try {
+      await this.pb.collection('notifications').create({
+        partnerId,
+        title: 'Nuevo regalo vendido 🎁',
+        message: `Producto: ${productName}. Código: ${redeemCode}`,
+        type: 'gift_order',
+        referenceId: orderId,
+        read: false
+      }, { requestKey: null });
+    } catch (error) {
+      console.error('Error creando notificación al local:', error);
+    }
   }
-}
-async showGiftSuccessAlert(redeemCode: string): Promise<void> {
-  const result = await Swal.fire({
-    icon: 'success',
-    title: 'Regalo creado 🎁',
-    html: `
+  async showGiftSuccessAlert(redeemCode: string): Promise<void> {
+    const result = await Swal.fire({
+      icon: 'success',
+      title: 'Regalo creado 🎁',
+      html: `
       <p>Comparte este código con el cliente para reclamarlo en el local.</p>
       <div style="font-size:22px;font-weight:700;color:#7c3aed;margin:16px 0;">
         ${redeemCode}
       </div>
       <p>El local ya fue notificado y podrá validar el pedido.</p>
     `,
-    confirmButtonText: 'Copiar código',
-    showDenyButton: true,
-    denyButtonText: 'Cerrar'
-  });
+      confirmButtonText: 'Copiar código',
+      showDenyButton: true,
+      denyButtonText: 'Cerrar'
+    });
 
-  if (result.isConfirmed) {
-    await navigator.clipboard.writeText(redeemCode);
+    if (result.isConfirmed) {
+      await navigator.clipboard.writeText(redeemCode);
+      this.toastService.show('Código copiado ✅', 'success');
+    }
+  }
+  async copyRedeemCode(): Promise<void> {
+    if (!this.lastRedeemCode) return;
+
+    await navigator.clipboard.writeText(this.lastRedeemCode);
     this.toastService.show('Código copiado ✅', 'success');
   }
-}
-  async copyRedeemCode(): Promise<void> {
-  if (!this.lastRedeemCode) return;
+  closeGiftModal(force = false): void {
+    if (this.isSendingGift && !force) return;
 
-  await navigator.clipboard.writeText(this.lastRedeemCode);
-  this.toastService.show('Código copiado ✅', 'success');
-}
-closeGiftModal(force = false): void {
-  if (this.isSendingGift && !force) return;
+    this.showGiftModal = false;
+    this.giftReceiver = null;
+    this.partnerProducts = [];
+    this.selectedGiftProduct = null;
+    this.giftMessage = '';
+    this.giftSentSuccess = false;
 
-  this.showGiftModal = false;
-  this.giftReceiver = null;
-  this.partnerProducts = [];
-  this.selectedGiftProduct = null;
-  this.giftMessage = '';
-  this.giftSentSuccess = false;
-
-  if (!force) {
-    this.lastRedeemCode = '';
-    this.lastRedeemQr = '';
-    this.lastGiftOrder = null;
+    if (!force) {
+      this.lastRedeemCode = '';
+      this.lastRedeemQr = '';
+      this.lastGiftOrder = null;
+    }
   }
-}
 
   resetCard() {
     this.transform = '';
@@ -626,31 +656,31 @@ closeGiftModal(force = false): void {
   }
 
   async loadProductsForPartner(partnerId?: string): Promise<void> {
-  const filter = partnerId
-    ? `partnerId="${partnerId}" && isAvailable=true`
-    : `isAvailable=true`;
+    const filter = partnerId
+      ? `partnerId="${partnerId}" && isAvailable=true`
+      : `isAvailable=true`;
 
-  const records = await this.pb.collection('partnerProducts').getFullList({
-    filter,
-    sort: '-created',
-    expand: 'partnerId',
-    requestKey: null
-  });
+    const records = await this.pb.collection('partnerProducts').getFullList({
+      filter,
+      sort: '-created',
+      expand: 'partnerId',
+      requestKey: null
+    });
 
-  this.partnerProducts = records.map((item: any) => ({
-    id: item.id,
-    name: item.name,
-    description: item.description,
-    category: item.category,
-    price: Number(item.price || 0),
-    partnerId: item.partnerId,
-    partnerName:
-      item.expand?.partnerId?.venueName ||
-      item.expand?.partnerId?.name ||
-      'Local',
-    image: item.image ? this.pb.files.getUrl(item, item.image) : ''
-  }));
-}
+    this.partnerProducts = records.map((item: any) => ({
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      category: item.category,
+      price: Number(item.price || 0),
+      partnerId: item.partnerId,
+      partnerName:
+        item.expand?.partnerId?.venueName ||
+        item.expand?.partnerId?.name ||
+        'Local',
+      image: item.image ? this.pb.files.getUrl(item, item.image) : ''
+    }));
+  }
 
   openMatchedChat() {
     if (!this.matchedClient) return;
@@ -725,21 +755,106 @@ closeGiftModal(force = false): void {
     }
   }
 
-  async updateClientLocation() {
-    if (!navigator.geolocation) return;
+async updateClientLocation() {
+  if (!navigator.geolocation) return;
 
-    navigator.geolocation.getCurrentPosition(async position => {
+  navigator.geolocation.getCurrentPosition(
+    async position => {
       const profile = this.authPocketbaseService.getCurrentProfile();
 
       if (!profile?.id) return;
 
-      await this.pb.collection('usuariosClient').update(profile.id, {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-        locationUpdatedAt: new Date().toISOString()
-      });
-    });
-  }
+      const userLat = position.coords.latitude;
+      const userLng = position.coords.longitude;
+
+      let currentPartnerId = '';
+      let currentPartnerName = '';
+
+      try {
+        const locales = await this.pb.collection('usuariosPartner').getFullList({
+          filter: `lat != "" && lng != ""`,
+          requestKey: null
+        });
+
+        for (const local of locales) {
+          const localLat = Number(local['lat']);
+          const localLng = Number(local['lng']);
+
+          if (!localLat || !localLng) continue;
+
+          const distancia = this.calculateDistanceMeters(
+            userLat,
+            userLng,
+            localLat,
+            localLng
+          );
+
+          console.log('Distancia a local:', {
+            local: local['venueName'],
+            distancia
+          });
+
+          if (distancia <= 80) {
+            currentPartnerId = local.id;
+            currentPartnerName = String(
+              local['venueName'] || local['name'] || 'Local OnGo'
+            );
+            break;
+          }
+        }
+
+        const updatedProfile = await this.pb.collection('usuariosClient').update(
+          profile.id,
+          {
+            lat: userLat,
+            lng: userLng,
+            currentPartnerId,
+            currentPartnerName,
+            insideLocal: !!currentPartnerId,
+            locationUpdatedAt: new Date().toISOString()
+          },
+          { requestKey: null }
+        );
+
+        this.currentLocalId = currentPartnerId;
+        this.currentLocalName = currentPartnerName;
+        this.isInsideLocal = !!currentPartnerId;
+
+        this.global.profileData = {
+          ...this.global.profileData,
+          ...updatedProfile,
+          currentPartnerId,
+          currentPartnerName,
+          insideLocal: !!currentPartnerId,
+          lat: userLat,
+          lng: userLng
+        };
+
+        localStorage.setItem(
+          'profile',
+          JSON.stringify(this.global.profileData)
+        );
+
+        console.log('Cliente actualizado en local:', {
+          currentPartnerId,
+          currentPartnerName,
+          insideLocal: !!currentPartnerId
+        });
+
+      } catch (error) {
+        console.error('Error actualizando ubicación del cliente:', error);
+      }
+    },
+    error => {
+      console.error('No se pudo obtener la ubicación:', error);
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    }
+  );
+}
 
   undoLastSwipe() {
     if (this.swipeHistory.length === 0) return;
@@ -838,54 +953,54 @@ closeGiftModal(force = false): void {
   }
 
   toggleFilters(): void {
-  this.showFilters = !this.showFilters;
-}
+    this.showFilters = !this.showFilters;
+  }
 
-hasActiveFilters(): boolean {
-  return !!(
-    this.filters.interests ||
-    this.filters.gender ||
-    this.filters.address
-  );
-}
+  hasActiveFilters(): boolean {
+    return !!(
+      this.filters.interests ||
+      this.filters.gender ||
+      this.filters.address
+    );
+  }
 
-applyClientFilters(): void {
-  const interests = this.filters.interests.trim().toLowerCase();
-  const gender = this.filters.gender.trim().toLowerCase();
-  const address = this.filters.address.trim().toLowerCase();
+  applyClientFilters(): void {
+    const interests = this.filters.interests.trim().toLowerCase();
+    const gender = this.filters.gender.trim().toLowerCase();
+    const address = this.filters.address.trim().toLowerCase();
 
-  this.clientes = this.allClientes.filter((client: any) => {
-    const clientInterests = String(client.interests || '').toLowerCase();
-    const clientGender = String(client.gender || '').toLowerCase();
-    const clientAddress = String(client.address || '').toLowerCase();
+    this.clientes = this.allClientes.filter((client: any) => {
+      const clientInterests = String(client.interests || '').toLowerCase();
+      const clientGender = String(client.gender || '').toLowerCase();
+      const clientAddress = String(client.address || '').toLowerCase();
 
-    const matchInterests = !interests || clientInterests.includes(interests);
-    const matchGender = !gender || clientGender === gender;
-    const matchAddress = !address || clientAddress.includes(address);
+      const matchInterests = !interests || clientInterests.includes(interests);
+      const matchGender = !gender || clientGender === gender;
+      const matchAddress = !address || clientAddress.includes(address);
 
-    return matchInterests && matchGender && matchAddress;
-  });
+      return matchInterests && matchGender && matchAddress;
+    });
 
-  this.currentIndex = 0;
-  this.currentPhotoIndex = 0;
-}
+    this.currentIndex = 0;
+    this.currentPhotoIndex = 0;
+  }
 
-clearClientFilters(): void {
-  this.filters = {
-    interests: '',
-    gender: '',
-    address: ''
-  };
+  clearClientFilters(): void {
+    this.filters = {
+      interests: '',
+      gender: '',
+      address: ''
+    };
 
-  this.clientes = [...this.allClientes];
-  this.currentIndex = 0;
-  this.currentPhotoIndex = 0;
-}
-getActiveFiltersCount(): number {
-  return [
-    this.filters.interests,
-    this.filters.gender,
-    this.filters.address
-  ].filter(value => String(value || '').trim()).length;
-}
+    this.clientes = [...this.allClientes];
+    this.currentIndex = 0;
+    this.currentPhotoIndex = 0;
+  }
+  getActiveFiltersCount(): number {
+    return [
+      this.filters.interests,
+      this.filters.gender,
+      this.filters.address
+    ].filter(value => String(value || '').trim()).length;
+  }
 }

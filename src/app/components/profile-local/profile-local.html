@@ -409,9 +409,25 @@
 
       <div #mapContainer class="local-map"></div>
 
-      <button class="primary-neon-btn" type="button" (click)="guardarUbicacion()">
-        Guardar ubicación seleccionada
-      </button>
+      <div class="local-map-actions">
+  <button
+    class="primary-neon-btn"
+    type="button"
+    (click)="usarMiUbicacionActual()">
+
+    Usar mi ubicación actual
+
+  </button>
+
+  <button
+    class="primary-neon-btn secondary"
+    type="button"
+    (click)="guardarUbicacion()">
+
+    Guardar ubicación seleccionada
+
+  </button>
+</div>
     </section>
 
   </div>
