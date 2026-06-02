@@ -310,16 +310,6 @@ export class Maps implements AfterViewInit, OnDestroy {
                 : ''
             }
 
-            /* ${
-              local['email']
-                ? `
-                  <div style="font-size:13px;color:#666;">
-                    <b>Email:</b> ${local['email']}
-                  </div>
-                `
-                : ''
-            } */
-
             ${
               local['phone']
                 ? `

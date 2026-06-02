@@ -953,6 +953,13 @@ activeRadarMode: 'local' | 'hotzone' | 'nearby' = 'local';
   }
 
   applyClientFilters(): void {
+    if (!this.hasClientProPlan()) {
+    this.toastService.show(
+      'Los filtros avanzados están disponibles en OnGo Premium o Platinum.',
+      'info'
+    );
+    return;
+  }
     const interests = this.filters.interests.trim().toLowerCase();
     const gender = this.filters.gender.trim().toLowerCase();
     const address = this.filters.address.trim().toLowerCase();

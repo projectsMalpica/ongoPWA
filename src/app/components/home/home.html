@@ -369,14 +369,26 @@
         <i class="fa-solid fa-xmark"></i>
       </button>
     </div>
+    <div class="premium-filter-box" *ngIf="!hasClientProPlan()">
 
-    <div class="filter-group">
+      <h4>🔒 Filtros avanzados</h4>
+
+      <p>
+        Activa OnGo Premium o Platinum para filtrar por intereses, género y ubicación.
+      </p>
+
+      <button type="button" (click)="openClientPlans()">
+        Ver planes
+      </button>
+
+    </div>
+    <div class="filter-group" [class.locked-filter]="!hasClientProPlan()">
       <label>Intereses</label>
       <input type="text" [(ngModel)]="filters.interests" placeholder="Ej: bailar, música, viajes"
         (input)="applyClientFilters()" />
     </div>
 
-    <div class="filter-group">
+    <div class="filter-group" [class.locked-filter]="!hasClientProPlan()">
       <label>Género</label>
       <select [(ngModel)]="filters.gender" (change)="applyClientFilters()">
         <option value="">Todos</option>
@@ -386,7 +398,7 @@
       </select>
     </div>
 
-    <div class="filter-group">
+    <div class="filter-group" [class.locked-filter]="!hasClientProPlan()">
       <label>Ubicación</label>
       <input type="text" [(ngModel)]="filters.address" placeholder="Ej: Medellín, Laureles, Poblado"
         (input)="applyClientFilters()" />
