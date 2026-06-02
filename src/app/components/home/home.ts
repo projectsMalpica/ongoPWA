@@ -70,6 +70,20 @@ activeRadarMode: 'local' | 'hotzone' | 'nearby' = 'local';
   currentHotZoneName = '';
   isInsideHotZone = false;
   hotZoneLocked = false;
+  FREE_LIMITS = {
+  likes: 10,
+  superLikes: 1,
+  chats: 3,
+  gifts: 1
+};
+
+PREMIUM_LIMITS = {
+  likes: 9999,
+  superLikes: 10,
+  chats: 9999,
+  gifts: 9999
+};
+dailyUsage: any = null;
   constructor(
     public global: GlobalService,
     public authPocketbaseService: AuthPocketbaseService,
@@ -126,6 +140,7 @@ activeRadarMode: 'local' | 'hotzone' | 'nearby' = 'local';
     });
 
     await this.updateClientLocation();
+    await this.loadDailyUsage();
     try {
       if (!this.global.getClientesSnapshot().length) {
         await this.global.initClientesRealtime();
@@ -471,17 +486,39 @@ activeRadarMode: 'local' | 'hotzone' | 'nearby' = 'local';
     this.deltaY = 0;
   }
 
-  async like(cliente: any) {
+ /*  async like(cliente: any) {
     await this.handleSwipeAction(cliente, 'like');
+  } */
+  async like(cliente: any) {
+  const allowed = await this.canUseDailyFeature('likes');
+
+  if (!allowed) {
+    this.showLimitModal('likes');
+    return;
   }
+
+  await this.handleSwipeAction(cliente, 'like');
+  await this.incrementDailyFeature('likes');
+}
 
   async dislike(cliente: any) {
     await this.handleSwipeAction(cliente, 'dislike');
   }
 
-  async superLike(cliente: any) {
+  /* async superLike(cliente: any) {
     await this.handleSwipeAction(cliente, 'superlike');
+  } */
+  async superLike(cliente: any) {
+  const allowed = await this.canUseDailyFeature('superLikes');
+
+  if (!allowed) {
+    this.showLimitModal('super likes');
+    return;
   }
+
+  await this.handleSwipeAction(cliente, 'superlike');
+  await this.incrementDailyFeature('superLikes');
+}
   async handleSwipeAction(
     cliente: any,
     action: 'like' | 'dislike' | 'superlike'
@@ -576,6 +613,14 @@ activeRadarMode: 'local' | 'hotzone' | 'nearby' = 'local';
     return Math.max(0, -this.deltaX / 120);
   }
   async openChat(cliente: any) {
+    const allowed = await this.canUseDailyFeature('chats');
+
+if (!allowed) {
+  this.showLimitModal('chats');
+  return;
+}
+
+await this.incrementDailyFeature('chats');
     if (!cliente) return;
 
     const receiverUserId = this.getReceiverUserId(cliente);
@@ -624,7 +669,7 @@ activeRadarMode: 'local' | 'hotzone' | 'nearby' = 'local';
   closeMatchOverlay() {
     this.showMatchOverlay = false;
   }
-  canSendGiftTo(cliente: any): boolean {
+  /* canSendGiftTo(cliente: any): boolean {
     const myProfile = this.global.profileData;
 
     if (!myProfile || !cliente) return false;
@@ -641,8 +686,21 @@ activeRadarMode: 'local' | 'hotzone' | 'nearby' = 'local';
     }
 
     return !!cliente.currentPartnerId;
+  } */
+canSendGiftTo(cliente: any): boolean {
+  const hasPro = this.hasClientProPlan();
+
+  const sameLocal =
+    this.currentLocalId &&
+    cliente?.currentPartnerId &&
+    cliente.currentPartnerId === this.currentLocalId;
+
+  if (hasPro) {
+    return !!cliente?.currentPartnerId;
   }
 
+  return !!sameLocal;
+}
   async loadProductsForPartner(partnerId?: string): Promise<void> {
     const filter = partnerId
       ? `partnerId="${partnerId}" && isAvailable=true`
@@ -922,13 +980,43 @@ activeRadarMode: 'local' | 'hotzone' | 'nearby' = 'local';
 
     this.currentPhotoIndex = (this.currentPhotoIndex + 1) % total;
   }
-  onGiftClick(event: Event, cliente: any) {
+ /*  onGiftClick(event: Event, cliente: any) {
     event.stopPropagation();
     event.preventDefault();
 
     this.openGiftFromHome(cliente);
 
+  } */
+async onGiftClick(event: Event, cliente: any) {
+    event.stopPropagation();
+  event.preventDefault();
+
+  if (!this.canSendGiftTo(cliente)) {
+    Swal.fire({
+      icon: 'info',
+      title: 'Regalos disponibles en el local',
+      text: 'Con OnGo Free solo puedes enviar regalos a personas dentro de tu mismo local. Activa Premium para más opciones.',
+      confirmButtonText: 'Ver planes',
+      showCancelButton: true,
+      cancelButtonText: 'Cerrar'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.openClientPlans();
+      }
+    });
+
+    return;
   }
+const allowed = await this.canUseDailyFeature('gifts');
+
+if (!allowed) {
+  this.showLimitModal('regalos');
+  return;
+}
+
+await this.incrementDailyFeature('gifts');
+  this.openGiftFromHome(cliente);
+}
   prevPhoto(event?: Event) {
     event?.stopPropagation();
 
@@ -1118,4 +1206,103 @@ activeRadarMode: 'local' | 'hotzone' | 'nearby' = 'local';
       }
     });
   }
+  getTodayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+async loadDailyUsage(): Promise<any> {
+  const user = this.authPocketbaseService.getCurrentUser?.() || this.authPocketbaseService.currentUser;
+  const profile = this.authPocketbaseService.getCurrentProfile();
+
+  if (!user?.id || !profile?.id) return null;
+
+  const dateKey = this.getTodayKey();
+
+  try {
+    this.dailyUsage = await this.pb.collection('client_daily_limits')
+      .getFirstListItem(`userId="${user.id}" && dateKey="${dateKey}"`, {
+        requestKey: null
+      });
+
+    return this.dailyUsage;
+
+  } catch {
+    this.dailyUsage = await this.pb.collection('client_daily_limits').create({
+      userId: user.id,
+      clientId: profile.id,
+      dateKey,
+      likesUsed: 0,
+      superLikesUsed: 0,
+      chatsUsed: 0,
+      giftsUsed: 0
+    }, { requestKey: null });
+
+    return this.dailyUsage;
+  }
+}
+
+async canUseDailyFeature(
+  feature: 'likes' | 'superLikes' | 'chats' | 'gifts'
+): Promise<boolean> {
+  if (this.hasClientProPlan()) return true;
+
+  const usage = await this.loadDailyUsage();
+  if (!usage?.id) return false;
+
+  const fieldMap: any = {
+    likes: 'likesUsed',
+    superLikes: 'superLikesUsed',
+    chats: 'chatsUsed',
+    gifts: 'giftsUsed'
+  };
+
+  const used = Number(usage[fieldMap[feature]] || 0);
+  const limit = Number(this.FREE_LIMITS[feature]);
+
+  return used < limit;
+}
+
+async incrementDailyFeature(
+  feature: 'likes' | 'superLikes' | 'chats' | 'gifts'
+): Promise<void> {
+  if (this.hasClientProPlan()) return;
+
+  const usage = await this.loadDailyUsage();
+  if (!usage?.id) return;
+
+  const fieldMap: any = {
+    likes: 'likesUsed',
+    superLikes: 'superLikesUsed',
+    chats: 'chatsUsed',
+    gifts: 'giftsUsed'
+  };
+
+  const field = fieldMap[feature];
+
+  const updated = await this.pb.collection('client_daily_limits').update(
+    usage.id,
+    {
+      [field]: Number(usage[field] || 0) + 1
+    },
+    { requestKey: null }
+  );
+
+  this.dailyUsage = updated;
+}
+
+showLimitModal(featureLabel: string): void {
+  Swal.fire({
+    icon: 'info',
+    title: 'Límite diario alcanzado',
+    text: `Alcanzaste el límite gratuito de ${featureLabel}. Activa OnGo Premium o Platinum para uso ilimitado.`,
+    confirmButtonText: 'Ver planes',
+    showCancelButton: true,
+    cancelButtonText: 'Cerrar'
+  }).then(result => {
+    if (result.isConfirmed) {
+      this.openClientPlans();
+    }
+  });
+}
+
 }
