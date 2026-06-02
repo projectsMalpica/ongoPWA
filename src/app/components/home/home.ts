@@ -64,6 +64,12 @@ export class Home implements OnInit {
   isInsideLocal = false;
   currentPartnerId = ''
   currentPartnerName = ''
+activeRadarMode: 'local' | 'hotzone' | 'nearby' = 'local';
+  localFromHomeLocked = false;
+  currentHotZoneId = '';
+  currentHotZoneName = '';
+  isInsideHotZone = false;
+  hotZoneLocked = false;
   constructor(
     public global: GlobalService,
     public authPocketbaseService: AuthPocketbaseService,
@@ -99,35 +105,17 @@ export class Home implements OnInit {
     this.global.clientes$.subscribe((clientes: any[]) => {
 
       const myProfile = this.authPocketbaseService.getCurrentProfile();
-
       const myProfileId = myProfile?.id;
 
-      this.currentLocalId =
-        myProfile?.currentPartnerId || '';
+      this.currentLocalId = myProfile?.currentPartnerId || '';
+      this.currentLocalName = myProfile?.currentPartnerName || '';
+      this.isInsideLocal = !!this.currentLocalId;
 
-      this.currentLocalName =
-        myProfile?.currentPartnerName || '';
-
-      this.isInsideLocal =
-        !!this.currentLocalId;
-
-      if (!this.currentLocalId) {
-
-        this.clientes = [];
-        this.allClientes = [];
-        this.loadingClients = false;
-
-        return;
-      }
-
-      this.clientes = (clientes || []).filter(client =>
-
-        client.id !== myProfileId &&
-        client.currentPartnerId === this.currentLocalId
-
+      this.allClientes = (clientes || []).filter(client =>
+        client.id !== myProfileId
       );
 
-      this.allClientes = [...this.clientes];
+      this.applyRadarMode();
 
       this.loadingClients = false;
 
@@ -755,106 +743,106 @@ export class Home implements OnInit {
     }
   }
 
-async updateClientLocation() {
-  if (!navigator.geolocation) return;
+  async updateClientLocation() {
+    if (!navigator.geolocation) return;
 
-  navigator.geolocation.getCurrentPosition(
-    async position => {
-      const profile = this.authPocketbaseService.getCurrentProfile();
+    navigator.geolocation.getCurrentPosition(
+      async position => {
+        const profile = this.authPocketbaseService.getCurrentProfile();
 
-      if (!profile?.id) return;
+        if (!profile?.id) return;
 
-      const userLat = position.coords.latitude;
-      const userLng = position.coords.longitude;
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
 
-      let currentPartnerId = '';
-      let currentPartnerName = '';
+        let currentPartnerId = '';
+        let currentPartnerName = '';
 
-      try {
-        const locales = await this.pb.collection('usuariosPartner').getFullList({
-          filter: `lat != "" && lng != ""`,
-          requestKey: null
-        });
-
-        for (const local of locales) {
-          const localLat = Number(local['lat']);
-          const localLng = Number(local['lng']);
-
-          if (!localLat || !localLng) continue;
-
-          const distancia = this.calculateDistanceMeters(
-            userLat,
-            userLng,
-            localLat,
-            localLng
-          );
-
-          console.log('Distancia a local:', {
-            local: local['venueName'],
-            distancia
+        try {
+          const locales = await this.pb.collection('usuariosPartner').getFullList({
+            filter: `lat != "" && lng != ""`,
+            requestKey: null
           });
 
-          if (distancia <= 80) {
-            currentPartnerId = local.id;
-            currentPartnerName = String(
-              local['venueName'] || local['name'] || 'Local OnGo'
-            );
-            break;
-          }
-        }
+          for (const local of locales) {
+            const localLat = Number(local['lat']);
+            const localLng = Number(local['lng']);
 
-        const updatedProfile = await this.pb.collection('usuariosClient').update(
-          profile.id,
-          {
-            lat: userLat,
-            lng: userLng,
+            if (!localLat || !localLng) continue;
+
+            const distancia = this.calculateDistanceMeters(
+              userLat,
+              userLng,
+              localLat,
+              localLng
+            );
+
+            console.log('Distancia a local:', {
+              local: local['venueName'],
+              distancia
+            });
+
+            if (distancia <= 80) {
+              currentPartnerId = local.id;
+              currentPartnerName = String(
+                local['venueName'] || local['name'] || 'Local OnGo'
+              );
+              break;
+            }
+          }
+
+          const updatedProfile = await this.pb.collection('usuariosClient').update(
+            profile.id,
+            {
+              lat: userLat,
+              lng: userLng,
+              currentPartnerId,
+              currentPartnerName,
+              insideLocal: !!currentPartnerId,
+              locationUpdatedAt: new Date().toISOString()
+            },
+            { requestKey: null }
+          );
+
+          this.currentLocalId = currentPartnerId;
+          this.currentLocalName = currentPartnerName;
+          this.isInsideLocal = !!currentPartnerId;
+
+          this.global.profileData = {
+            ...this.global.profileData,
+            ...updatedProfile,
             currentPartnerId,
             currentPartnerName,
             insideLocal: !!currentPartnerId,
-            locationUpdatedAt: new Date().toISOString()
-          },
-          { requestKey: null }
-        );
+            lat: userLat,
+            lng: userLng
+          };
 
-        this.currentLocalId = currentPartnerId;
-        this.currentLocalName = currentPartnerName;
-        this.isInsideLocal = !!currentPartnerId;
+          localStorage.setItem(
+            'profile',
+            JSON.stringify(this.global.profileData)
+          );
 
-        this.global.profileData = {
-          ...this.global.profileData,
-          ...updatedProfile,
-          currentPartnerId,
-          currentPartnerName,
-          insideLocal: !!currentPartnerId,
-          lat: userLat,
-          lng: userLng
-        };
+          console.log('Cliente actualizado en local:', {
+            currentPartnerId,
+            currentPartnerName,
+            insideLocal: !!currentPartnerId
+          });
 
-        localStorage.setItem(
-          'profile',
-          JSON.stringify(this.global.profileData)
-        );
-
-        console.log('Cliente actualizado en local:', {
-          currentPartnerId,
-          currentPartnerName,
-          insideLocal: !!currentPartnerId
-        });
-
-      } catch (error) {
-        console.error('Error actualizando ubicación del cliente:', error);
+        } catch (error) {
+          console.error('Error actualizando ubicación del cliente:', error);
+        }
+      },
+      error => {
+        console.error('No se pudo obtener la ubicación:', error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
       }
-    },
-    error => {
-      console.error('No se pudo obtener la ubicación:', error);
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0
-    }
-  );
-}
+    );
+  }
 
   undoLastSwipe() {
     if (this.swipeHistory.length === 0) return;
@@ -1002,5 +990,125 @@ async updateClientLocation() {
       this.filters.gender,
       this.filters.address
     ].filter(value => String(value || '').trim()).length;
+  }
+  setRadarMode(mode: 'local' | 'hotzone' | 'nearby'): void {
+    this.activeRadarMode = mode;
+    this.applyRadarMode();
+  }
+
+  canUseHotZone(): boolean {
+    const profile = this.authPocketbaseService.getCurrentProfile();
+
+    return (
+      profile?.subscriptionStatus === 'active' &&
+      ['premium', 'vip'].includes(
+        String(profile?.subscriptionPlanName || '').toLowerCase()
+      )
+    );
+  }
+
+  applyRadarMode(): void {
+  const myProfile = this.authPocketbaseService.getCurrentProfile();
+  const myProfileId = myProfile?.id;
+
+  this.hotZoneLocked = false;
+  this.localFromHomeLocked = false;
+
+  /* if (this.activeRadarMode === 'all') {
+    this.clientes = this.allClientes.filter(c => c.id !== myProfileId);
+  } */
+
+  if (this.activeRadarMode === 'local') {
+    const isInsideLocal = !!this.currentLocalId;
+    const hasPro = this.hasClientProPlan();
+
+    if (!isInsideLocal && !hasPro) {
+      this.localFromHomeLocked = true;
+      this.clientes = [];
+      this.currentIndex = 0;
+      this.currentPhotoIndex = 0;
+      return;
+    }
+
+    this.clientes = this.allClientes.filter(c =>
+      c.id !== myProfileId &&
+      c.currentPartnerId === this.currentLocalId
+    );
+  }
+
+  if (this.activeRadarMode === 'hotzone') {
+    if (!this.hasClientProPlan()) {
+      this.hotZoneLocked = true;
+      this.clientes = [];
+      this.currentIndex = 0;
+      this.currentPhotoIndex = 0;
+      return;
+    }
+
+    this.clientes = this.allClientes.filter(c =>
+      c.id !== myProfileId &&
+      c.currentHotZoneId === this.currentHotZoneId
+    );
+  }
+
+  if (this.activeRadarMode === 'nearby') {
+    this.clientes = this.allClientes.filter(c => {
+      if (c.id === myProfileId) return false;
+
+      const myLat = Number(myProfile?.lat);
+      const myLng = Number(myProfile?.lng);
+      const clientLat = Number(c.lat);
+      const clientLng = Number(c.lng);
+
+      if (!myLat || !myLng || !clientLat || !clientLng) return false;
+
+      const distance = this.calculateDistanceMeters(
+        myLat,
+        myLng,
+        clientLat,
+        clientLng
+      );
+
+      return distance <= 500;
+    });
+  }
+
+  this.currentIndex = 0;
+  this.currentPhotoIndex = 0;
+}
+  openSubscriptionsModal(): void {
+    this.router.navigate(['/profile']);
+  }
+  hasClientProPlan(): boolean {
+  const profile = this.authPocketbaseService.getCurrentProfile();
+
+  const planName = String(profile?.subscriptionPlanName || '').toLowerCase();
+  const planId = String(profile?.subscriptionPlanId || '');
+  const status = String(profile?.subscriptionStatus || '').toLowerCase();
+  const expiresAt = profile?.subscriptionExpiresAt;
+
+  const isActive =
+    status === 'active' &&
+    expiresAt &&
+    new Date(expiresAt).getTime() > Date.now();
+
+  const paidPlanNames =
+    planName.includes('premium') ||
+    planName.includes('platinum');
+
+  const paidPlanIds = [
+    'ruglhjy5kr7h8a8', // OnGo Premium
+    '6ha3ke9bapjz4av'  // OnGo Platinum
+  ].includes(planId);
+
+  return !!isActive && (paidPlanNames || paidPlanIds);
+}
+
+  openClientPlans(): void {
+    this.router.navigate(['/profile'], {
+      queryParams: {
+        section: 'plans'
+      }
+    });
   }
 }

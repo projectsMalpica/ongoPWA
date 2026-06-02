@@ -74,19 +74,43 @@ export class LoginComponent {
     this.auth.loginUser(email, password).subscribe({
       next: async (res: any) => {
         try {
-          await this.global.loadProfile();
-          await this.global.initClientesRealtime();
-          await this.global.initPartnersRealtime();
+          const authRecord = this.auth.pb?.authStore?.record;
 
-          const userType = res?.record?.type || this.auth.pb?.authStore?.record?.['type'];
+          const userType = String(
+            res?.record?.type ||
+            authRecord?.['type'] ||
+            ''
+          ).trim().toLowerCase();
+
+          console.log('LOGIN RES:', res);
+          console.log('AUTH RECORD:', authRecord);
+          console.log('USER TYPE LOGIN:', userType);
+
+          if (userType === 'admin') {
+            await this.router.navigateByUrl('/admin');
+            return;
+          }
 
           if (userType === 'partner') {
-            await this.router.navigate(['/home-local']);
-          } else if (userType === 'admin') {
-            await this.router.navigate(['/admin']);
-          } else {
-            await this.router.navigate(['/maps']);
+            await this.global.loadProfile();
+            await this.global.initPartnersRealtime();
+            await this.router.navigateByUrl('/home-local');
+            return;
           }
+
+          if (userType === 'client') {
+            await this.global.loadProfile();
+            await this.global.initClientesRealtime();
+            await this.router.navigateByUrl('/maps');
+            return;
+          }
+
+          Swal.fire({
+            icon: 'warning',
+            title: 'Tipo de usuario no válido',
+            text: `El usuario tiene type="${userType}". Debe ser admin, partner o client.`
+          });
+
         } catch (error) {
           console.error('Error en post-login:', error);
         }
@@ -119,57 +143,59 @@ export class LoginComponent {
   }
 
 
- async handleGoogleLogin() {
-  this.loading = true;
+  async handleGoogleLogin() {
+    this.loading = true;
 
-  try {
+    try {
 
-    const result = await this.auth.loginWithGoogle();
+      const result = await this.auth.loginWithGoogle();
 
-    console.log('Google result:', result);
+      console.log('Google result:', result);
 
-    if (result?.needsRegister) {
+      if (result?.needsRegister) {
 
-      this.loading = false;
+        this.loading = false;
 
-      await this.router.navigate(['/register'], {
-        queryParams: {
-          google: 'true',
-          userId: result.user.id,
-          email: result.user.email,
-          name: result.user.name,
-          type: result.user.type || ''
-        }
+        await this.router.navigate(['/register'], {
+          queryParams: {
+            google: 'true',
+            userId: result.user.id,
+            email: result.user.email,
+            name: result.user.name,
+            type: result.user.type || ''
+          }
+        });
+
+        return;
+      }
+
+      if (result.type === 'admin') {
+        await this.router.navigate(['/admin']);
+        return;
+      }
+
+      await this.global.loadProfile();
+
+      if (result.type === 'partner') {
+        await this.router.navigate(['/home-local']);
+
+      } else {
+        await this.router.navigate(['/maps']);
+      }
+
+    } catch (error: any) {
+
+      console.error('Error Google Login:', error);
+
+      Swal.fire({
+        icon: 'error',
+        title: 'Error con Google',
+        text: error?.message || 'No se pudo iniciar sesión con Google'
       });
 
-      return;
+    } finally {
+
+      this.loading = false;
     }
-
-    await this.global.loadProfile();
-
-    if (result.type === 'partner') {
-      await this.router.navigate(['/home-local']);
-
-    } else if (result.type === 'admin') {
-      await this.router.navigate(['/admin']);
-
-    } else {
-      await this.router.navigate(['/maps']);
-    }
-
-  } catch (error: any) {
-
-    console.error('Error Google Login:', error);
-
-    Swal.fire({
-      icon: 'error',
-      title: 'Error con Google',
-      text: error?.message || 'No se pudo iniciar sesión con Google'
-    });
-
-  } finally {
-
-    this.loading = false;
   }
-}
 }

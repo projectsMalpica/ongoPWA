@@ -1,0 +1,220 @@
+<div class="page-content space-top p-b60">
+    <div class="local-dashboard admin-dashboard">
+
+        <section class="local-hero">
+            <div class="hero-glow"></div>
+
+            <div class="local-profile">
+                <div class="local-avatar">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+
+                <div class="local-info">
+                    <span class="local-badge">OnGo Admin</span>
+                    <h2>Panel administrativo</h2>
+                    <p>
+                        <i class="fa-solid fa-chart-line"></i>
+                        Gestión general de la plataforma
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section class="local-stats-grid">
+            <div class="stat-card pink">
+                <i class="fa-solid fa-fire"></i>
+                <span>Zonas calientes</span>
+                <strong>{{ stats.hotZones }}</strong>
+                <small>Activas / creadas</small>
+            </div>
+
+            <div class="stat-card cyan">
+                <i class="fa-solid fa-store"></i>
+                <span>Locales</span>
+                <strong>{{ stats.locales }}</strong>
+                <small>Partners registrados</small>
+            </div>
+
+            <div class="stat-card gold">
+                <i class="fa-solid fa-users"></i>
+                <span>Clientes</span>
+                <strong>{{ stats.clientes }}</strong>
+                <small>Usuarios registrados</small>
+            </div>
+        </section>
+
+        <section class="quick-actions">
+            <button type="button">
+                <i class="fa-solid fa-fire"></i>
+                Zonas
+            </button>
+
+            <button type="button">
+                <i class="fa-solid fa-store"></i>
+                Locales
+            </button>
+
+            <button type="button">
+                <i class="fa-solid fa-users"></i>
+                Clientes
+            </button>
+
+            <button type="button">
+                <i class="fa-solid fa-wallet"></i>
+                Wallet
+            </button>
+        </section>
+
+        <section class="coming-soon-panel">
+            <div class="panel-header">
+                <div>
+                    <span>Administración</span>
+                    <h3>Crear zona caliente 🔥</h3>
+                </div>
+
+                <button type="button" (click)="loadHotZones()">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+            </div>
+
+            <div class="preset-actions">
+                <button type="button" (click)="setCucutaPreset('malecon')">
+                    Malecón
+                </button>
+
+                <button type="button" (click)="setCucutaPreset('ventura')">
+                    Ventura
+                </button>
+
+                <button type="button" (click)="setCucutaPreset('mercedes')">
+                    Mercedes Ábrego
+                </button>
+            </div>
+
+            <div class="admin-form-grid">
+                <input type="text" placeholder="Nombre" [(ngModel)]="newHotZone.name">
+
+                <input type="text" placeholder="Ciudad" [(ngModel)]="newHotZone.city">
+
+                <input type="number" placeholder="Latitud" [(ngModel)]="newHotZone.lat">
+
+                <input type="number" placeholder="Longitud" [(ngModel)]="newHotZone.lng">
+
+                <input type="number" placeholder="Radio en metros" [(ngModel)]="newHotZone.radiusMeters">
+
+                <select [(ngModel)]="newHotZone.minPlan">
+                    <option value="premium">Premium</option>
+                    <option value="vip">VIP</option>
+                </select>
+
+                <textarea placeholder="Descripción" [(ngModel)]="newHotZone.description">
+        </textarea>
+            </div>
+
+            <div class="admin-checks">
+                <label>
+                    <input type="checkbox" [(ngModel)]="newHotZone.isActive">
+                    Activa
+                </label>
+
+                <label>
+                    <input type="checkbox" [(ngModel)]="newHotZone.requiresPlan">
+                    Requiere plan
+                </label>
+            </div>
+
+            <button type="button" class="admin-primary-btn" [disabled]="savingHotZone" (click)="saveHotZone()">
+
+                {{ savingHotZone ? 'Guardando...' : (editingHotZoneId ? 'Actualizar zona' : 'Crear zona caliente') }}
+
+            </button>
+        </section>
+
+        <section class="gift-orders-panel">
+            <div class="panel-header">
+                <div>
+                    <span>Hot Zones</span>
+                    <h3>Zonas registradas</h3>
+                </div>
+            </div>
+
+            <div class="gift-loading" *ngIf="loadingHotZones">
+                Cargando zonas...
+            </div>
+
+            <article class="gift-ticket" *ngFor="let zone of hotZones">
+                <div class="ticket-left">
+                    <div class="ticket-icon">
+                        <i class="fa-solid fa-fire"></i>
+                    </div>
+
+                    <div>
+                        <h4>{{ zone.name }}</h4>
+                        <p>{{ zone.city }} · {{ zone.radiusMeters }} m</p>
+                        <strong>{{ zone.minPlan || 'premium' }}</strong>
+                    </div>
+                </div>
+
+                <div class="ticket-right">
+                    <span>{{ zone.isActive ? 'Activa' : 'Inactiva' }}</span>
+
+                    <button type="button" (click)="toggleHotZone(zone)">
+                        {{ zone.isActive ? 'Pausar' : 'Activar' }}
+                    </button>
+                    <button type="button" (click)="editHotZone(zone)">
+                        Editar
+                    </button>
+                    <button type="button" class="danger-btn" (click)="deleteHotZone(zone)">
+                        Eliminar
+                    </button>
+                </div>
+            </article>
+
+            <div class="gift-tip" *ngIf="!loadingHotZones && hotZones.length === 0">
+                Aún no hay zonas calientes registradas.
+            </div>
+        </section>
+
+        <section class="coming-soon-panel">
+            <div class="panel-header">
+                <div>
+                    <span>Próximamente</span>
+                    <h3>Módulos administrativos</h3>
+                </div>
+            </div>
+
+            <div class="feature-grid">
+                <div>
+                    <i class="fa-solid fa-store"></i>
+                    Locales
+                </div>
+
+                <div>
+                    <i class="fa-solid fa-users"></i>
+                    Clientes
+                </div>
+
+                <div>
+                    <i class="fa-solid fa-crown"></i>
+                    Planes
+                </div>
+
+                <div>
+                    <i class="fa-solid fa-bullhorn"></i>
+                    Promos
+                </div>
+
+                <div>
+                    <i class="fa-solid fa-wallet"></i>
+                    Ventas / Wallet
+                </div>
+
+                <div>
+                    <i class="fa-solid fa-chart-line"></i>
+                    Estadísticas
+                </div>
+            </div>
+        </section>
+
+    </div>
+</div>

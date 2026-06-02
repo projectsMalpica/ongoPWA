@@ -29,6 +29,24 @@
       </div>
 
     </section>
+    <section class="radar-mode-tabs">
+
+      <!-- <button type="button" [class.active]="activeRadarMode === 'all'" (click)="setRadarMode('all')">
+        Todos 🔒
+      </button> -->
+
+      <button type="button" [class.active]="activeRadarMode === 'local'" (click)="setRadarMode('local')">
+        En mi local
+      </button>
+
+      <button type="button" [class.active]="activeRadarMode === 'hotzone'" (click)="setRadarMode('hotzone')">
+        Zona caliente 🔥
+      </button>
+
+      <button type="button" [class.active]="activeRadarMode === 'nearby'" (click)="setRadarMode('nearby')">
+        Cerca de mí
+      </button>
+    </section>
     <div *ngIf="loadingClients" class="empty-state">
       Cargando perfiles...
     </div>
@@ -238,10 +256,53 @@
       </div>
 
     </div>
+    <div *ngIf="!loadingClients && activeRadarMode === 'hotzone' && hotZoneLocked" class="empty-state">
 
+      <h3>🔥 Zona caliente disponible</h3>
+
+      <p>
+        Activa tu suscripción para ver personas conectando en esta zona.
+      </p>
+
+      <button class="apply-filters-btn" type="button" (click)="openClientPlans()">
+        Activar zona caliente
+      </button>
+
+    </div>
+    <div *ngIf="
+    !loadingClients &&
+    activeRadarMode === 'hotzone' &&
+    !hotZoneLocked &&
+    clientes.length === 0
+  " class="empty-state">
+
+      <h3>🔥 No hay personas en esta zona caliente</h3>
+
+      <p>
+        Cuando haya usuarios activos en esta zona aparecerán aquí.
+      </p>
+
+    </div>
+    <div *ngIf="!loadingClients && activeRadarMode === 'local' && localFromHomeLocked" class="empty-state">
+
+      <h3>🔒 Ver el local desde casa es Pro</h3>
+
+      <p>
+        Activa el Plan Pro para ver quiénes están conectando dentro de los locales aunque no estés físicamente allí.
+      </p>
+
+      <button class="apply-filters-btn" type="button" (click)="openClientPlans()">
+        Ver Plan Pro
+      </button>
+
+    </div>
     <!-- Usuario NO está dentro de ningún local -->
-    <div *ngIf="!loadingClients && !currentLocalId" class="empty-state">
-
+    <div *ngIf="
+    !loadingClients &&
+    activeRadarMode === 'local' &&
+    !currentLocalId &&
+    !localFromHomeLocked
+  " class="empty-state">
       <h3>No estás dentro de un local OnGo</h3>
 
       <p>
@@ -257,8 +318,13 @@
     </div>
 
     <!-- Está dentro de un local pero no hay personas -->
-    <div *ngIf="!loadingClients && currentLocalId && clientes.length === 0" class="empty-state">
-
+    <div *ngIf="
+    !loadingClients &&
+    activeRadarMode === 'local' &&
+    currentLocalId &&
+    clientes.length === 0 &&
+    !localFromHomeLocked
+  " class="empty-state">
       <h3>🍸 Aún no hay personas en este local</h3>
 
       <p>
@@ -266,6 +332,26 @@
       </p>
 
     </div>
+    <div *ngIf="
+    !loadingClients &&
+    activeRadarMode === 'nearby' &&
+    clientes.length === 0
+  " class="empty-state">
+
+      <h3>📍 No hay personas cerca por ahora</h3>
+
+      <p>
+        Mostraremos usuarios activos hasta 500 metros de tu ubicación.
+      </p>
+
+      <button class="apply-filters-btn" routerLink="/maps">
+
+        Explorar mapa
+
+      </button>
+
+    </div>
+
 
   </div>
   <div class="filters-backdrop" *ngIf="showFilters" (click)="toggleFilters()"></div>

@@ -50,6 +50,12 @@ export const routes: Routes = [
     title: 'Ongo local'
   },
   {
+    path: 'admin',
+    loadComponent: () =>
+      import('./components/admin/admin').then(c => c.Admin),
+    title: 'Ongo admin'
+  },
+  {
     path: 'maps',
     loadComponent: () =>
       import('./components/maps/maps').then(c => c.Maps),
