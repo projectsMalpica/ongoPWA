@@ -64,26 +64,26 @@ export class Home implements OnInit {
   isInsideLocal = false;
   currentPartnerId = ''
   currentPartnerName = ''
-activeRadarMode: 'local' | 'hotzone' | 'nearby' = 'local';
+  activeRadarMode: 'local' | 'hotzone' | 'nearby' = 'local';
   localFromHomeLocked = false;
   currentHotZoneId = '';
   currentHotZoneName = '';
   isInsideHotZone = false;
   hotZoneLocked = false;
   FREE_LIMITS = {
-  likes: 10,
-  superLikes: 1,
-  chats: 3,
-  gifts: 1
-};
+    likes: 10,
+    superLikes: 1,
+    chats: 3,
+    gifts: 1
+  };
 
-PREMIUM_LIMITS = {
-  likes: 9999,
-  superLikes: 10,
-  chats: 9999,
-  gifts: 9999
-};
-dailyUsage: any = null;
+  PREMIUM_LIMITS = {
+    likes: 9999,
+    superLikes: 10,
+    chats: 9999,
+    gifts: 9999
+  };
+  dailyUsage: any = null;
   constructor(
     public global: GlobalService,
     public authPocketbaseService: AuthPocketbaseService,
@@ -486,20 +486,20 @@ dailyUsage: any = null;
     this.deltaY = 0;
   }
 
- /*  async like(cliente: any) {
-    await this.handleSwipeAction(cliente, 'like');
-  } */
+  /*  async like(cliente: any) {
+     await this.handleSwipeAction(cliente, 'like');
+   } */
   async like(cliente: any) {
-  const allowed = await this.canUseDailyFeature('likes');
+    const allowed = await this.canUseDailyFeature('likes');
 
-  if (!allowed) {
-    this.showLimitModal('likes');
-    return;
+    if (!allowed) {
+      this.showLimitModal('likes');
+      return;
+    }
+
+    await this.handleSwipeAction(cliente, 'like');
+    await this.incrementDailyFeature('likes');
   }
-
-  await this.handleSwipeAction(cliente, 'like');
-  await this.incrementDailyFeature('likes');
-}
 
   async dislike(cliente: any) {
     await this.handleSwipeAction(cliente, 'dislike');
@@ -509,16 +509,16 @@ dailyUsage: any = null;
     await this.handleSwipeAction(cliente, 'superlike');
   } */
   async superLike(cliente: any) {
-  const allowed = await this.canUseDailyFeature('superLikes');
+    const allowed = await this.canUseDailyFeature('superLikes');
 
-  if (!allowed) {
-    this.showLimitModal('super likes');
-    return;
+    if (!allowed) {
+      this.showLimitModal('super likes');
+      return;
+    }
+
+    await this.handleSwipeAction(cliente, 'superlike');
+    await this.incrementDailyFeature('superLikes');
   }
-
-  await this.handleSwipeAction(cliente, 'superlike');
-  await this.incrementDailyFeature('superLikes');
-}
   async handleSwipeAction(
     cliente: any,
     action: 'like' | 'dislike' | 'superlike'
@@ -612,43 +612,43 @@ dailyUsage: any = null;
   get rejectOpacity() {
     return Math.max(0, -this.deltaX / 120);
   }
- async openChat(cliente: any) {
-  if (!cliente) return;
+  async openChat(cliente: any) {
+    if (!cliente) return;
 
-  const receiverUserId = this.getReceiverUserId(cliente);
+    const receiverUserId = this.getReceiverUserId(cliente);
 
-  const canOpen = await this.hasActiveMatchWith(cliente);
+    const canOpen = await this.hasActiveMatchWith(cliente);
 
-  if (!canOpen) {
-    Swal.fire({
-      icon: 'info',
-      title: 'Chat bloqueado',
-      text: 'El chat se desbloquea cuando ambos hacen match.',
-      confirmButtonText: 'Entendido'
-    });
-    return;
+    if (!canOpen) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Chat bloqueado',
+        text: 'El chat se desbloquea cuando ambos hacen match.',
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
+
+    const allowed = await this.canUseDailyFeature('chats');
+
+    if (!allowed) {
+      this.showLimitModal('chats');
+      return;
+    }
+
+    await this.incrementDailyFeature('chats');
+
+    this.global.selectedClient = { ...cliente };
+    this.global.chatReceiverId = receiverUserId;
+
+    await this.router.navigate(['/chat-detail', receiverUserId]);
   }
+  async hasActiveMatchWith(cliente: any): Promise<boolean> {
+    const myProfile = this.authPocketbaseService.getCurrentProfile();
 
-  const allowed = await this.canUseDailyFeature('chats');
+    if (!myProfile?.id || !cliente?.id) return false;
 
-  if (!allowed) {
-    this.showLimitModal('chats');
-    return;
-  }
-
-  await this.incrementDailyFeature('chats');
-
-  this.global.selectedClient = { ...cliente };
-  this.global.chatReceiverId = receiverUserId;
-
-  await this.router.navigate(['/chat-detail', receiverUserId]);
-}
-async hasActiveMatchWith(cliente: any): Promise<boolean> {
-  const myProfile = this.authPocketbaseService.getCurrentProfile();
-
-  if (!myProfile?.id || !cliente?.id) return false;
-
-  const filter = `
+    const filter = `
     (
       userA="${myProfile.id}" && userB="${cliente.id}"
     ) || (
@@ -656,17 +656,17 @@ async hasActiveMatchWith(cliente: any): Promise<boolean> {
     )
   `;
 
-  try {
-    const match = await this.pb.collection('matches').getFirstListItem(filter, {
-      requestKey: null
-    });
+    try {
+      const match = await this.pb.collection('matches').getFirstListItem(filter, {
+        requestKey: null
+      });
 
-    return match['status'] === 'active';
+      return match['status'] === 'active';
 
-  } catch {
-    return false;
+    } catch {
+      return false;
+    }
   }
-}
 
   async registerSwipe(cliente: any, action: 'like' | 'dislike' | 'superlike') {
     const targetProfileId = cliente.id;
@@ -674,45 +674,46 @@ async hasActiveMatchWith(cliente: any): Promise<boolean> {
     const result = await this.swipesService.registerSwipe(targetProfileId, action);
 
     console.log('RESULTADO SWIPE:', result);
-
+    console.log('CLIENTE TARGET:', cliente);
+    console.log('MI PERFIL:', this.authPocketbaseService.getCurrentProfile());
     const isMatch =
       result?.match ||
       result?.matched === true ||
       result?.isMatch === true;
 
     if (isMatch) {
-  await this.createOrUpdateMatch(cliente);
-  this.showConnectionOverlay(cliente);
-} else if (action === 'superlike') {
+      await this.createOrUpdateMatch(cliente);
+      this.showConnectionOverlay(cliente);
+    } else if (action === 'superlike') {
       this.showSuperLikeNotification(cliente);
 
     }
 
     this.swipeHistory.push({ clientId: cliente.id, action });
   }
-async createOrUpdateMatch(cliente: any): Promise<void> {
-  const myProfile = this.authPocketbaseService.getCurrentProfile();
-  const myAuthUser = this.authPocketbaseService.getCurrentUser?.() || this.authPocketbaseService.currentUser;
+  async createOrUpdateMatch(cliente: any): Promise<void> {
+    const myProfile = this.authPocketbaseService.getCurrentProfile();
+    const myAuthUser = this.authPocketbaseService.getCurrentUser?.() || this.authPocketbaseService.currentUser;
 
-  if (!myProfile?.id || !cliente?.id || !myAuthUser?.id) return;
+    if (!myProfile?.id || !cliente?.id || !myAuthUser?.id) return;
 
-  const userA = myProfile.id;
-  const userB = cliente.id;
+    const userA = myProfile.id;
+    const userB = cliente.id;
 
-  const userAAuthId = myAuthUser.id;
-  const userBAuthId = cliente.userId || cliente.id;
+    const userAAuthId = myAuthUser.id;
+    const userBAuthId = cliente.userId || cliente.id;
 
-  const sameLocal =
-    myProfile.currentPartnerId &&
-    cliente.currentPartnerId &&
-    myProfile.currentPartnerId === cliente.currentPartnerId;
+    const sameLocal =
+      myProfile.currentPartnerId &&
+      cliente.currentPartnerId &&
+      myProfile.currentPartnerId === cliente.currentPartnerId;
 
-  const partnerId = sameLocal ? myProfile.currentPartnerId : '';
-  const partnerName = sameLocal
-    ? myProfile.currentPartnerName || cliente.currentPartnerName || ''
-    : '';
+    const partnerId = sameLocal ? myProfile.currentPartnerId : '';
+    const partnerName = sameLocal
+      ? myProfile.currentPartnerName || cliente.currentPartnerName || ''
+      : '';
 
-  const filter = `
+    const filter = `
     (
       userA="${userA}" && userB="${userB}"
     ) || (
@@ -720,32 +721,44 @@ async createOrUpdateMatch(cliente: any): Promise<void> {
     )
   `;
 
-  try {
-    const existing = await this.pb.collection('matches').getFirstListItem(filter, {
-      requestKey: null
-    });
+    try {
+      const existing = await this.pb.collection('matches').getFirstListItem(filter, {
+        requestKey: null
+      });
 
-    await this.pb.collection('matches').update(existing.id, {
-      status: 'active',
-      partnerId,
-      partnerName,
-      insideSameLocal: !!sameLocal
-    }, { requestKey: null });
+      const updateData: any = {
+        status: 'active',
+        partnerName,
+        insideSameLocal: !!sameLocal
+      };
 
-  } catch {
-    await this.pb.collection('matches').create({
-      userA,
-      userB,
-      userAAuthId,
-      userBAuthId,
-      status: 'active',
-      partnerId,
-      partnerName,
-      insideSameLocal: !!sameLocal,
-      lastMessage: ''
-    }, { requestKey: null });
+      if (partnerId) {
+        updateData.partnerId = partnerId;
+      }
+
+      await this.pb.collection('matches').update(existing.id, updateData, {
+        requestKey: null
+      });
+
+    } catch {
+      const data: any = {
+        userA,
+        userB,
+        userAAuthId,
+        userBAuthId,
+        status: 'active',
+        partnerName,
+        insideSameLocal: !!sameLocal,
+        lastMessage: ''
+      };
+
+      if (partnerId) {
+        data.partnerId = partnerId;
+      }
+
+      await this.pb.collection('matches').create(data, { requestKey: null });
+    }
   }
-}
   showConnectionOverlay(cliente: any) {
     console.log('MOSTRANDO OVERLAY MATCH:', cliente);
 
@@ -780,20 +793,20 @@ async createOrUpdateMatch(cliente: any): Promise<void> {
 
     return !!cliente.currentPartnerId;
   } */
-canSendGiftTo(cliente: any): boolean {
-  const hasPro = this.hasClientProPlan();
+  canSendGiftTo(cliente: any): boolean {
+    const hasPro = this.hasClientProPlan();
 
-  const sameLocal =
-    this.currentLocalId &&
-    cliente?.currentPartnerId &&
-    cliente.currentPartnerId === this.currentLocalId;
+    const sameLocal =
+      this.currentLocalId &&
+      cliente?.currentPartnerId &&
+      cliente.currentPartnerId === this.currentLocalId;
 
-  if (hasPro) {
-    return !!cliente?.currentPartnerId;
+    if (hasPro) {
+      return !!cliente?.currentPartnerId;
+    }
+
+    return !!sameLocal;
   }
-
-  return !!sameLocal;
-}
   async loadProductsForPartner(partnerId?: string): Promise<void> {
     const filter = partnerId
       ? `partnerId="${partnerId}" && isAvailable=true`
@@ -1073,43 +1086,43 @@ canSendGiftTo(cliente: any): boolean {
 
     this.currentPhotoIndex = (this.currentPhotoIndex + 1) % total;
   }
- /*  onGiftClick(event: Event, cliente: any) {
+  /*  onGiftClick(event: Event, cliente: any) {
+     event.stopPropagation();
+     event.preventDefault();
+ 
+     this.openGiftFromHome(cliente);
+ 
+   } */
+  async onGiftClick(event: Event, cliente: any) {
     event.stopPropagation();
     event.preventDefault();
 
+    if (!this.canSendGiftTo(cliente)) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Regalos disponibles en el local',
+        text: 'Con OnGo Free solo puedes enviar regalos a personas dentro de tu mismo local. Activa Premium para más opciones.',
+        confirmButtonText: 'Ver planes',
+        showCancelButton: true,
+        cancelButtonText: 'Cerrar'
+      }).then(result => {
+        if (result.isConfirmed) {
+          this.openClientPlans();
+        }
+      });
+
+      return;
+    }
+    const allowed = await this.canUseDailyFeature('gifts');
+
+    if (!allowed) {
+      this.showLimitModal('regalos');
+      return;
+    }
+
+    await this.incrementDailyFeature('gifts');
     this.openGiftFromHome(cliente);
-
-  } */
-async onGiftClick(event: Event, cliente: any) {
-    event.stopPropagation();
-  event.preventDefault();
-
-  if (!this.canSendGiftTo(cliente)) {
-    Swal.fire({
-      icon: 'info',
-      title: 'Regalos disponibles en el local',
-      text: 'Con OnGo Free solo puedes enviar regalos a personas dentro de tu mismo local. Activa Premium para más opciones.',
-      confirmButtonText: 'Ver planes',
-      showCancelButton: true,
-      cancelButtonText: 'Cerrar'
-    }).then(result => {
-      if (result.isConfirmed) {
-        this.openClientPlans();
-      }
-    });
-
-    return;
   }
-const allowed = await this.canUseDailyFeature('gifts');
-
-if (!allowed) {
-  this.showLimitModal('regalos');
-  return;
-}
-
-await this.incrementDailyFeature('gifts');
-  this.openGiftFromHome(cliente);
-}
   prevPhoto(event?: Event) {
     event?.stopPropagation();
 
@@ -1135,12 +1148,12 @@ await this.incrementDailyFeature('gifts');
 
   applyClientFilters(): void {
     if (!this.hasClientProPlan()) {
-    this.toastService.show(
-      'Los filtros avanzados están disponibles en OnGo Premium o Platinum.',
-      'info'
-    );
-    return;
-  }
+      this.toastService.show(
+        'Los filtros avanzados están disponibles en OnGo Premium o Platinum.',
+        'info'
+      );
+      return;
+    }
     const interests = this.filters.interests.trim().toLowerCase();
     const gender = this.filters.gender.trim().toLowerCase();
     const address = this.filters.address.trim().toLowerCase();
@@ -1196,101 +1209,101 @@ await this.incrementDailyFeature('gifts');
   }
 
   applyRadarMode(): void {
-  const myProfile = this.authPocketbaseService.getCurrentProfile();
-  const myProfileId = myProfile?.id;
+    const myProfile = this.authPocketbaseService.getCurrentProfile();
+    const myProfileId = myProfile?.id;
 
-  this.hotZoneLocked = false;
-  this.localFromHomeLocked = false;
+    this.hotZoneLocked = false;
+    this.localFromHomeLocked = false;
 
-  /* if (this.activeRadarMode === 'all') {
-    this.clientes = this.allClientes.filter(c => c.id !== myProfileId);
-  } */
+    /* if (this.activeRadarMode === 'all') {
+      this.clientes = this.allClientes.filter(c => c.id !== myProfileId);
+    } */
 
-  if (this.activeRadarMode === 'local') {
-    const isInsideLocal = !!this.currentLocalId;
-    const hasPro = this.hasClientProPlan();
+    if (this.activeRadarMode === 'local') {
+      const isInsideLocal = !!this.currentLocalId;
+      const hasPro = this.hasClientProPlan();
 
-    if (!isInsideLocal && !hasPro) {
-      this.localFromHomeLocked = true;
-      this.clientes = [];
-      this.currentIndex = 0;
-      this.currentPhotoIndex = 0;
-      return;
-    }
+      if (!isInsideLocal && !hasPro) {
+        this.localFromHomeLocked = true;
+        this.clientes = [];
+        this.currentIndex = 0;
+        this.currentPhotoIndex = 0;
+        return;
+      }
 
-    this.clientes = this.allClientes.filter(c =>
-      c.id !== myProfileId &&
-      c.currentPartnerId === this.currentLocalId
-    );
-  }
-
-  if (this.activeRadarMode === 'hotzone') {
-    if (!this.hasClientProPlan()) {
-      this.hotZoneLocked = true;
-      this.clientes = [];
-      this.currentIndex = 0;
-      this.currentPhotoIndex = 0;
-      return;
-    }
-
-    this.clientes = this.allClientes.filter(c =>
-      c.id !== myProfileId &&
-      c.currentHotZoneId === this.currentHotZoneId
-    );
-  }
-
-  if (this.activeRadarMode === 'nearby') {
-    this.clientes = this.allClientes.filter(c => {
-      if (c.id === myProfileId) return false;
-
-      const myLat = Number(myProfile?.lat);
-      const myLng = Number(myProfile?.lng);
-      const clientLat = Number(c.lat);
-      const clientLng = Number(c.lng);
-
-      if (!myLat || !myLng || !clientLat || !clientLng) return false;
-
-      const distance = this.calculateDistanceMeters(
-        myLat,
-        myLng,
-        clientLat,
-        clientLng
+      this.clientes = this.allClientes.filter(c =>
+        c.id !== myProfileId &&
+        c.currentPartnerId === this.currentLocalId
       );
+    }
 
-      return distance <= 500;
-    });
+    if (this.activeRadarMode === 'hotzone') {
+      if (!this.hasClientProPlan()) {
+        this.hotZoneLocked = true;
+        this.clientes = [];
+        this.currentIndex = 0;
+        this.currentPhotoIndex = 0;
+        return;
+      }
+
+      this.clientes = this.allClientes.filter(c =>
+        c.id !== myProfileId &&
+        c.currentHotZoneId === this.currentHotZoneId
+      );
+    }
+
+    if (this.activeRadarMode === 'nearby') {
+      this.clientes = this.allClientes.filter(c => {
+        if (c.id === myProfileId) return false;
+
+        const myLat = Number(myProfile?.lat);
+        const myLng = Number(myProfile?.lng);
+        const clientLat = Number(c.lat);
+        const clientLng = Number(c.lng);
+
+        if (!myLat || !myLng || !clientLat || !clientLng) return false;
+
+        const distance = this.calculateDistanceMeters(
+          myLat,
+          myLng,
+          clientLat,
+          clientLng
+        );
+
+        return distance <= 500;
+      });
+    }
+
+    this.currentIndex = 0;
+    this.currentPhotoIndex = 0;
   }
-
-  this.currentIndex = 0;
-  this.currentPhotoIndex = 0;
-}
   openSubscriptionsModal(): void {
     this.router.navigate(['/profile']);
   }
   hasClientProPlan(): boolean {
-  const profile = this.authPocketbaseService.getCurrentProfile();
+    const profile = this.authPocketbaseService.getCurrentProfile();
 
-  const planName = String(profile?.subscriptionPlanName || '').toLowerCase();
-  const planId = String(profile?.subscriptionPlanId || '');
-  const status = String(profile?.subscriptionStatus || '').toLowerCase();
-  const expiresAt = profile?.subscriptionExpiresAt;
+    const planName = String(profile?.subscriptionPlanName || '').toLowerCase();
+    const planId = String(profile?.subscriptionPlanId || '');
+    const status = String(profile?.subscriptionStatus || '').toLowerCase();
+    const expiresAt = profile?.subscriptionExpiresAt;
 
-  const isActive =
-    status === 'active' &&
-    expiresAt &&
-    new Date(expiresAt).getTime() > Date.now();
+    const isActive =
+      status === 'active' &&
+      expiresAt &&
+      new Date(expiresAt).getTime() > Date.now();
 
-  const paidPlanNames =
-    planName.includes('premium') ||
-    planName.includes('platinum');
+    const paidPlanNames =
+      planName.includes('premium') ||
+      planName.includes('platinum');
 
-  const paidPlanIds = [
-    'ruglhjy5kr7h8a8', // OnGo Premium
-    '6ha3ke9bapjz4av'  // OnGo Platinum
-  ].includes(planId);
+    const paidPlanIds = [
+      'ruglhjy5kr7h8a8', // OnGo Premium
+      '6ha3ke9bapjz4av'  // OnGo Platinum
+    ].includes(planId);
 
-  return !!isActive && (paidPlanNames || paidPlanIds);
-}
+    return !!isActive && (paidPlanNames || paidPlanIds);
+  }
 
   openClientPlans(): void {
     this.router.navigate(['/profile'], {
@@ -1300,102 +1313,102 @@ await this.incrementDailyFeature('gifts');
     });
   }
   getTodayKey(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-async loadDailyUsage(): Promise<any> {
-  const user = this.authPocketbaseService.getCurrentUser?.() || this.authPocketbaseService.currentUser;
-  const profile = this.authPocketbaseService.getCurrentProfile();
-
-  if (!user?.id || !profile?.id) return null;
-
-  const dateKey = this.getTodayKey();
-
-  try {
-    this.dailyUsage = await this.pb.collection('client_daily_limits')
-      .getFirstListItem(`userId="${user.id}" && dateKey="${dateKey}"`, {
-        requestKey: null
-      });
-
-    return this.dailyUsage;
-
-  } catch {
-    this.dailyUsage = await this.pb.collection('client_daily_limits').create({
-      userId: user.id,
-      clientId: profile.id,
-      dateKey,
-      likesUsed: 0,
-      superLikesUsed: 0,
-      chatsUsed: 0,
-      giftsUsed: 0
-    }, { requestKey: null });
-
-    return this.dailyUsage;
+    return new Date().toISOString().slice(0, 10);
   }
-}
 
-async canUseDailyFeature(
-  feature: 'likes' | 'superLikes' | 'chats' | 'gifts'
-): Promise<boolean> {
-  if (this.hasClientProPlan()) return true;
+  async loadDailyUsage(): Promise<any> {
+    const user = this.authPocketbaseService.getCurrentUser?.() || this.authPocketbaseService.currentUser;
+    const profile = this.authPocketbaseService.getCurrentProfile();
 
-  const usage = await this.loadDailyUsage();
-  if (!usage?.id) return false;
+    if (!user?.id || !profile?.id) return null;
 
-  const fieldMap: any = {
-    likes: 'likesUsed',
-    superLikes: 'superLikesUsed',
-    chats: 'chatsUsed',
-    gifts: 'giftsUsed'
-  };
+    const dateKey = this.getTodayKey();
 
-  const used = Number(usage[fieldMap[feature]] || 0);
-  const limit = Number(this.FREE_LIMITS[feature]);
+    try {
+      this.dailyUsage = await this.pb.collection('client_daily_limits')
+        .getFirstListItem(`userId="${user.id}" && dateKey="${dateKey}"`, {
+          requestKey: null
+        });
 
-  return used < limit;
-}
+      return this.dailyUsage;
 
-async incrementDailyFeature(
-  feature: 'likes' | 'superLikes' | 'chats' | 'gifts'
-): Promise<void> {
-  if (this.hasClientProPlan()) return;
+    } catch {
+      this.dailyUsage = await this.pb.collection('client_daily_limits').create({
+        userId: user.id,
+        clientId: profile.id,
+        dateKey,
+        likesUsed: 0,
+        superLikesUsed: 0,
+        chatsUsed: 0,
+        giftsUsed: 0
+      }, { requestKey: null });
 
-  const usage = await this.loadDailyUsage();
-  if (!usage?.id) return;
-
-  const fieldMap: any = {
-    likes: 'likesUsed',
-    superLikes: 'superLikesUsed',
-    chats: 'chatsUsed',
-    gifts: 'giftsUsed'
-  };
-
-  const field = fieldMap[feature];
-
-  const updated = await this.pb.collection('client_daily_limits').update(
-    usage.id,
-    {
-      [field]: Number(usage[field] || 0) + 1
-    },
-    { requestKey: null }
-  );
-
-  this.dailyUsage = updated;
-}
-
-showLimitModal(featureLabel: string): void {
-  Swal.fire({
-    icon: 'info',
-    title: 'Límite diario alcanzado',
-    text: `Alcanzaste el límite gratuito de ${featureLabel}. Activa OnGo Premium o Platinum para uso ilimitado.`,
-    confirmButtonText: 'Ver planes',
-    showCancelButton: true,
-    cancelButtonText: 'Cerrar'
-  }).then(result => {
-    if (result.isConfirmed) {
-      this.openClientPlans();
+      return this.dailyUsage;
     }
-  });
-}
+  }
+
+  async canUseDailyFeature(
+    feature: 'likes' | 'superLikes' | 'chats' | 'gifts'
+  ): Promise<boolean> {
+    if (this.hasClientProPlan()) return true;
+
+    const usage = await this.loadDailyUsage();
+    if (!usage?.id) return false;
+
+    const fieldMap: any = {
+      likes: 'likesUsed',
+      superLikes: 'superLikesUsed',
+      chats: 'chatsUsed',
+      gifts: 'giftsUsed'
+    };
+
+    const used = Number(usage[fieldMap[feature]] || 0);
+    const limit = Number(this.FREE_LIMITS[feature]);
+
+    return used < limit;
+  }
+
+  async incrementDailyFeature(
+    feature: 'likes' | 'superLikes' | 'chats' | 'gifts'
+  ): Promise<void> {
+    if (this.hasClientProPlan()) return;
+
+    const usage = await this.loadDailyUsage();
+    if (!usage?.id) return;
+
+    const fieldMap: any = {
+      likes: 'likesUsed',
+      superLikes: 'superLikesUsed',
+      chats: 'chatsUsed',
+      gifts: 'giftsUsed'
+    };
+
+    const field = fieldMap[feature];
+
+    const updated = await this.pb.collection('client_daily_limits').update(
+      usage.id,
+      {
+        [field]: Number(usage[field] || 0) + 1
+      },
+      { requestKey: null }
+    );
+
+    this.dailyUsage = updated;
+  }
+
+  showLimitModal(featureLabel: string): void {
+    Swal.fire({
+      icon: 'info',
+      title: 'Límite diario alcanzado',
+      text: `Alcanzaste el límite gratuito de ${featureLabel}. Activa OnGo Premium o Platinum para uso ilimitado.`,
+      confirmButtonText: 'Ver planes',
+      showCancelButton: true,
+      cancelButtonText: 'Cerrar'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.openClientPlans();
+      }
+    });
+  }
 
 }
