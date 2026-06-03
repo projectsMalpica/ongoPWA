@@ -1,4 +1,4 @@
-import { Component, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnDestroy, AfterViewInit, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import * as mapboxgl from 'mapbox-gl';
 import PocketBase, { RecordModel } from 'pocketbase';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
@@ -37,10 +37,12 @@ export class Maps implements AfterViewInit, OnDestroy {
 
   locales: any[] = [];
   nearbyUsers: any[] = [];
-
+  personas: any[] = [];       // usuariosClient
+  nearbyLocales: any[] = [];  // locales cercanos
   constructor(
     public global: GlobalService,
-    public router: Router
+    public router: Router,
+      private cdr: ChangeDetectorRef
   ) { }
 
   async ngOnInit() {
@@ -122,72 +124,78 @@ export class Maps implements AfterViewInit, OnDestroy {
 
       this.map.resize();
 
-      // 📍 Cargar locales
-      await this.cargarLocales();
+      await Promise.all([
+        this.cargarLocales(),
+        this.cargarPersonas()
+      ]);
 
-setTimeout(() => {
+      navigator.geolocation.getCurrentPosition(
+        position => {
 
-  navigator.geolocation.getCurrentPosition(
+          const userLng = position.coords.longitude;
+          const userLat = position.coords.latitude;
 
-    position => {
+          this.userLng = userLng;
+          this.userLat = userLat;
 
-      const userLng = position.coords.longitude;
-      const userLat = position.coords.latitude;
+          this.actualizarStatsMapa();
+          this.cdr.detectChanges(); 
 
-      this.userLng = userLng;
-      this.userLat = userLat;
-
-      this.actualizarStatsMapa();
-
-      new mapboxgl.Marker({
-        color: '#f70192'
-      })
-        .setLngLat([userLng, userLat])
-        .setPopup(
-          new mapboxgl.Popup().setHTML(`
+          new mapboxgl.Marker({
+            color: '#f70192'
+          })
+            .setLngLat([userLng, userLat])
+            .setPopup(
+              new mapboxgl.Popup().setHTML(`
             <strong>Tu ubicación</strong>
           `)
-        )
-        .addTo(this.map);
+            )
+            .addTo(this.map);
 
-      this.map.flyTo({
-        center: [userLng, userLat],
-        zoom: 6,
-        speed: 0.35,
-        curve: 1.8,
-        essential: true
-      });
+          this.map.flyTo({
+            center: [userLng, userLat],
+            zoom: 12,
+            speed: 0.8,
+            curve: 1.4,
+            essential: true
+          });
 
-    },
-
-    error => {
-      console.warn('No se pudo obtener ubicación', error);
-
-      this.map.flyTo({
-        center: [-74.0721, 4.7110],
-        zoom: 5,
-        speed: 0.35,
-        curve: 1.8,
-        essential: true
-      });
-    }
-
-  );
-
-}, 5500);
+        },
+        error => {
+          console.warn('No se pudo obtener ubicación', error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 8000,
+          maximumAge: 60000
+        }
+      );
 
     });
-
     // 🔄 Tiempo real
     this.pb.collection('usuariosPartner')
       .subscribe('*', e => {
-
         this.actualizarMarcadores(e.record);
-
       });
 
   }
+  async cargarPersonas() {
+    try {
+      const personas = await this.pb
+        .collection('usuariosClient')
+        .getFullList({
+          sort: '-created'
+        });
 
+      this.personas = personas;
+
+      this.actualizarStatsMapa();
+      this.cdr.detectChanges();
+
+    } catch (error) {
+      console.error('Error cargando personas:', error);
+    }
+  }
   // ============================================
   // 📍 CARGAR LOCALES
   // ============================================
@@ -207,6 +215,7 @@ setTimeout(() => {
       });
 
       this.actualizarStatsMapa();
+      this.cdr.detectChanges();
 
     } catch (error) {
       console.error('Error cargando locales:', error);
@@ -472,16 +481,17 @@ setTimeout(() => {
     return value * Math.PI / 180;
   }
   actualizarStatsMapa() {
-    if (!this.locales?.length) {
+    if (!this.personas?.length) {
       this.totalActiveUsers = 0;
       this.activeUsersPreview = [];
       this.extraUsers = 0;
+      this.nearbyUsers = [];
       return;
     }
 
-    let localesConDistancia = this.locales.map((local: any) => {
-      const lat = parseFloat(local.lat);
-      const lng = parseFloat(local.lng);
+    let personasConDistancia = this.personas.map((persona: any) => {
+      const lat = parseFloat(persona.lat);
+      const lng = parseFloat(persona.lng);
 
       let distanceKm: number | null = null;
 
@@ -500,38 +510,41 @@ setTimeout(() => {
       }
 
       return {
-        ...local,
+        ...persona,
         distanceKm,
-        avatarUrl: local.avatar
-          ? this.pb.files.getUrl(local, local.avatar)
+        avatarUrl: persona.avatar
+          ? this.pb.files.getUrl(persona, persona.avatar)
           : 'assets/images/user.png'
       };
     });
 
     if (this.userLat !== null && this.userLng !== null) {
-      localesConDistancia = localesConDistancia
-        .filter((local: any) => local.distanceKm !== null)
+      personasConDistancia = personasConDistancia
+        .filter((persona: any) => persona.distanceKm !== null)
         .sort((a: any, b: any) => a.distanceKm - b.distanceKm);
     }
 
-    this.nearbyUsers = localesConDistancia;
+    this.nearbyUsers = personasConDistancia;
 
-    this.totalActiveUsers = localesConDistancia.length;
+    // Personas cercanas en radio de 10 km
+    const personasCerca = personasConDistancia.filter((persona: any) => {
+      return persona.distanceKm !== null && persona.distanceKm <= 10;
+    });
 
-    this.activeUsersPreview = localesConDistancia.slice(0, 3).map((local: any) => ({
-      avatar: local.avatarUrl,
-      name: local.venueName,
-      distanceKm: local.distanceKm
+    this.totalActiveUsers = personasCerca.length;
+
+    this.activeUsersPreview = personasCerca.slice(0, 3).map((persona: any) => ({
+      avatar: persona.avatarUrl,
+      name: persona.name || persona.fullName || 'Usuario',
+      distanceKm: persona.distanceKm
     }));
 
     this.extraUsers = Math.max(this.totalActiveUsers - this.activeUsersPreview.length, 0);
 
-    this.matchesNow = localesConDistancia.filter((local: any) => {
-      return local.distanceKm !== null && local.distanceKm <= 10;
-    }).length;
+    this.matchesNow = personasCerca.length;
 
-    this.newUsers = localesConDistancia.filter((local: any) => {
-      const created = new Date(local.created).getTime();
+    this.newUsers = personasCerca.filter((persona: any) => {
+      const created = new Date(persona.created).getTime();
       const now = Date.now();
       const diffHours = (now - created) / (1000 * 60 * 60);
 

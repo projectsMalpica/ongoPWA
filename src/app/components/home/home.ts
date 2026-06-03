@@ -612,24 +612,61 @@ dailyUsage: any = null;
   get rejectOpacity() {
     return Math.max(0, -this.deltaX / 120);
   }
-  async openChat(cliente: any) {
-    const allowed = await this.canUseDailyFeature('chats');
+ async openChat(cliente: any) {
+  if (!cliente) return;
 
-if (!allowed) {
-  this.showLimitModal('chats');
-  return;
-}
+  const receiverUserId = this.getReceiverUserId(cliente);
 
-await this.incrementDailyFeature('chats');
-    if (!cliente) return;
+  const canOpen = await this.hasActiveMatchWith(cliente);
 
-    const receiverUserId = this.getReceiverUserId(cliente);
-
-    this.global.selectedClient = { ...cliente };
-    this.global.chatReceiverId = receiverUserId;
-
-    await this.router.navigate(['/chat-detail', receiverUserId]);
+  if (!canOpen) {
+    Swal.fire({
+      icon: 'info',
+      title: 'Chat bloqueado',
+      text: 'El chat se desbloquea cuando ambos hacen match.',
+      confirmButtonText: 'Entendido'
+    });
+    return;
   }
+
+  const allowed = await this.canUseDailyFeature('chats');
+
+  if (!allowed) {
+    this.showLimitModal('chats');
+    return;
+  }
+
+  await this.incrementDailyFeature('chats');
+
+  this.global.selectedClient = { ...cliente };
+  this.global.chatReceiverId = receiverUserId;
+
+  await this.router.navigate(['/chat-detail', receiverUserId]);
+}
+async hasActiveMatchWith(cliente: any): Promise<boolean> {
+  const myProfile = this.authPocketbaseService.getCurrentProfile();
+
+  if (!myProfile?.id || !cliente?.id) return false;
+
+  const filter = `
+    (
+      userA="${myProfile.id}" && userB="${cliente.id}"
+    ) || (
+      userA="${cliente.id}" && userB="${myProfile.id}"
+    )
+  `;
+
+  try {
+    const match = await this.pb.collection('matches').getFirstListItem(filter, {
+      requestKey: null
+    });
+
+    return match['status'] === 'active';
+
+  } catch {
+    return false;
+  }
+}
 
   async registerSwipe(cliente: any, action: 'like' | 'dislike' | 'superlike') {
     const targetProfileId = cliente.id;
@@ -644,15 +681,71 @@ await this.incrementDailyFeature('chats');
       result?.isMatch === true;
 
     if (isMatch) {
-      this.showConnectionOverlay(cliente);
-    } else if (action === 'superlike') {
+  await this.createOrUpdateMatch(cliente);
+  this.showConnectionOverlay(cliente);
+} else if (action === 'superlike') {
       this.showSuperLikeNotification(cliente);
 
     }
 
     this.swipeHistory.push({ clientId: cliente.id, action });
   }
+async createOrUpdateMatch(cliente: any): Promise<void> {
+  const myProfile = this.authPocketbaseService.getCurrentProfile();
+  const myAuthUser = this.authPocketbaseService.getCurrentUser?.() || this.authPocketbaseService.currentUser;
 
+  if (!myProfile?.id || !cliente?.id || !myAuthUser?.id) return;
+
+  const userA = myProfile.id;
+  const userB = cliente.id;
+
+  const userAAuthId = myAuthUser.id;
+  const userBAuthId = cliente.userId || cliente.id;
+
+  const sameLocal =
+    myProfile.currentPartnerId &&
+    cliente.currentPartnerId &&
+    myProfile.currentPartnerId === cliente.currentPartnerId;
+
+  const partnerId = sameLocal ? myProfile.currentPartnerId : '';
+  const partnerName = sameLocal
+    ? myProfile.currentPartnerName || cliente.currentPartnerName || ''
+    : '';
+
+  const filter = `
+    (
+      userA="${userA}" && userB="${userB}"
+    ) || (
+      userA="${userB}" && userB="${userA}"
+    )
+  `;
+
+  try {
+    const existing = await this.pb.collection('matches').getFirstListItem(filter, {
+      requestKey: null
+    });
+
+    await this.pb.collection('matches').update(existing.id, {
+      status: 'active',
+      partnerId,
+      partnerName,
+      insideSameLocal: !!sameLocal
+    }, { requestKey: null });
+
+  } catch {
+    await this.pb.collection('matches').create({
+      userA,
+      userB,
+      userAAuthId,
+      userBAuthId,
+      status: 'active',
+      partnerId,
+      partnerName,
+      insideSameLocal: !!sameLocal,
+      lastMessage: ''
+    }, { requestKey: null });
+  }
+}
   showConnectionOverlay(cliente: any) {
     console.log('MOSTRANDO OVERLAY MATCH:', cliente);
 

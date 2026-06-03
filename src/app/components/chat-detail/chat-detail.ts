@@ -26,7 +26,9 @@ export class ChatDetail implements OnInit, AfterViewInit, OnDestroy {
   messages: any[] = [];
   currentUserId = '';
   receiverId = '';
-
+isMatched = false;
+currentMatch: any = null;
+insideSameLocal = false;
   private messagesSub?: Subscription;
 
   constructor(
@@ -52,11 +54,11 @@ async ngOnInit() {
     '';
 
   this.receiverId = await this.chatService.resolveUserId(rawReceiverId);
-
   if (!this.currentUserId || !this.receiverId) {
     console.warn('Falta currentUserId o receiverId');
     return;
   }
+    this.isMatched = await this.checkMatchStatus();
 
   this.chatService.chatReceiverId = this.receiverId;
 
@@ -76,7 +78,34 @@ await this.chatService.markMessagesAsRead(this.receiverId);
 
 this.cdr.detectChanges();
 }
+async checkMatchStatus(): Promise<boolean> {
+  try {
+    const match = await this.chatService.pb
+      .collection('matches')
+      .getFirstListItem(
+        `
+        (
+          userAAuthId="${this.currentUserId}" && userBAuthId="${this.receiverId}"
+        ) || (
+          userAAuthId="${this.receiverId}" && userBAuthId="${this.currentUserId}"
+        )
+        `,
+        {
+          requestKey: null
+        }
+      );
 
+    this.currentMatch = match;
+    this.insideSameLocal = !!match['insideSameLocal'];
+
+    return match['status'] === 'active';
+
+  } catch (error) {
+    this.currentMatch = null;
+    this.insideSameLocal = false;
+    return false;
+  }
+}
  async send() {
   const message = this.form.value.message?.trim();
 

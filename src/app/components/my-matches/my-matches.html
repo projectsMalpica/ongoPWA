@@ -1,0 +1,54 @@
+<div class="page-content my-matches-page p-t50 p-b70">
+    <div class="container">
+
+        <div class="matches-header">
+            <span>OnGo Matches</span>
+            <h2>Mis conexiones</h2>
+            <p>Personas con las que hubo conexión mutua.</p>
+        </div>
+
+        <div class="matches-loading" *ngIf="loading">
+            Cargando matches...
+        </div>
+
+        <div class="alert-error" *ngIf="error">
+            {{ error }}
+        </div>
+
+        <div class="empty-matches" *ngIf="!loading && !error && !matches.length">
+            <div class="empty-icon"></div>
+            <h3>Aún no tienes matches</h3>
+            <p>Cuando ambos se den like aparecerán aquí.</p>
+        </div>
+
+        <div class="matches-list" *ngIf="!loading && matches.length">
+            <div class="match-card-item" *ngFor="let match of matches">
+
+                <img [src]="match.avatar" (error)="$any($event.target).src='assets/images/avatar/1.jpg'" alt="match" />
+
+                <div class="match-info">
+                    <h3>
+                        {{ match.name }}
+                        <span *ngIf="match.age">{{ match.age }}</span>
+                    </h3>
+                    <p *ngIf="match.insideSameLocal">
+                        🍸 Match en {{ match.partnerName || 'el mismo local' }}
+                    </p>
+                    <p>{{ match.address }}</p>
+
+                    <small>
+                        Match generado el {{ match.created | date:'dd/MM/yyyy' }}
+                    </small>
+                </div>
+
+                <small *ngIf="match.lastMessage">
+                    {{ match.lastMessage }}
+                </small>
+                <button type="button" [routerLink]="['/chat-detail', match.chatUserId]">
+                    Chat
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>

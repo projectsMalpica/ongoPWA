@@ -17,6 +17,7 @@ import { Wallet } from './components/wallet/wallet';
 import { WalletHistory } from './components/wallet-history/wallet-history';
 import { WalletPartner } from './components/wallet-partner/wallet-partner';
 import { Detailpromo } from './components/detailpromo/detailpromo';
+import { MyMatches } from './components/my-matches/my-matches';
 
 
 export const routes: Routes = [
@@ -36,6 +37,12 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./components/login/login').then(c => c.LoginComponent),
     title: 'Login'
+  },
+  {
+    path: 'matches',
+    loadComponent: () =>
+      import('./components/my-matches/my-matches').then(c => c.MyMatches),
+    title: 'Matches'
   },
   {
     path: 'home',

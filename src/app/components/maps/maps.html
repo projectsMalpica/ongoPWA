@@ -6,18 +6,24 @@
   <!-- 🔝 OVERLAY SUPERIOR -->
   <div class="map-overlay-top">
     <div class="live-card">
-      <h2><i class="fas fa-fire"></i> {{ totalActiveUsers || 0 }} personas</h2>
-      <p>Usuario más cercano a
-  {{ nearbyUsers[0]?.distanceKm | number:'1.1-1' }} km</p>
+      <h2>
+        <i class="fas fa-fire"></i>
+        {{ totalActiveUsers || 0 }} personas cerca
+      </h2>
 
-      <div class="avatars">
-        <img
-          *ngFor="let user of activeUsersPreview"
-          [src]="user.avatar || 'assets/images/user.png'"
-          (error)="$any($event.target).src='assets/images/user.png'"
-        />
+      <p *ngIf="nearbyUsers[0]?.distanceKm !== null">
+        Persona más cercana a
+        {{ nearbyUsers[0]?.distanceKm | number:'1.1-1' }} km
+      </p>
+
+     <!--  <div class="avatars">
+        <img *ngFor="let user of activeUsersPreview" [src]="user.avatar || 'assets/images/user.png'"
+          (error)="$any($event.target).src='assets/images/user.png'" />
         <span *ngIf="extraUsers > 0">+{{ extraUsers }}</span>
-      </div>
+      </div> -->
+       <p *ngIf="!nearbyUsers.length">
+        Buscando personas cerca de ti
+      </p>
     </div>
   </div>
 
