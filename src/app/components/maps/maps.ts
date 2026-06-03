@@ -24,24 +24,24 @@ export class Maps implements AfterViewInit, OnDestroy {
 
   private markers: Map<string, mapboxgl.Marker> = new Map();
 
-  totalActiveUsers = 128;
+  totalActiveUsers = 0;
+  activeUsersPreview: any[] = [];
+  extraUsers = 0;
 
-  activeUsersPreview = [
-    { avatar: 'https://randomuser.me/api/portraits/women/1.jpg' },
-    { avatar: 'https://randomuser.me/api/portraits/men/2.jpg' },
-    { avatar: 'https://randomuser.me/api/portraits/women/3.jpg' }
-  ];
+  matchesNow = 0;
+  newUsers = 0;
+  viewsToday = 0;
 
-  extraUsers = 25;
+  userLat: number | null = null;
+  userLng: number | null = null;
 
-  matchesNow = 23;
-  newUsers = 5;
-  viewsToday = 12;
+  locales: any[] = [];
+  nearbyUsers: any[] = [];
 
   constructor(
     public global: GlobalService,
     public router: Router
-  ) {}
+  ) { }
 
   async ngOnInit() {
 
@@ -125,62 +125,56 @@ export class Maps implements AfterViewInit, OnDestroy {
       // 📍 Cargar locales
       await this.cargarLocales();
 
-      // ⏳ Mantener mapa mundial unos segundos
-      setTimeout(() => {
+setTimeout(() => {
 
-        navigator.geolocation.getCurrentPosition(
+  navigator.geolocation.getCurrentPosition(
 
-          // ✅ Usuario encontrado
-          position => {
+    position => {
 
-            const userLng = position.coords.longitude;
-            const userLat = position.coords.latitude;
+      const userLng = position.coords.longitude;
+      const userLat = position.coords.latitude;
 
-            // 📍 Marker usuario
-            new mapboxgl.Marker({
-              color: '#f70192'
-            })
-              .setLngLat([userLng, userLat])
-              .setPopup(
-                new mapboxgl.Popup().setHTML(`
-                  <strong>Tu ubicación</strong>
-                `)
-              )
-              .addTo(this.map);
+      this.userLng = userLng;
+      this.userLat = userLat;
 
-            // ✈️ Vuelo cinematográfico
-            this.map.flyTo({
-              center: [userLng, userLat],
-              zoom: 6,
-              speed: 0.35,
-              curve: 1.8,
-              essential: true
-            });
+      this.actualizarStatsMapa();
 
-          },
+      new mapboxgl.Marker({
+        color: '#f70192'
+      })
+        .setLngLat([userLng, userLat])
+        .setPopup(
+          new mapboxgl.Popup().setHTML(`
+            <strong>Tu ubicación</strong>
+          `)
+        )
+        .addTo(this.map);
 
-          // ❌ Error geolocalización
-          error => {
+      this.map.flyTo({
+        center: [userLng, userLat],
+        zoom: 6,
+        speed: 0.35,
+        curve: 1.8,
+        essential: true
+      });
 
-            console.warn(
-              'No se pudo obtener ubicación',
-              error
-            );
+    },
 
-            // 🇨🇴 Fallback Colombia
-            this.map.flyTo({
-              center: [-74.0721, 4.7110],
-              zoom: 5,
-              speed: 0.35,
-              curve: 1.8,
-              essential: true
-            });
+    error => {
+      console.warn('No se pudo obtener ubicación', error);
 
-          }
+      this.map.flyTo({
+        center: [-74.0721, 4.7110],
+        zoom: 5,
+        speed: 0.35,
+        curve: 1.8,
+        essential: true
+      });
+    }
 
-        );
+  );
 
-      }, 5500);
+}, 5500);
 
     });
 
@@ -199,28 +193,24 @@ export class Maps implements AfterViewInit, OnDestroy {
   // ============================================
 
   async cargarLocales() {
-
     try {
-
       const locales = await this.pb
         .collection('usuariosPartner')
-        .getFullList();
+        .getFullList({
+          sort: '-created'
+        });
+
+      this.locales = locales;
 
       locales.forEach((local: any) => {
-
         this.agregarMarcador(local);
-
       });
 
+      this.actualizarStatsMapa();
+
     } catch (error) {
-
-      console.error(
-        'Error cargando locales:',
-        error
-      );
-
+      console.error('Error cargando locales:', error);
     }
-
   }
 
   // ============================================
@@ -290,35 +280,45 @@ export class Maps implements AfterViewInit, OnDestroy {
               ${local['venueName'] || ''}
             </h5>
 
-            ${
-              local['address']
-                ? `
+            ${local['address']
+            ? `
                   <div style="font-size:13px;color:#666;">
                     ${local['address']}
                   </div>
                 `
-                : ''
-            }
+            : ''
+          }
+            ${this.userLat !== null && this.userLng !== null
+            ? `
+      <div style="font-size:13px;color:#f70192;font-weight:600;margin-top:4px;">
+        A ${this.calcularDistanciaKm(
+              this.userLat,
+              this.userLng,
+              lat,
+              lng
+            ).toFixed(1)} km de ti
+      </div>
+    `
+            : ''
+          }
 
-            ${
-              local['venueName']
-                ? `
+            ${local['venueName']
+            ? `
                   <div style="font-size:13px;color:#666;">
                     ${local['venueName']}
                   </div>
                 `
-                : ''
-            }
+            : ''
+          }
 
-            ${
-              local['phone']
-                ? `
+            ${local['phone']
+            ? `
                   <div style="font-size:13px;color:#666;">
                     <b>Tel:</b> ${local['phone']}
                   </div>
                 `
-                : ''
-            }
+            : ''
+          }
 
             <div
               style="
@@ -444,6 +444,101 @@ export class Maps implements AfterViewInit, OnDestroy {
 
     this.map.remove();
 
+  }
+  private calcularDistanciaKm(
+    lat1: number,
+    lng1: number,
+    lat2: number,
+    lng2: number
+  ): number {
+    const R = 6371;
+
+    const dLat = this.toRad(lat2 - lat1);
+    const dLng = this.toRad(lng2 - lng1);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.toRad(lat1)) *
+      Math.cos(this.toRad(lat2)) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+  }
+
+  private toRad(value: number): number {
+    return value * Math.PI / 180;
+  }
+  actualizarStatsMapa() {
+    if (!this.locales?.length) {
+      this.totalActiveUsers = 0;
+      this.activeUsersPreview = [];
+      this.extraUsers = 0;
+      return;
+    }
+
+    let localesConDistancia = this.locales.map((local: any) => {
+      const lat = parseFloat(local.lat);
+      const lng = parseFloat(local.lng);
+
+      let distanceKm: number | null = null;
+
+      if (
+        this.userLat !== null &&
+        this.userLng !== null &&
+        !isNaN(lat) &&
+        !isNaN(lng)
+      ) {
+        distanceKm = this.calcularDistanciaKm(
+          this.userLat,
+          this.userLng,
+          lat,
+          lng
+        );
+      }
+
+      return {
+        ...local,
+        distanceKm,
+        avatarUrl: local.avatar
+          ? this.pb.files.getUrl(local, local.avatar)
+          : 'assets/images/user.png'
+      };
+    });
+
+    if (this.userLat !== null && this.userLng !== null) {
+      localesConDistancia = localesConDistancia
+        .filter((local: any) => local.distanceKm !== null)
+        .sort((a: any, b: any) => a.distanceKm - b.distanceKm);
+    }
+
+    this.nearbyUsers = localesConDistancia;
+
+    this.totalActiveUsers = localesConDistancia.length;
+
+    this.activeUsersPreview = localesConDistancia.slice(0, 3).map((local: any) => ({
+      avatar: local.avatarUrl,
+      name: local.venueName,
+      distanceKm: local.distanceKm
+    }));
+
+    this.extraUsers = Math.max(this.totalActiveUsers - this.activeUsersPreview.length, 0);
+
+    this.matchesNow = localesConDistancia.filter((local: any) => {
+      return local.distanceKm !== null && local.distanceKm <= 10;
+    }).length;
+
+    this.newUsers = localesConDistancia.filter((local: any) => {
+      const created = new Date(local.created).getTime();
+      const now = Date.now();
+      const diffHours = (now - created) / (1000 * 60 * 60);
+
+      return diffHours <= 24;
+    }).length;
+
+    this.viewsToday = 0;
   }
 
 }

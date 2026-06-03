@@ -7,7 +7,8 @@
   <div class="map-overlay-top">
     <div class="live-card">
       <h2><i class="fas fa-fire"></i> {{ totalActiveUsers || 0 }} personas</h2>
-      <p>conectando cerca de ti</p>
+      <p>Usuario más cercano a
+  {{ nearbyUsers[0]?.distanceKm | number:'1.1-1' }} km</p>
 
       <div class="avatars">
         <img
