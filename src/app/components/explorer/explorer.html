@@ -45,12 +45,48 @@
                                     <div class="dz-media">
                                         <img [src]="partner.avatar || 'assets/img/default.jpg'" alt="">
                                     </div>
-                                    <div class="dz-content">
+                                    <div class="dz-content partner-content">
+
                                         <div class="left-content">
-                                            <h6 class="title">{{partner.venueName}}</h6>
-                                            <span class="about">{{partner.address}}</span>
+
+                                            <h6 class="title">
+                                                {{partner.venueName}}
+                                            </h6>
+
+                                            <span class="about">
+                                                {{partner.address}}
+                                            </span>
+
+
+                                            <div class="partner-info-row">
+
+                                                <div class="local-live">
+                                                    <i class="fa-solid fa-users"></i>
+                                                    <span>
+                                                        <b>{{partnerStats[partner.id] || 0}}</b>
+                                                        dentro
+                                                    </span>
+                                                </div>
+
+
+                                                <div class="ambient-tag" [class.chill]="partner.ambientLevel==='Chill'"
+                                                    [class.activo]="partner.ambientLevel==='Activo'"
+                                                    [class.full]="partner.ambientLevel==='Full'">
+
+                                                    <i class="fa-solid fa-music"></i>
+                                                    {{partner.ambientLevel}}
+
+                                                </div>
+
+                                            </div>
+
                                         </div>
-                                        <div class="dz-icon ms-auto me-0"><i class="flaticon flaticon-star-1"></i></div>
+
+
+                                        <div class="dz-icon ms-auto">
+                                            <i class="flaticon flaticon-star-1"></i>
+                                        </div>
+
                                     </div>
                                 </a>
                             </div>

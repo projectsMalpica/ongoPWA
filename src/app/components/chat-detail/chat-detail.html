@@ -41,11 +41,19 @@
     </div>
   </div>
 </div>
-<div class="chat-quick-actions" *ngIf="isMatched && insideSameLocal">
-  <button type="button"> Escribir</button>
-  <button type="button">🍸 Enviar copa</button>
-  <button type="button"> Enviar regalo</button>
-  <button type="button"> Ver distancia</button>
+<div class="chat-quick-actions" *ngIf="isMatched">
+
+  <button type="button" *ngIf="insideSameLocal">
+    🍸 Enviar copa
+  </button>
+
+  <button type="button" *ngIf="insideSameLocal">
+    Enviar regalo
+  </button>
+
+  <button type="button">
+    Ver distancia
+  </button>
 </div>
 <div class="chat-locked" *ngIf="!isMatched">
   🔒 El chat se desbloquea cuando ambos hacen match.

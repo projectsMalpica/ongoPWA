@@ -46,47 +46,149 @@
     </section>
     <!-- MÉTRICAS -->
     <section class="local-stats-grid">
+
       <div class="stat-card cyan">
         <i class="fa-solid fa-users"></i>
+
         <span>Personas dentro</span>
-        <strong>{{ peopleInside || 0 }}</strong>
-        <small>En tiempo real</small>
+
+        <strong>
+          {{ hasActivePartnerSubscription() ? stats?.currentVisitors || 0 : '--' }}
+        </strong>
+
+        <small>
+          {{ hasActivePartnerSubscription()
+          ? 'En tiempo real'
+          : 'VIP'
+          }}
+        </small>
       </div>
 
       <div class="stat-card pink">
-        <i class="fa-solid fa-fire"></i>
-        <span>Ambiente</span>
-        <strong>{{ ambientLevel || 'Chill' }}</strong>
-        <small>Chill / Activo / Full</small>
+
+        <i class="fa-solid fa-heart"></i>
+
+        <span>
+          Matches generados
+        </span>
+
+        <strong>
+          {{ hasActivePartnerSubscription()
+          ? stats?.matchesGenerated || 0
+          : '🔒'
+          }}
+        </strong>
+
+        <small>
+          Personas conectadas
+        </small>
+
+      </div>
+      
+      <div class="stat-card gold">
+
+        <i class="fa-solid fa-chart-line"></i>
+
+        <strong>
+          {{ hasActivePartnerSubscription()
+          ? stats?.todayVisitors || 0
+          : '🔒'
+          }}
+        </strong>
+
+        <span>
+          Tráfico hoy
+        </span>
+
+        <small>
+          Visitantes del día
+        </small>
+
       </div>
 
-      <div class="stat-card gold">
-        <i class="fa-solid fa-gift"></i>
-        <span>Regalos pendientes</span>
-        <strong>{{ giftOrders.length || 0 }}</strong>
-        <small>Por reclamar</small>
+
+
+      <div class="stat-card" [class.locked]="!hasActivePartnerSubscription()"
+        (click)="requirePartnerSubscription('Horas pico')">
+
+        <i class="fa-solid fa-clock"></i>
+
+        <strong *ngIf="hasActivePartnerSubscription()">
+          {{ stats?.peakHour || '--' }}
+        </strong>
+
+        <strong *ngIf="!hasActivePartnerSubscription()">
+          🔒
+        </strong>
+
+        <span>
+          Hora pico
+        </span>
+
+        <small>
+          Mayor tráfico
+        </small>
+
       </div>
+
+
+
+      <div class="stat-card pink">
+
+        <i class="fa-solid fa-fire"></i>
+
+        <span>
+          Ambiente
+        </span>
+
+        <strong>
+          {{ global.profileDataPartner?.ambientLevel || 'Chill' }}
+        </strong>
+
+        <small>
+          Chill / Activo / Full
+        </small>
+
+      </div>
+
+
+      <div class="stat-card gold">
+
+        <i class="fa-solid fa-gift"></i>
+
+        <span>
+          Regalos pendientes
+        </span>
+
+        <strong>
+          {{ giftOrders.length || 0 }}
+        </strong>
+
+        <small>
+          Por reclamar
+        </small>
+
+      </div>
+
 
     </section>
 
     <!-- ACCIONES RÁPIDAS -->
     <section class="quick-actions">
-       <button type="button" (click)="goToProfileLocal()">
-    <i class="fa-solid fa-qrcode"></i>
-    Validar código
-  </button>
+      <button type="button" (click)="goToProfileLocal()">
+        <i class="fa-solid fa-qrcode"></i>
+        Validar código
+      </button>
 
       <button type="button" (click)="openPremiumPromo()">
         <i class="fa-solid fa-bullhorn"></i>
         Crear promo
       </button>
 
-      <button
-    type="button"
-    (click)="requirePartnerSubscription('OnGo Night')">
-    <i class="fa-solid fa-moon"></i>
-    OnGo Night
-  </button>
+      <button type="button" (click)="requirePartnerSubscription('OnGo Night')">
+        <i class="fa-solid fa-moon"></i>
+        OnGo Night
+      </button>
 
       <button type="button" routerLink="/wallet-partner">
         <i class="fa-solid fa-wallet"></i>
@@ -143,19 +245,15 @@
 
     <!-- ROADMAP VISUAL -->
     <section class="coming-soon-panel">
-      <!-- <div class="panel-header">
-      <div>
-        <span>Próximamente</span>
-        <h3>Herramientas para tu local</h3>
-      </div>
-    </div> -->
 
       <div class="feature-grid">
+
         <div [class.locked]="!hasActivePartnerSubscription()">
           <i class="fa-solid fa-music"></i>
           Música / ambiente
           <small *ngIf="!hasActivePartnerSubscription()">VIP</small>
         </div>
+
 
         <div [class.locked]="!hasActivePartnerSubscription()" (click)="requirePartnerSubscription('Estadísticas')">
           <i class="fa-solid fa-chart-line"></i>
@@ -163,31 +261,90 @@
           <small *ngIf="!hasActivePartnerSubscription()">VIP</small>
         </div>
 
+
         <div [class.locked]="!hasActivePartnerSubscription()" (click)="requirePartnerSubscription('Beneficios VIP')">
+
           <i class="fa-solid fa-crown"></i>
           Beneficios VIP
+
           <small *ngIf="!hasActivePartnerSubscription()">VIP</small>
+
         </div>
 
+
         <div [class.locked]="!hasActivePartnerSubscription()" (click)="requirePartnerSubscription('Destacar en mapa')">
+
           <i class="fa-solid fa-map-location-dot"></i>
           Destacar en mapa
+
           <small *ngIf="!hasActivePartnerSubscription()">VIP</small>
+
         </div>
+
 
         <div [class.locked]="!hasActivePartnerSubscription()"
           (click)="requirePartnerSubscription('Promos por horario')">
+
           <i class="fa-solid fa-tags"></i>
           Promos por horario
+
           <small *ngIf="!hasActivePartnerSubscription()">VIP</small>
+
         </div>
 
+
         <div [class.locked]="!hasActivePartnerSubscription()" (click)="requirePartnerSubscription('Anti-fraude')">
+
           <i class="fa-solid fa-shield-halved"></i>
           Anti-fraude
+
           <small *ngIf="!hasActivePartnerSubscription()">VIP</small>
+
         </div>
+
       </div>
+
+
+      <!-- AMBIENTE SEPARADO -->
+      <div class="ambient-box">
+
+        <h4>
+          <i class="fa-solid fa-fire"></i>
+          Ambiente actual
+        </h4>
+
+
+        <div class="ambient-selector">
+
+          <button [class.active]="ambientLevel === 'Chill'" (click)="setAmbient('Chill')">
+
+            <i class="fa-solid fa-moon"></i>
+            Chill
+
+          </button>
+
+
+          <button [class.active]="ambientLevel === 'Activo'" (click)="setAmbient('Activo')">
+
+            <i class="fa-solid fa-music"></i>
+            Activo
+
+          </button>
+
+
+          <button [class.active]="ambientLevel === 'Full'" (click)="setAmbient('Full')">
+
+            <i class="fa-solid fa-fire"></i>
+            Full
+
+          </button>
+
+
+        </div>
+
+      </div>
+
+
     </section>
 
   </div>

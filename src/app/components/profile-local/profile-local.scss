@@ -1069,3 +1069,764 @@
   background: rgba(255, 255, 255, 0.14);
   border: 1px solid rgba(255, 255, 255, 0.18);
 }
+/* ===========================
+   LOCAL DASHBOARD UI
+=========================== */
+
+.local-page {
+  background: #050505;
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
+
+.local-shell {
+  width: 100%;
+  max-width: 520px;
+  margin: auto;
+  padding: 15px;
+}
+
+
+/* HERO */
+
+.local-hero-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 28px;
+  padding: 30px 20px;
+  margin-bottom: 20px;
+  background: linear-gradient(
+    145deg,
+    #151515,
+    #090909
+  );
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow:
+    0 15px 40px rgba(0,0,0,.6);
+}
+
+
+.hero-bg {
+  position:absolute;
+  inset:0;
+
+  background:
+  radial-gradient(
+    circle at top right,
+    rgba(255,80,162,.35),
+    transparent 45%
+  );
+
+  pointer-events:none;
+}
+
+
+.edit-floating-btn {
+
+  position:absolute;
+  right:15px;
+  top:15px;
+
+  width:42px;
+  height:42px;
+
+  border-radius:50%;
+  border:none;
+
+  background:#ff50a2;
+  color:white;
+
+  z-index:2;
+
+}
+
+
+.local-avatar-wrap {
+
+  position:relative;
+  z-index:2;
+
+  width:100px;
+  height:100px;
+
+  margin:auto;
+
+}
+
+
+.local-avatar-wrap img {
+
+  width:100%;
+  height:100%;
+
+  object-fit:cover;
+
+  border-radius:50%;
+
+  border:4px solid #ff50a2;
+
+}
+
+
+.local-hero-info {
+
+ text-align:center;
+ position:relative;
+ z-index:2;
+
+ margin-top:15px;
+
+}
+
+
+.ongo-chip {
+
+ display:inline-block;
+
+ padding:6px 14px;
+
+ border-radius:20px;
+
+ background:#ff50a2;
+ color:white;
+
+ font-size:12px;
+
+}
+
+
+.local-hero-info h2 {
+
+ color:white;
+
+ margin-top:15px;
+
+ font-size:26px;
+
+}
+
+
+.local-hero-info p {
+
+ color:#aaa;
+
+}
+
+
+/* ===========================
+ STATS
+=========================== */
+
+
+.stats-grid {
+
+ display:grid;
+
+ grid-template-columns:repeat(2,1fr);
+
+ gap:12px;
+
+ margin-bottom:25px;
+
+}
+
+
+.stat-card {
+
+background:
+linear-gradient(
+145deg,
+#171717,
+#090909
+);
+
+border-radius:20px;
+
+padding:18px 10px;
+
+text-align:center;
+
+border:1px solid rgba(255,255,255,.08);
+
+
+}
+
+
+.stat-card i {
+
+font-size:25px;
+
+color:#ff50a2;
+
+margin-bottom:10px;
+
+}
+
+
+.stat-card h2 {
+
+color:white;
+
+margin:0;
+
+font-size:22px;
+
+}
+
+
+.stat-card span {
+
+display:block;
+
+color:#999;
+
+font-size:12px;
+
+}
+
+
+/* ===========================
+ ACCIONES
+=========================== */
+
+
+.local-actions {
+
+
+display:grid;
+
+grid-template-columns:repeat(4,1fr);
+
+gap:10px;
+
+margin-bottom:25px;
+
+
+}
+
+
+.local-actions button {
+
+
+border:none;
+
+border-radius:18px;
+
+padding:15px 5px;
+
+
+background:#151515;
+
+color:white;
+
+
+font-size:12px;
+
+
+border:1px solid rgba(255,255,255,.08);
+
+
+display:flex;
+
+flex-direction:column;
+
+align-items:center;
+
+gap:8px;
+
+
+}
+
+
+.local-actions i {
+
+font-size:22px;
+
+color:#ff50a2;
+
+}
+
+
+
+/* ===========================
+ PANELS
+=========================== */
+
+
+.neon-panel,
+.subscription-neon-panel,
+.redeem-panel-neon,
+.gift-orders-panel {
+
+
+background:
+
+linear-gradient(
+145deg,
+#151515,
+#080808
+);
+
+
+border-radius:26px;
+
+padding:20px;
+
+margin-bottom:20px;
+
+
+border:
+
+1px solid rgba(255,80,162,.15);
+
+
+box-shadow:
+
+0 10px 35px rgba(0,0,0,.45);
+
+
+}
+
+
+
+/* TITLES */
+
+
+.panel-title span,
+.panel-header span {
+
+
+color:#ff50a2;
+
+font-size:12px;
+
+text-transform:uppercase;
+
+letter-spacing:1px;
+
+
+}
+
+
+.panel-title h3,
+.panel-header h3 {
+
+
+color:white;
+
+margin:5px 0 0;
+
+font-size:21px;
+
+}
+
+
+
+
+/* ===========================
+ SUBSCRIPTION
+=========================== */
+
+
+.subscription-card-neon {
+
+
+background:#101010;
+
+border-radius:22px;
+
+padding:20px;
+
+
+border:1px solid rgba(255,80,162,.2);
+
+
+}
+
+
+.subscription-icon {
+
+
+width:45px;
+
+height:45px;
+
+border-radius:50%;
+
+
+display:flex;
+
+align-items:center;
+
+justify-content:center;
+
+
+background:#ff50a2;
+
+color:white;
+
+
+}
+
+
+.subscription-top {
+
+
+display:flex;
+
+gap:15px;
+
+align-items:center;
+
+
+}
+
+
+.subscription-top h4 {
+
+color:white;
+
+margin:0;
+
+}
+
+
+.subscription-top p {
+
+color:#999;
+
+font-size:13px;
+
+}
+
+
+.subscription-price {
+
+color:white;
+
+font-size:28px;
+
+font-weight:bold;
+
+margin:20px 0;
+
+
+}
+
+
+.subscription-benefits {
+
+padding:0;
+
+list-style:none;
+
+
+}
+
+
+.subscription-benefits li {
+
+color:#ddd;
+
+margin-bottom:8px;
+
+
+}
+
+
+.subscription-benefits i {
+
+color:#ff50a2;
+
+margin-right:8px;
+
+}
+
+
+
+.subscription-btn {
+
+
+width:100%;
+
+padding:13px;
+
+border-radius:15px;
+
+border:none;
+
+
+background:#ff50a2;
+
+color:white;
+
+
+font-weight:600;
+
+
+}
+
+
+
+
+/* ===========================
+ REDEEM
+=========================== */
+
+
+.redeem-input-row {
+
+
+display:flex;
+
+gap:10px;
+
+margin-top:15px;
+
+
+}
+
+
+.redeem-input-row input {
+
+
+flex:1;
+
+background:#111;
+
+border:
+
+1px solid rgba(255,255,255,.1);
+
+
+border-radius:15px;
+
+
+padding:14px;
+
+color:white;
+
+
+}
+
+
+.redeem-input-row button {
+
+
+width:50px;
+
+border-radius:15px;
+
+border:none;
+
+
+background:#ff50a2;
+
+color:white;
+
+
+}
+
+
+
+.redeem-ticket-neon {
+
+
+margin-top:20px;
+
+
+padding:18px;
+
+
+background:#111;
+
+
+border-radius:20px;
+
+
+border:1px dashed #ff50a2;
+
+
+}
+
+
+.redeem-ticket-info h4 {
+
+
+color:white;
+
+}
+
+
+.redeem-ticket-info strong {
+
+
+color:#ff50a2;
+
+font-size:20px;
+
+}
+
+
+
+/* ===========================
+ GALERIA
+=========================== */
+
+
+.local-gallery {
+
+
+display:grid;
+
+grid-template-columns:repeat(3,1fr);
+
+gap:8px;
+
+
+}
+
+
+.local-gallery img {
+
+
+width:100%;
+
+height:90px;
+
+object-fit:cover;
+
+border-radius:15px;
+
+
+}
+
+
+
+/* ===========================
+ PRODUCTOS
+=========================== */
+
+
+.product-grid {
+
+
+display:grid;
+
+grid-template-columns:repeat(2,1fr);
+
+gap:12px;
+
+
+}
+
+
+.product-card {
+
+
+background:#111;
+
+border-radius:18px;
+
+overflow:hidden;
+
+
+}
+
+
+.product-card img {
+
+
+width:100%;
+
+height:130px;
+
+object-fit:cover;
+
+
+}
+
+
+.product-card div {
+
+padding:12px;
+
+
+}
+
+
+.product-card h4 {
+
+color:white;
+
+font-size:15px;
+
+}
+
+
+.product-card p {
+
+color:#888;
+
+font-size:12px;
+
+
+}
+
+
+.product-card strong {
+
+color:#ff50a2;
+
+
+}
+
+
+
+/* MAPA */
+
+
+.local-map {
+
+height:280px;
+
+border-radius:20px;
+
+overflow:hidden;
+
+margin-top:15px;
+
+}
+
+
+
+.primary-neon-btn {
+
+
+width:100%;
+
+margin-top:10px;
+
+padding:14px;
+
+border-radius:16px;
+
+border:none;
+
+
+background:#ff50a2;
+
+color:white;
+
+
+}
+
+
+
+.primary-neon-btn.secondary {
+
+background:#222;
+
+border:1px solid #ff50a2;
+
+}

@@ -16,7 +16,7 @@ import { Autoplay, Pagination, Navigation } from 'swiper/modules';
 export class Explorer implements OnInit, OnDestroy, AfterViewInit {
   partners: any[] = [];
   promos: any[] = [];
-
+  partnerStats:any = {};
   private promoSwiper?: Swiper;
 
   constructor(
@@ -31,6 +31,7 @@ export class Explorer implements OnInit, OnDestroy, AfterViewInit {
 
     this.global.partners$.subscribe((partners: any[]) => {
       this.partners = partners;
+      this.loadPartnerStats();
       this.changeDetectorRef.detectChanges();
     });
 
@@ -42,7 +43,20 @@ export class Explorer implements OnInit, OnDestroy, AfterViewInit {
       }, 100);
     });
   }
+  async loadPartnerStats(){
 
+ for(const partner of this.partners){
+
+   const stats =
+   await this.global.getPartnerStats(partner.id);
+
+
+   this.partnerStats[partner.id] =
+   stats?.['currentVisitors'] || 0;
+
+ }
+
+}
   initPromoSwiper(): void {
     if (this.promoSwiper) {
       this.promoSwiper.destroy(true, true);

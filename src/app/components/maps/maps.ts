@@ -42,7 +42,7 @@ export class Maps implements AfterViewInit, OnDestroy {
   constructor(
     public global: GlobalService,
     public router: Router,
-      private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef
   ) { }
 
   async ngOnInit() {
@@ -139,7 +139,7 @@ export class Maps implements AfterViewInit, OnDestroy {
           this.userLat = userLat;
 
           this.actualizarStatsMapa();
-          this.cdr.detectChanges(); 
+          this.cdr.detectChanges();
 
           new mapboxgl.Marker({
             color: '#f70192'
@@ -319,7 +319,34 @@ export class Maps implements AfterViewInit, OnDestroy {
                 `
             : ''
           }
-
+          ${local['ambientLevel']
+            ? `
+            <div style="
+              margin-top:8px;
+              display:inline-flex;
+              align-items:center;
+              gap:6px;
+              padding:5px 12px;
+              border-radius:20px;
+              color:white;
+              font-size:12px;
+              font-weight:700;
+              background:
+              ${local['ambientLevel'] === 'Full'
+              ? '#ff007a'
+              :
+              local['ambientLevel'] === 'Activo'
+                ? '#0066ff'
+                :
+                '#343a40'
+            };
+            ">
+              <i class="fa-solid fa-music"></i>
+              ${local['ambientLevel']}
+            </div>
+            `
+            : ''
+          }
             ${local['phone']
             ? `
                   <div style="font-size:13px;color:#666;">
@@ -413,7 +440,7 @@ export class Maps implements AfterViewInit, OnDestroy {
   // 🔄 TIEMPO REAL
   // ============================================
 
-  actualizarMarcadores(local: RecordModel) {
+  /* actualizarMarcadores(local: RecordModel) {
 
     const lat = parseFloat(local['lat']);
     const lng = parseFloat(local['lng']);
@@ -430,8 +457,27 @@ export class Maps implements AfterViewInit, OnDestroy {
 
     }
 
-  }
+  } */
+  actualizarMarcadores(local: RecordModel) {
 
+    const lat = parseFloat(local['lat']);
+    const lng = parseFloat(local['lng']);
+
+    const existingMarker = this.markers.get(local.id);
+
+    if (existingMarker) {
+
+      existingMarker.remove();
+
+      this.agregarMarcador(local);
+
+    } else {
+
+      this.agregarMarcador(local);
+
+    }
+
+  }
   // ============================================
   // 🔥 BOTÓN RADAR
   // ============================================

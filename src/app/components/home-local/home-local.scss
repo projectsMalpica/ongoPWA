@@ -314,13 +314,23 @@
   box-shadow: 0 0 18px rgba(255, 0, 200, .35);
 }
 
-.local-stats-grid {
+/* .local-stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 11px;
   margin-top: 16px;
+} */
+.local-stats-grid {
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:14px;
 }
 
+@media(min-width:768px){
+  .local-stats-grid{
+    grid-template-columns:repeat(5,1fr);
+  }
+}
 .stat-card {
   min-height: 118px;
   padding: 14px;
@@ -644,4 +654,156 @@
   font-size: 10px;
   font-weight: 900;
   background: #ffb540;
+}
+.ambient-selector {
+
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+
+  button {
+
+    flex: 1;
+    padding: 12px 15px;
+
+    border-radius: 14px;
+
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.15);
+
+    color: white;
+
+    font-weight: 600;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+
+    cursor:pointer;
+
+    transition: .25s ease;
+
+
+    i {
+      font-size: 16px;
+    }
+
+
+    &:hover {
+      transform: translateY(-2px);
+    }
+
+
+    &.active {
+
+      background: linear-gradient(
+        135deg,
+        #ff007a,
+        #ff9700
+      );
+
+      border-color: transparent;
+
+      box-shadow:
+        0 0 20px rgba(255,0,120,.45);
+
+      transform: scale(1.05);
+
+    }
+
+  }
+
+}
+.ambient-box {
+
+  margin-top:20px;
+
+  padding:16px;
+
+  border-radius:22px;
+
+  background:
+    rgba(255,255,255,.05);
+
+  border:
+    1px solid rgba(255,255,255,.12);
+
+
+  h4 {
+
+    margin:0 0 14px;
+
+    font-size:15px;
+
+    color:#fff;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+
+    i {
+      color:#ff38d4;
+    }
+
+  }
+
+}
+
+
+.ambient-selector {
+
+  display:grid;
+
+  grid-template-columns:repeat(3,1fr);
+
+  gap:10px;
+
+
+  button {
+
+    min-height:48px;
+
+    border-radius:14px;
+
+    border:1px solid rgba(255,255,255,.15);
+
+    background:rgba(255,255,255,.05);
+
+    color:white;
+
+    font-size:13px;
+
+    font-weight:800;
+
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:6px;
+
+
+    transition:.25s;
+
+
+    &.active {
+
+      background:
+      linear-gradient(135deg,#ff007a,#ff9700);
+
+      border-color:transparent;
+
+      box-shadow:
+      0 0 18px rgba(255,0,120,.45);
+
+    }
+
+  }
+
 }

@@ -26,7 +26,73 @@
       </div>
     </section>
 
+    <div class="stats-grid">
 
+
+<div class="stat-card">
+
+<i class="fa-solid fa-gift"></i>
+
+<h2>
+{{todayStats.giftsRedeemed}}
+</h2>
+
+<span>
+Regalos entregados hoy
+</span>
+
+</div>
+
+
+
+<div class="stat-card">
+
+<i class="fa-solid fa-ticket"></i>
+
+<h2>
+{{todayStats.ticketsSold}}
+</h2>
+
+<span>
+Entradas vendidas hoy
+</span>
+
+</div>
+
+
+
+<div class="stat-card">
+
+<i class="fa-solid fa-door-open"></i>
+
+<h2>
+{{todayStats.ticketsUsed}}
+</h2>
+
+<span>
+Ingresos hoy
+</span>
+
+</div>
+
+
+
+<div class="stat-card">
+
+<i class="fa-solid fa-money-bill"></i>
+
+<h2>
+{{todayStats.revenue | currency:'COP':'symbol':'1.0-0'}}
+</h2>
+
+<span>
+Ventas hoy
+</span>
+
+</div>
+
+
+</div>
 
     <!-- ACCIONES -->
     <section class="local-actions">

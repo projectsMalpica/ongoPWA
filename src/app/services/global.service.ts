@@ -267,4 +267,24 @@ export class GlobalService {
   public getClientesSnapshot(): any[] {
   return this.clientesSubject.getValue();
 }
+
+async getPartnerStats(partnerId:string){
+
+  try {
+
+    return await this.pb.collection('partner_stats')
+      .getFirstListItem(
+        `partnerId="${partnerId}"`,
+        {
+          requestKey:null
+        }
+      );
+
+  } catch {
+
+    return null;
+
+  }
+
+}
 }

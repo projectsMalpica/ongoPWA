@@ -947,11 +947,18 @@ export class Home implements OnInit {
             });
 
             if (distancia <= 80) {
+
               currentPartnerId = local.id;
-              currentPartnerName = String(
-                local['venueName'] || local['name'] || 'Local OnGo'
-              );
+
+              currentPartnerName =
+                String(local['venueName']);
+
+
+              await this.registerLocalVisit(currentPartnerId);
+
+
               break;
+
             }
           }
 
@@ -1007,7 +1014,52 @@ export class Home implements OnInit {
       }
     );
   }
+  async registerLocalVisit(partnerId:string){
 
+ try{
+
+ const stats = await this.pb.collection('partner_stats')
+ .getFirstListItem(
+   `partnerId="${partnerId}"`,
+   {
+    requestKey:null
+   }
+ );
+
+
+ await this.pb.collection('partner_stats')
+ .update(stats.id,{
+    currentVisitors: Number(stats['currentVisitors'] || 0)+1,
+    todayVisitors: Number(stats['todayVisitors'] || 0)+1,
+    totalVisits: Number(stats['totalVisits'] || 0)+1,
+    lastUpdated:new Date()
+ },{
+    requestKey:null
+ });
+
+
+ }catch{
+
+ await this.pb.collection('partner_stats')
+ .create({
+
+    partnerId,
+
+    currentVisitors:1,
+
+    todayVisitors:1,
+
+    totalVisits:1,
+
+    lastUpdated:new Date()
+
+ },{
+    requestKey:null
+ });
+
+ }
+
+}
   undoLastSwipe() {
     if (this.swipeHistory.length === 0) return;
 

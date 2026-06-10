@@ -40,7 +40,9 @@ export class Detailprofilelocal {
   lastRedeemCode = '';
   lastRedeemQr = '';
   giftSentSuccess = false;
-  
+  partnerStats: any = null;
+currentVisitors = 0;
+todayVisitors = 0;
   constructor(public global: GlobalService,
     public changeDetectorRef: ChangeDetectorRef,
     public auth: AuthPocketbaseService,
@@ -83,7 +85,8 @@ export class Detailprofilelocal {
 
     await Promise.all([
       this.loadPartnerPromos(),
-      this.loadPartnerProducts()
+      this.loadPartnerProducts(),
+        this.loadPartnerStats()
     ]);
 
     console.log('Partner detalle:', this.partner);
@@ -824,4 +827,42 @@ this.changeDetectorRef.detectChanges();
       paymentData: transaction
     }, { requestKey: null });
   }
+  async loadPartnerStats(): Promise<void> {
+
+  if(!this.partner?.id) return;
+
+
+  try {
+
+    this.partnerStats =
+      await this.pb.collection('partner_stats')
+      .getFirstListItem(
+        `partnerId="${this.partner.id}"`,
+        {
+          requestKey:null
+        }
+      );
+
+
+      this.currentVisitors =
+      Number(this.partnerStats.currentVisitors || 0);
+
+
+      this.todayVisitors =
+      Number(this.partnerStats.todayVisitors || 0);
+
+
+
+  } catch(error){
+
+    console.warn(
+      'Este local no tiene estadísticas todavía'
+    );
+
+    this.currentVisitors = 0;
+    this.todayVisitors = 0;
+
+  }
+
+}
 }

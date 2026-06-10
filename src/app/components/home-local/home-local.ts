@@ -13,6 +13,7 @@ import 'swiper/css/pagination';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import Swal from 'sweetalert2';
+import { PartnerStatsService } from '../../services/partnerStats.service';
 
 @Component({
   selector: 'app-home-local',
@@ -37,130 +38,144 @@ export class HomeLocal implements AfterViewInit, OnDestroy {
   giftOrders: any[] = [];
   loadingGiftOrders = false;
   peopleInside = 0;
-ambientLevel = 'Chill';
+  ambientLevel = 'Chill';
+  ambientManual = false;
+  stats: any;
+
   constructor(public global: GlobalService,
     public http: HttpClient,
     public auth: AuthPocketbaseService,
     public wompi: WompiService,
-    public router: Router
+    public router: Router,
+    public partnerStats: PartnerStatsService
   ) { }
-openPremiumPromo(): void {
-  if (!this.requirePartnerSubscription('Crear promociones')) {
-    return;
-  }
-
-  this.router.navigate(['/profile-local']);
-}
-goToProfileLocal(): void {
-  this.router.navigate(['/profile-local']);
-}
-async ngOnInit(): Promise<void> {
-  await this.auth.restoreSession();
-
-  await this.loadPartnerProfileForHome();
-
-  this.global.initPlanningPartnersRealtime();
-
-  setTimeout(() => {
-    this.loadGiftOrders();
-  }, 500);
-}
-async loadPartnerProfileForHome(): Promise<void> {
-  const user = this.auth.getCurrentUser();
-
-  if (!user?.id) {
-    console.warn('No hay usuario autenticado en HomeLocal');
-    return;
-  }
-
-  try {
-    const partner = await this.global.pb
-      .collection('usuariosPartner')
-      .getFirstListItem(`userId="${user.id}"`, {
-        requestKey: null
-      });
-
-    this.global.profileDataPartner = {
-      ...this.global.profileDataPartner,
-
-      id: partner.id,
-      userId: partner['userId'] || '',
-      name: partner['name'] || '',
-      venueName: partner['venueName'] || '',
-      email: partner['email'] || '',
-      phone: partner['phone'] || '',
-      avatar: partner['avatar']
-        ? this.global.pb.files.getUrl(partner, partner['avatar'])
-        : this.global.profileDataPartner?.avatar || '',
-
-      subscriptionPlanName: partner['subscriptionPlanName'] || '',
-      subscriptionPlanId: partner['subscriptionPlanId'] || '',
-      subscriptionStatus: partner['subscriptionStatus'] || '',
-      subscriptionStartsAt: partner['subscriptionStartsAt'] || '',
-      subscriptionExpiresAt: partner['subscriptionExpiresAt'] || '',
-      subscriptionAutoRenew: partner['subscriptionAutoRenew'] || false,
-    };
-
-    if (
-      this.global.profileDataPartner.subscriptionStatus === 'active' &&
-      this.global.profileDataPartner.subscriptionExpiresAt &&
-      new Date(this.global.profileDataPartner.subscriptionExpiresAt).getTime() <= Date.now()
-    ) {
-      await this.global.pb.collection('usuariosPartner').update(partner.id, {
-        subscriptionStatus: 'expired'
-      }, { requestKey: null });
-
-      this.global.profileDataPartner.subscriptionStatus = 'expired';
+  openPremiumPromo(): void {
+    if (!this.requirePartnerSubscription('Crear promociones')) {
+      return;
     }
 
-  } catch (error) {
-    console.error('Error cargando perfil partner en home:', error);
+    this.router.navigate(['/profile-local']);
   }
-}
-async loadGiftOrders(): Promise<void> {
-  const partnerId = this.global.profileDataPartner?.id;
-
-  if (!partnerId) {
-    console.warn('No hay partnerId para cargar regalos');
-    return;
+  goToProfileLocal(): void {
+    this.router.navigate(['/profile-local']);
   }
+  async ngOnInit(): Promise<void> {
+    await this.auth.restoreSession();
 
-  this.loadingGiftOrders = true;
+    await this.loadPartnerProfileForHome();
+    const profile =
+      this.auth.getCurrentProfile();
 
-  try {
-    this.giftOrders = await this.global.pb.collection('product_orders').getFullList({
-      filter: `partnerId="${partnerId}" && orderType="gift" && orderStatus="pending_redeem"`,
-      sort: '-created',
-      expand: 'receiverUserId,buyerUserId',
-      requestKey: null
-    });
-  } catch (error) {
-    console.error('Error cargando regalos pendientes:', error);
-  } finally {
-    this.loadingGiftOrders = false;
+
+    this.stats =
+      await this.partnerStats.getStats(
+        profile.id
+      );
+    this.global.initPlanningPartnersRealtime();
+
+    setTimeout(() => {
+      this.loadGiftOrders();
+    }, 500);
   }
-}
-async markGiftAsRedeemed(order: any): Promise<void> {
-  if (!order?.id) return;
+  async loadPartnerProfileForHome(): Promise<void> {
+    const user = this.auth.getCurrentUser();
 
-  const confirm = window.confirm(
-    `¿Confirmas que entregaste "${order.productName}" con el código ${order.redeemCode}?`
-  );
+    if (!user?.id) {
+      console.warn('No hay usuario autenticado en HomeLocal');
+      return;
+    }
 
-  if (!confirm) return;
+    try {
+      const partner = await this.global.pb
+        .collection('usuariosPartner')
+        .getFirstListItem(`userId="${user.id}"`, {
+          requestKey: null
+        });
 
-  try {
-    await this.global.pb.collection('product_orders').update(order.id, {
-      orderStatus: 'redeemed',
-      status: 'completed',
-      redeemedAt: new Date().toISOString()
-    }, { requestKey: null });
+      this.global.profileDataPartner = {
+        ...this.global.profileDataPartner,
 
-    this.giftOrders = this.giftOrders.filter(item => item.id !== order.id);
-  } catch (error) {
-    console.error('Error reclamando regalo:', error);
+        id: partner.id,
+        userId: partner['userId'] || '',
+        name: partner['name'] || '',
+        venueName: partner['venueName'] || '',
+        email: partner['email'] || '',
+        phone: partner['phone'] || '',
+        avatar: partner['avatar']
+          ? this.global.pb.files.getUrl(partner, partner['avatar'])
+          : this.global.profileDataPartner?.avatar || '',
+
+        subscriptionPlanName: partner['subscriptionPlanName'] || '',
+        subscriptionPlanId: partner['subscriptionPlanId'] || '',
+        subscriptionStatus: partner['subscriptionStatus'] || '',
+        subscriptionStartsAt: partner['subscriptionStartsAt'] || '',
+        subscriptionExpiresAt: partner['subscriptionExpiresAt'] || '',
+        subscriptionAutoRenew: partner['subscriptionAutoRenew'] || false,
+        ambientLevel: partner['ambientLevel'] || 'Chill'
+      };
+      this.ambientLevel =
+        this.global.profileDataPartner.ambientLevel;
+      if (
+        this.global.profileDataPartner.subscriptionStatus === 'active' &&
+        this.global.profileDataPartner.subscriptionExpiresAt &&
+        new Date(this.global.profileDataPartner.subscriptionExpiresAt).getTime() <= Date.now()
+
+      ) {
+        await this.global.pb.collection('usuariosPartner').update(partner.id, {
+          subscriptionStatus: 'expired'
+        }, { requestKey: null });
+
+        this.global.profileDataPartner.subscriptionStatus = 'expired';
+      }
+
+    } catch (error) {
+      console.error('Error cargando perfil partner en home:', error);
+    }
   }
-}
+  async loadGiftOrders(): Promise<void> {
+    const partnerId = this.global.profileDataPartner?.id;
+
+    if (!partnerId) {
+      console.warn('No hay partnerId para cargar regalos');
+      return;
+    }
+
+    this.loadingGiftOrders = true;
+
+    try {
+      this.giftOrders = await this.global.pb.collection('product_orders').getFullList({
+        filter: `partnerId="${partnerId}" && orderType="gift" && orderStatus="pending_redeem"`,
+        sort: '-created',
+        expand: 'receiverUserId,buyerUserId',
+        requestKey: null
+      });
+    } catch (error) {
+      console.error('Error cargando regalos pendientes:', error);
+    } finally {
+      this.loadingGiftOrders = false;
+    }
+  }
+  async markGiftAsRedeemed(order: any): Promise<void> {
+    if (!order?.id) return;
+
+    const confirm = window.confirm(
+      `¿Confirmas que entregaste "${order.productName}" con el código ${order.redeemCode}?`
+    );
+
+    if (!confirm) return;
+
+    try {
+      await this.global.pb.collection('product_orders').update(order.id, {
+        orderStatus: 'redeemed',
+        status: 'completed',
+        redeemedAt: new Date().toISOString()
+      }, { requestKey: null });
+
+      this.giftOrders = this.giftOrders.filter(item => item.id !== order.id);
+    } catch (error) {
+      console.error('Error reclamando regalo:', error);
+    }
+  }
   async selectPlan(plan: { id: string; name: string; priceCOP: number; role: 'partner' | 'client' }) {
     const reference = `suscrip-${plan.role}-${plan.id}-${crypto.randomUUID()}`;
 
@@ -271,47 +286,124 @@ async markGiftAsRedeemed(order: any): Promise<void> {
     this.tx = undefined; this.txError = undefined;
   }
 
-hasActivePartnerSubscription(): boolean {
-  return (
-    this.global.profileDataPartner?.subscriptionStatus === 'active' &&
-    this.global.profileDataPartner?.subscriptionExpiresAt &&
-    new Date(this.global.profileDataPartner.subscriptionExpiresAt).getTime() > Date.now()
-  );
-}
-
-getPartnerPlanName(): string {
-  return this.global.profileDataPartner?.subscriptionPlanName || 'Plan gratuito';
-}
-
-getPartnerPlanExpiresLabel(): string {
-  const expiresAt = this.global.profileDataPartner?.subscriptionExpiresAt;
-
-  if (!expiresAt) return '';
-
-  return new Date(expiresAt).toLocaleDateString('es-CO', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
-}
-
-requirePartnerSubscription(featureName: string): boolean {
-  if (this.hasActivePartnerSubscription()) {
-    return true;
+  hasActivePartnerSubscription(): boolean {
+    return (
+      this.global.profileDataPartner?.subscriptionStatus === 'active' &&
+      this.global.profileDataPartner?.subscriptionExpiresAt &&
+      new Date(this.global.profileDataPartner.subscriptionExpiresAt).getTime() > Date.now()
+    );
   }
 
-  Swal.fire({
-    icon: 'info',
-    title: 'Función VIP',
-    text: `${featureName} requiere una suscripción activa.`,
-    confirmButtonText: 'Ver planes'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      this.router.navigate(['/profile-local']);
-    }
-  });
+  getPartnerPlanName(): string {
+    return this.global.profileDataPartner?.subscriptionPlanName || 'Plan gratuito';
+  }
 
-  return false;
-}
+  getPartnerPlanExpiresLabel(): string {
+    const expiresAt = this.global.profileDataPartner?.subscriptionExpiresAt;
+
+    if (!expiresAt) return '';
+
+    return new Date(expiresAt).toLocaleDateString('es-CO', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  requirePartnerSubscription(featureName: string): boolean {
+    if (this.hasActivePartnerSubscription()) {
+      return true;
+    }
+
+    Swal.fire({
+      icon: 'info',
+      title: 'Función VIP',
+      text: `${featureName} requiere una suscripción activa.`,
+      confirmButtonText: 'Ver planes'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.router.navigate(['/profile-local']);
+      }
+    });
+
+    return false;
+  }
+
+  /* async setAmbient(level: string) {
+  
+    const partnerId = this.global.profileDataPartner?.id;
+  
+    if (!partnerId) {
+      console.warn('No existe partner');
+      return;
+    }
+  
+    this.ambientManual = true;
+    this.ambientLevel = level;
+  
+  
+    try {
+  
+      await this.global.pb
+        .collection('usuariosPartner')
+        .update(partnerId, {
+  
+          ambientLevel: level,
+          ambientUpdatedAt: new Date().toISOString()
+  
+        },{
+          requestKey:null
+        });
+  
+  
+      console.log(
+        'Ambiente actualizado:',
+        level
+      );
+  
+  
+    } catch(error){
+  
+      console.error(
+        'Error guardando ambiente',
+        error
+      );
+  
+    }
+  
+  } */
+  async setAmbient(level: string) {
+
+    this.ambientLevel = level;
+
+    this.global.profileDataPartner.ambientLevel = level;
+
+
+    const partnerId = this.global.profileDataPartner?.id;
+
+    if (!partnerId) return;
+
+
+    await this.global.pb
+      .collection('usuariosPartner')
+      .update(partnerId, {
+
+        ambientLevel: level,
+        ambientUpdatedAt: new Date().toISOString()
+
+      }, {
+        requestKey: null
+      });
+
+  }
+  updateAmbientLevel() {
+    if (this.peopleInside < 20) {
+      this.ambientLevel = 'Chill';
+    } else if (this.peopleInside < 50) {
+      this.ambientLevel = 'Activo';
+    } else {
+      this.ambientLevel = 'Full';
+    }
+  }
 }
 

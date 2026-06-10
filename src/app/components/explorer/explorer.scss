@@ -1,59 +1,110 @@
-.page-content {
-  min-height: calc(100vh - 60px);
-  height: auto;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 65px 0 100px;
+.partner-content{
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
 }
 
-.container {
-  height: auto;
-  min-height: 100%;
-  padding: 15px;
+
+.left-content{
+    flex:1;
+    min-width:0;
 }
 
-.swiper {
-  width: 100%;
-  overflow: hidden;
+
+.partner-info-row{
+
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+
+    margin-top:12px;
+
 }
 
-.swiper-wrapper {
-  align-items: stretch;
+
+
+.local-live,
+.ambient-tag{
+
+    display:flex;
+    align-items:center;
+
+    width:max-content;
+
+    padding:6px 10px;
+
+    border-radius:20px;
+
+    font-size:11px;
+
+    font-weight:700;
+
 }
 
-.swiper-slide {
-  height: auto;
+
+
+.local-live{
+
+    background:rgba(0,220,255,.12);
+
+    color:#00d9ff;
+
+    border:1px solid rgba(0,220,255,.3);
+
 }
 
-.dz-media-card {
-  height: 100%;
-  overflow: hidden;
-  border-radius: 16px;
+
+
+.local-live i{
+
+    margin-right:6px;
+
 }
 
-.dz-media {
-  width: 100%;
-  height: 160px;
-  overflow: hidden;
+
+
+.local-live b{
+
+    font-size:14px;
+
+    margin-right:3px;
+
 }
 
-.dz-media img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+
+
+
+.ambient-tag{
+
+    color:white;
+
+    gap:6px;
+
 }
 
-/* Cards de bares */
-.row.g-2 .col-6 {
-  display: flex;
+
+
+
+.ambient-tag.chill{
+
+    background:#243b55;
+
 }
 
-.row.g-2 .dz-media-card {
-  width: 100%;
-  margin-bottom: 12px;
+
+
+.ambient-tag.activo{
+
+    background:#0066ff;
+
 }
 
-.dz-content {
-  min-height: 70px;
+
+
+.ambient-tag.full{
+
+    background:linear-gradient(135deg,#ff007a,#ff9700);
+
+    box-shadow:0 0 12px rgba(255,0,120,.4);
+
 }

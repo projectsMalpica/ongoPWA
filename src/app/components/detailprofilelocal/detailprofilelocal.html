@@ -1,160 +1,189 @@
 <div class="page-content local-detail-page p-b80" *ngIf="partner">
-    <div class="container">
+  <div class="container">
 
-        <!-- HERO LOCAL -->
-        <div class="local-hero">
-            <div class="local-cover">
-                <img [src]="partner.files?.[0] || partner.avatar || 'assets/images/night-city-bg.jpg'" alt="cover">
-                <div class="cover-overlay"></div>
-            </div>
+    <!-- HERO LOCAL -->
+    <div class="local-hero">
+      <div class="local-cover">
+        <img [src]="partner.files?.[0] || partner.avatar || 'assets/images/night-city-bg.jpg'" alt="cover">
+        <div class="cover-overlay"></div>
+      </div>
 
-            <div class="local-info-card">
-                <img [src]="avatarUrl || 'assets/images/avatar-local.png'" alt="local" class="local-avatar">
-                <div class="local-main-info">
-                    <h3>{{ partner.venueName }}</h3>
-                    <p><i class="icon feather icon-map-pin"></i> {{ partner.address || 'Ubicación no especificada' }}
-                    </p>
-                    <p><i class="icon feather icon-phone"></i> {{ partner.phone || 'Sin teléfono' }}</p>
-                </div>
-
-                <button class="favorite-btn">
-                    <i class="flaticon flaticon-star-1"></i>
-                </button>
-            </div>
+      <div class="local-info-card">
+        <img [src]="avatarUrl || 'assets/images/avatar-local.png'" alt="local" class="local-avatar">
+        <div class="local-main-info">
+          <h3>{{ partner.venueName }}</h3>
+          <p><i class="icon feather icon-map-pin"></i> {{ partner.address || 'Ubicación no especificada' }}
+          </p>
+          <p><i class="icon feather icon-phone"></i> {{ partner.phone || 'Sin teléfono' }}</p>
         </div>
 
-        <!-- INFO RAPIDA -->
-        <div class="quick-stats">
-            <div class="quick-card">
-                <strong>{{ partner.capacity || 0 }}</strong>
-                <span>Capacidad</span>
-            </div>
+        <button class="favorite-btn">
+          <i class="flaticon flaticon-star-1"></i>
+        </button>
+      </div>
+    </div>
 
-            <div class="quick-card">
-                <strong>{{ partnerPromos.length || 0 }}</strong>
-                <span>Promos</span>
-            </div>
+    <!-- INFO RAPIDA -->
+    <div class="quick-stats">
 
-            <div class="quick-card">
-                <strong>{{ partnerProducts.length || 0 }}</strong>
-                <span>Productos</span>
-            </div>
-        </div>
+      <div class="quick-card">
+        <strong>{{ partner.capacity || 0 }}</strong>
+        <span>Capacidad</span>
+      </div>
 
-        <!-- SOBRE EL LOCAL -->
-        <div class="detail-section">
-            <h6>Nuestro lugar</h6>
-            <p>{{ partner.description || 'Este local aún no tiene descripción.' }}</p>
-        </div>
+      <div class="quick-card">
+        <strong>{{ partnerPromos.length || 0 }}</strong>
+        <span>Promos</span>
+      </div>
 
-        <!-- SERVICIOS -->
-        <div class="detail-section" *ngIf="partner.services?.length">
-            <h6>Servicios</h6>
+      <div class="quick-card">
+        <strong>{{ partnerProducts.length || 0 }}</strong>
+        <span>Productos</span>
+      </div>
+    </div>
+    <div class="local-live-stats">
 
-            <div class="tag-cloud">
-                <span *ngFor="let service of partner.services">
-                    <i class="fa fa-check"></i> {{ service }}
-                </span>
-            </div>
-        </div>
-
-        <!-- HORARIO -->
-        <div class="detail-section">
-            <h6>Horario</h6>
-            <div class="night-pill">
-                <i class="fa fa-clock"></i>
-                {{ partner.openingHours || 'Horario no especificado' }}
-            </div>
-        </div>
-        <div class="local-actions">
-            <button *ngIf="partner.reservationEnabled" type="button" class="action-btn reserve"
-                [disabled]="isReservingTable" (click)="reserveTable()">
-                {{ isReservingTable ? 'Procesando...' : 'Reservar mesa' }}
-            </button>
-
-            <button *ngIf="partner.ticketsEnabled" type="button" class="action-btn tickets" [disabled]="isBuyingTicket"
-                (click)="buyTicket()">
-                {{ isBuyingTicket ? 'Procesando...' : 'Comprar entrada' }}
-            </button>
-
-            <a [href]="'https://www.google.com/maps/dir/?api=1&destination=' + partner.lat + ',' + partner.lng"
-                target="_blank" class="action-btn maps">
-                Cómo llegar
-            </a>
-        </div>
-
-        <div class="ticket-success-card" *ngIf="showTicketSuccess">
-            <div class="ticket-success-icon">
-                <i class="fa-solid fa-ticket"></i>
-            </div>
-
-            <h6>Entrada comprada 🎟️</h6>
-            <p>Muestra este código al llegar al local.</p>
-
-            <div class="redeem-code-box">
-                <small>Código de entrada</small>
-                <strong>{{ lastTicketCode }}</strong>
-            </div>
-        </div>
+      <div class="live-title">
+        🔥 Ahora en el local
+      </div>
 
 
-        <!-- PROMOCIONES -->
-        <div class="detail-section" *ngIf="partnerPromos.length">
-            <div class="section-header">
-                <h6>Promociones y eventos</h6>
-                <span>Esta noche</span>
-            </div>
+      <div class="live-number">
 
-            <div class="promo-list">
-                <div class="promo-card" *ngFor="let promo of partnerPromos">
-                    <img [src]="promo.files?.[0] || 'assets/img/default.jpg'" alt="promo">
+        <strong>
+          {{currentVisitors}}
+        </strong>
 
-                    <div class="promo-overlay">
-                        <span class="promo-badge">Promo</span>
-                        <h5>{{ promo.name }}</h5>
-                        <p>{{ promo.description }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <span>
+          personas conectadas
+        </span>
+
+      </div>
 
 
-        <!-- PRODUCTOS -->
-        <div class="detail-section" *ngIf="partnerProducts.length">
-            <div class="section-header">
-                <h6>Productos</h6>
-                <span>Catálogo</span>
-            </div>
+      <div class="today-visits">
 
-            <div class="products-grid">
-                <div class="product-card" *ngFor="let product of partnerProducts">
-                    <img [src]="product.image || 'assets/images/default-product.jpg'" alt="producto">
+        👀
+        {{todayVisitors}}
+        visitas hoy
 
-                    <div class="product-info">
-                        <h6>{{ product.name }}</h6>
-                        <p>{{ product.category || 'Producto' }}</p>
-                        <strong>{{ product.price | number:'1.0-0' }} COP</strong>
-                        <button type="button" class="gift-btn" (click)="openGiftModal(product)">
-                            Comprar / Enviar regalo
-                        </button>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-
-        <!-- GALERIA -->
-        <div class="detail-section" *ngIf="partner.files?.length">
-            <h6>Galería</h6>
-
-            <div class="gallery-grid">
-                <a *ngFor="let url of partner.files" [href]="url" target="_blank">
-                    <img [src]="url" alt="Imagen del local">
-                </a>
-            </div>
-        </div>
+      </div>
 
     </div>
+    <!-- SOBRE EL LOCAL -->
+    <div class="detail-section">
+      <h6>Nuestro lugar</h6>
+      <p>{{ partner.description || 'Este local aún no tiene descripción.' }}</p>
+    </div>
+
+    <!-- SERVICIOS -->
+    <div class="detail-section" *ngIf="partner.services?.length">
+      <h6>Servicios</h6>
+
+      <div class="tag-cloud">
+        <span *ngFor="let service of partner.services">
+          <i class="fa fa-check"></i> {{ service }}
+        </span>
+      </div>
+    </div>
+
+    <!-- HORARIO -->
+    <div class="detail-section">
+      <h6>Horario</h6>
+      <div class="night-pill">
+        <i class="fa fa-clock"></i>
+        {{ partner.openingHours || 'Horario no especificado' }}
+      </div>
+    </div>
+    <div class="local-actions">
+      <button *ngIf="partner.reservationEnabled" type="button" class="action-btn reserve" [disabled]="isReservingTable"
+        (click)="reserveTable()">
+        {{ isReservingTable ? 'Procesando...' : 'Reservar mesa' }}
+      </button>
+
+      <button *ngIf="partner.ticketsEnabled" type="button" class="action-btn tickets" [disabled]="isBuyingTicket"
+        (click)="buyTicket()">
+        {{ isBuyingTicket ? 'Procesando...' : 'Comprar entrada' }}
+      </button>
+
+      <a [href]="'https://www.google.com/maps/dir/?api=1&destination=' + partner.lat + ',' + partner.lng"
+        target="_blank" class="action-btn maps">
+        Cómo llegar
+      </a>
+    </div>
+
+    <div class="ticket-success-card" *ngIf="showTicketSuccess">
+      <div class="ticket-success-icon">
+        <i class="fa-solid fa-ticket"></i>
+      </div>
+
+      <h6>Entrada comprada 🎟️</h6>
+      <p>Muestra este código al llegar al local.</p>
+
+      <div class="redeem-code-box">
+        <small>Código de entrada</small>
+        <strong>{{ lastTicketCode }}</strong>
+      </div>
+    </div>
+
+
+    <!-- PROMOCIONES -->
+    <div class="detail-section" *ngIf="partnerPromos.length">
+      <div class="section-header">
+        <h6>Promociones y eventos</h6>
+        <span>Esta noche</span>
+      </div>
+
+      <div class="promo-list">
+        <div class="promo-card" *ngFor="let promo of partnerPromos">
+          <img [src]="promo.files?.[0] || 'assets/img/default.jpg'" alt="promo">
+
+          <div class="promo-overlay">
+            <span class="promo-badge">Promo</span>
+            <h5>{{ promo.name }}</h5>
+            <p>{{ promo.description }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- PRODUCTOS -->
+    <div class="detail-section" *ngIf="partnerProducts.length">
+      <div class="section-header">
+        <h6>Productos</h6>
+        <span>Catálogo</span>
+      </div>
+
+      <div class="products-grid">
+        <div class="product-card" *ngFor="let product of partnerProducts">
+          <img [src]="product.image || 'assets/images/default-product.jpg'" alt="producto">
+
+          <div class="product-info">
+            <h6>{{ product.name }}</h6>
+            <p>{{ product.category || 'Producto' }}</p>
+            <strong>{{ product.price | number:'1.0-0' }} COP</strong>
+            <button type="button" class="gift-btn" (click)="openGiftModal(product)">
+              Comprar / Enviar regalo
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- GALERIA -->
+    <div class="detail-section" *ngIf="partner.files?.length">
+      <h6>Galería</h6>
+
+      <div class="gallery-grid">
+        <a *ngFor="let url of partner.files" [href]="url" target="_blank">
+          <img [src]="url" alt="Imagen del local">
+        </a>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <!-- Modal de regalo -->
@@ -211,9 +240,8 @@
       <div class="gift-receiver-box">
         <label>¿Para quién es?</label>
 
-        <div class="receiver-option"
-             [class.active]="selectedReceiverUserId === ''"
-             (click)="selectedReceiverUserId = ''">
+        <div class="receiver-option" [class.active]="selectedReceiverUserId === ''"
+          (click)="selectedReceiverUserId = ''">
 
           <img [src]="auth.currentUser?.avatar || 'assets/images/user/pic1.jpg'" alt="Yo">
 
@@ -225,10 +253,8 @@
           <i *ngIf="selectedReceiverUserId === ''" class="fa fa-check"></i>
         </div>
 
-        <div class="receiver-option"
-             *ngFor="let user of giftReceivers"
-             [class.active]="selectedReceiverUserId === user.userId"
-             (click)="selectedReceiverUserId = user.userId">
+        <div class="receiver-option" *ngFor="let user of giftReceivers"
+          [class.active]="selectedReceiverUserId === user.userId" (click)="selectedReceiverUserId = user.userId">
 
           <img [src]="user.avatar || 'assets/images/user/pic1.jpg'" alt="usuario">
 
@@ -265,10 +291,7 @@
         <span>Confirma tu compra o regalo</span>
       </div>
 
-      <button type="button"
-              class="send-gift-btn"
-              [disabled]="isSendingGift"
-              (click)="sendGift()">
+      <button type="button" class="send-gift-btn" [disabled]="isSendingGift" (click)="sendGift()">
         {{ isSendingGift ? 'Procesando...' : 'Confirmar compra / Enviar regalo 🎁' }}
       </button>
 

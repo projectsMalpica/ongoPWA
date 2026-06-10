@@ -47,15 +47,15 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
   productImageFile: File | null = null;
   isEditingProduct: boolean = false;
   editingProductId: string | null = null;
-  openSubscriptionsModal() {
-    const modalEl = document.getElementById('subscriptionsModal');
-    if (modalEl) {
-      const modalInstance = new bootstrap.Modal(modalEl);
-      modalInstance.show();
-    } else {
-      console.warn('No se encontró el modal de subscripciones en el DOM');
-    }
-  }
+  todayStats = {
+  giftsRedeemed: 0,
+  ticketsSold: 0,
+  ticketsUsed: 0,
+  revenue: 0
+};
+
+loadingStats = false;
+  
 
   @ViewChild('promoOptionsModal', { static: false }) promoOptionsModalRef!: ElementRef;
   @ViewChild('mapRef', { static: false }) mapRef!: ElementRef;
@@ -147,10 +147,120 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
 
     await this.loadProfileDataPartner();
     await this.loadPartnerProducts();
-
+    await this.loadTodayStats();
     this.global.initPlanningPartnersRealtime();
     this.initMapIfReady();
   }
+  openSubscriptionsModal() {
+    const modalEl = document.getElementById('subscriptionsModal');
+    if (modalEl) {
+      const modalInstance = new bootstrap.Modal(modalEl);
+      modalInstance.show();
+    } else {
+      console.warn('No se encontró el modal de subscripciones en el DOM');
+    }
+  }
+  async loadTodayStats() {
+
+  const partnerId = this.global.profileDataPartner?.id;
+
+  if (!partnerId) return;
+
+
+  this.loadingStats = true;
+
+
+  try {
+
+    const start = new Date();
+    start.setHours(0,0,0,0);
+
+
+    const end = new Date();
+    end.setHours(23,59,59,999);
+
+
+    const startISO = start.toISOString();
+    const endISO = end.toISOString();
+
+
+
+    // 🎁 regalos entregados hoy
+
+    const gifts = await this.pb
+      .collection('product_orders')
+      .getFullList({
+
+        filter:
+        `partnerId="${partnerId}" 
+        && orderType="gift"
+        && orderStatus="redeemed"
+        && redeemedAt >= "${startISO}"
+        && redeemedAt <= "${endISO}"`,
+
+        requestKey:null
+
+      });
+
+
+
+    // 🎟️ entradas vendidas hoy
+
+    const tickets = await this.pb
+      .collection('ticket_orders')
+      .getFullList({
+
+        filter:
+        `partnerId="${partnerId}"
+        && status="paid"
+        && created >= "${startISO}"
+        && created <= "${endISO}"`,
+
+        requestKey:null
+
+      });
+
+
+
+    // 🚪 entradas usadas hoy
+
+    const usedTickets = tickets.filter(
+      t => t['orderStatus'] === 'redeemed'
+    );
+
+
+
+    this.todayStats = {
+
+      giftsRedeemed:gifts.length,
+
+      ticketsSold:tickets.length,
+
+      ticketsUsed:usedTickets.length,
+
+      revenue:tickets.reduce(
+        (sum,t)=> sum + Number(t['amount'] || 0),
+        0
+      )
+
+    };
+
+
+
+  } catch(error){
+
+    console.error(
+      'Error cargando estadísticas',
+      error
+    );
+
+  } finally {
+
+    this.loadingStats=false;
+
+  }
+
+}
   async searchTicketByCode(): Promise<void> {
 
     let partnerId = this.global.profileDataPartner?.id;
