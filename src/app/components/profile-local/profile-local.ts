@@ -48,14 +48,14 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
   isEditingProduct: boolean = false;
   editingProductId: string | null = null;
   todayStats = {
-  giftsRedeemed: 0,
-  ticketsSold: 0,
-  ticketsUsed: 0,
-  revenue: 0
-};
+    giftsRedeemed: 0,
+    ticketsSold: 0,
+    ticketsUsed: 0,
+    revenue: 0
+  };
 
-loadingStats = false;
-  
+  loadingStats = false;
+
 
   @ViewChild('promoOptionsModal', { static: false }) promoOptionsModalRef!: ElementRef;
   @ViewChild('mapRef', { static: false }) mapRef!: ElementRef;
@@ -99,6 +99,9 @@ loadingStats = false;
   };
   showPromos = false;
   isServicesOffcanvasOpen = false;
+  selectedPaymentCountry: 'CO' | 'VE' = 'CO';
+  selectedPlan: any = null;
+  paymentProofFile: File | null = null;
 
   filteredServices: { value: string; label: string }[] = [...this.servicesPartner];
   promoImageFile: File | null = null;
@@ -138,44 +141,104 @@ loadingStats = false;
 
 
   async ngOnInit() {
-  this.fetchPartnerData();
+    this.fetchPartnerData();
 
-  await this.global.initPlanningPartnersRealtime();
+    await this.global.initPlanningPartnersRealtime();
 
-  this.plansSwiperSub = this.global.planningPartners$.subscribe((plans) => {
-    this.subscriptionPlans = plans || [];
-    console.log('Planes cargados:', this.subscriptionPlans);
+    this.plansSwiperSub = this.global.planningPartners$.subscribe((plans) => {
+      this.subscriptionPlans = plans || [];
+      console.log('Planes cargados:', this.subscriptionPlans);
 
-    setTimeout(() => {
-      this.initPlansSwiper();
-      this.cdr.detectChanges();
-    }, 0);
-  });
+      setTimeout(() => {
+        this.initPlansSwiper();
+        this.cdr.detectChanges();
+      }, 0);
+    });
 
-  await this.loadProfileDataPartner();
-  await this.loadPartnerProducts();
-  await this.loadTodayStats();
+    await this.loadProfileDataPartner();
+    await this.loadPartnerProducts();
+    await this.loadTodayStats();
 
-  this.initMapIfReady();
-}
-getPlanItems(plan: any): string[] {
-  const items = plan?.items;
-
-  if (!items) return [];
-
-  if (Array.isArray(items)) {
-    return items.map(String).filter(Boolean);
+    this.initMapIfReady();
   }
 
-  if (typeof items === 'string') {
-    return items
-      .split(',')
-      .map(item => item.trim())
-      .filter(Boolean);
-  }
+ async submitManualPaymentProof() {
+  if (!this.selectedPlan || !this.paymentProofFile) return;
 
-  return [];
+  try {
+    await this.auth.restoreSession();
+
+    const user = this.auth.getCurrentUser();
+
+    const partnerId = this.global.profileDataPartner?.id;
+
+    if (!user?.id || !partnerId) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Perfil no disponible',
+        text: 'No se encontró el usuario o el local asociado.'
+      });
+      return;
+    }
+
+    const formData = new FormData();
+
+    formData.append('partnerId', partnerId);
+    formData.append('userId', user.id);
+    formData.append('planId', this.selectedPlan.id);
+    formData.append('planName', this.selectedPlan.name || '');
+    formData.append('field', 'comprobante_pago_venezuela');
+    formData.append('amountUSD', String(Number(this.selectedPlan.PriceUSD || 0)));
+    formData.append('amountBs', '0');
+    formData.append('bcvRate', '0');
+    formData.append('country', 'VE');
+    formData.append('paymentMethod', 'Pago móvil / transferencia');
+    formData.append('status', 'pending');
+    formData.append('adminNotes', '');
+    formData.append('proofFile', this.paymentProofFile);
+
+    await this.pb.collection('partner_payment_proofs').create(formData, {
+      requestKey: null
+    });
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Comprobante enviado',
+      text: 'Validaremos tu pago y activaremos tu plan en menos de 12 horas.'
+    });
+
+    this.paymentProofFile = null;
+    this.selectedPlan = null;
+
+  } catch (error: any) {
+    console.error('Error enviando comprobante:', error);
+    console.error('Detalle PocketBase:', error?.data?.data);
+
+    Swal.fire({
+      icon: 'error',
+      title: 'No se pudo enviar',
+      text: error?.data?.message || error?.message || 'Error al enviar comprobante.'
+    });
+  }
 }
+  getPlanItems(plan: any): string[] {
+    const items = plan?.items;
+
+    if (!items) return [];
+
+    if (Array.isArray(items)) {
+      return items.map(String).filter(Boolean);
+    }
+
+    if (typeof items === 'string') {
+      return items
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean);
+    }
+
+    return [];
+  }
   openSubscriptionsModal() {
     const modalEl = document.getElementById('subscriptionsModal');
     if (modalEl) {
@@ -187,105 +250,105 @@ getPlanItems(plan: any): string[] {
   }
   async loadTodayStats() {
 
-  const partnerId = this.global.profileDataPartner?.id;
+    const partnerId = this.global.profileDataPartner?.id;
 
-  if (!partnerId) return;
-
-
-  this.loadingStats = true;
+    if (!partnerId) return;
 
 
-  try {
-
-    const start = new Date();
-    start.setHours(0,0,0,0);
+    this.loadingStats = true;
 
 
-    const end = new Date();
-    end.setHours(23,59,59,999);
+    try {
+
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
 
 
-    const startISO = start.toISOString();
-    const endISO = end.toISOString();
+      const end = new Date();
+      end.setHours(23, 59, 59, 999);
+
+
+      const startISO = start.toISOString();
+      const endISO = end.toISOString();
 
 
 
-    // 🎁 regalos entregados hoy
+      // 🎁 regalos entregados hoy
 
-    const gifts = await this.pb
-      .collection('product_orders')
-      .getFullList({
+      const gifts = await this.pb
+        .collection('product_orders')
+        .getFullList({
 
-        filter:
-        `partnerId="${partnerId}" 
+          filter:
+            `partnerId="${partnerId}" 
         && orderType="gift"
         && orderStatus="redeemed"
         && redeemedAt >= "${startISO}"
         && redeemedAt <= "${endISO}"`,
 
-        requestKey:null
+          requestKey: null
 
-      });
+        });
 
 
 
-    // 🎟️ entradas vendidas hoy
+      // 🎟️ entradas vendidas hoy
 
-    const tickets = await this.pb
-      .collection('ticket_orders')
-      .getFullList({
+      const tickets = await this.pb
+        .collection('ticket_orders')
+        .getFullList({
 
-        filter:
-        `partnerId="${partnerId}"
+          filter:
+            `partnerId="${partnerId}"
         && status="paid"
         && created >= "${startISO}"
         && created <= "${endISO}"`,
 
-        requestKey:null
+          requestKey: null
 
-      });
-
-
-
-    // 🚪 entradas usadas hoy
-
-    const usedTickets = tickets.filter(
-      t => t['orderStatus'] === 'redeemed'
-    );
+        });
 
 
 
-    this.todayStats = {
+      // 🚪 entradas usadas hoy
 
-      giftsRedeemed:gifts.length,
-
-      ticketsSold:tickets.length,
-
-      ticketsUsed:usedTickets.length,
-
-      revenue:tickets.reduce(
-        (sum,t)=> sum + Number(t['amount'] || 0),
-        0
-      )
-
-    };
+      const usedTickets = tickets.filter(
+        t => t['orderStatus'] === 'redeemed'
+      );
 
 
 
-  } catch(error){
+      this.todayStats = {
 
-    console.error(
-      'Error cargando estadísticas',
-      error
-    );
+        giftsRedeemed: gifts.length,
 
-  } finally {
+        ticketsSold: tickets.length,
 
-    this.loadingStats=false;
+        ticketsUsed: usedTickets.length,
+
+        revenue: tickets.reduce(
+          (sum, t) => sum + Number(t['amount'] || 0),
+          0
+        )
+
+      };
+
+
+
+    } catch (error) {
+
+      console.error(
+        'Error cargando estadísticas',
+        error
+      );
+
+    } finally {
+
+      this.loadingStats = false;
+
+    }
 
   }
-
-}
   async searchTicketByCode(): Promise<void> {
 
     let partnerId = this.global.profileDataPartner?.id;
@@ -1704,165 +1767,175 @@ getPlanItems(plan: any): string[] {
     this.editingProductId = null;
   }
 
-/* 
-  private toAmountInCents(priceCOP: string | number): number {
-    if (typeof priceCOP === 'number') return Math.round(priceCOP * 100);
-    // elimina todo lo que no sea dígito (soporta puntos y comas de miles)
-    const onlyDigits = priceCOP.replace(/\D/g, '');
-    return Number(onlyDigits) * 100;
-  } */
-
   async subscribeToPlan(plan: any): Promise<void> {
-  if (this.subscribingPlanId) return;
+    if (this.subscribingPlanId) return;
     if (this.isFreePartnerPlan(plan)) {
-  Swal.fire({
-    icon: 'info',
-    title: 'Plan gratuito',
-    text: 'Este plan ya está incluido al registrarte.'
-  });
-  return;
-}
-
-  try {
-    this.subscribingPlanId = plan.id;
-
-    await this.auth.restoreSession();
-
-    const user = this.auth.getCurrentUser();
-
-    if (!user?.id) {
       Swal.fire({
-        icon: 'warning',
-        title: 'Inicia sesión',
-        text: 'Debes iniciar sesión para comprar una suscripción.'
+        icon: 'info',
+        title: 'Plan gratuito',
+        text: 'Este plan ya está incluido al registrarte.'
       });
       return;
     }
-
-    const partnerRecord = await this.pb
-      .collection('usuariosPartner')
-      .getFirstListItem(`userId="${user.id}"`, { requestKey: null });
-
-    const amountCOP = Number(plan.priceCOP || 0);
-
-    if (!amountCOP || amountCOP <= 0) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Plan no válido',
-        text: 'Este plan no tiene un precio válido.'
-      });
+    if (this.selectedPaymentCountry === 'VE') {
+      this.selectedPlan = plan;
+      this.openManualPaymentModal(plan);
       return;
     }
+    try {
+      this.subscribingPlanId = plan.id;
 
-    const intent = await firstValueFrom(
-      this.http.post<any>('https://db.ongomatch.com:5055/partner/subscription-intent', {
-        userId: user.id,
-        partnerId: partnerRecord.id,
-        planId: plan.id,
-        planName: plan.name,
-        price: amountCOP,
-        customerEmail: user.email || partnerRecord['email'] || ''
-      })
-    );
+      await this.auth.restoreSession();
 
-    const result = await this.wompi.openCheckout({
-      amountInCents: intent.amountInCents,
-      reference: intent.reference,
-      currency: 'COP',
-      customerEmail: user.email || partnerRecord['email'] || '',
-      signature: intent.signature,
-      publicKey: intent.publicKey,
-      redirectUrl: intent.redirectUrl
-    });
+      const user = this.auth.getCurrentUser();
 
-    const transaction = result?.transaction;
-
-    await firstValueFrom(
-      this.http.post<any>('https://db.ongomatch.com:5055/partner/confirm-subscription', {
-        reference: intent.reference,
-        status: transaction?.status || 'UNKNOWN',
-        transactionId: transaction?.id || '',
-        paymentData: result
-      })
-    );
-
-    if (transaction?.status === 'APPROVED') {
-      await this.loadProfileDataPartner();
-
-      Swal.fire({
-        icon: 'success',
-        title: 'Suscripción activa',
-        text: `Tu plan ${plan.name} fue activado correctamente.`,
-        timer: 1800,
-        showConfirmButton: false,
-        background: '#101935',
-        color: '#fff'
-      });
-    } else {
-      Swal.fire({
-        icon: 'error',
-        title: 'Pago no aprobado',
-        text: 'La suscripción no fue activada porque el pago no fue aprobado.'
-      });
-    }
-
-  } catch (error: any) {
-    console.error('Error creando suscripción partner:', error);
-
-    Swal.fire({
-      icon: 'error',
-      title: 'No se pudo procesar',
-      text: error?.error?.error || error?.message || 'Ocurrió un error al procesar la suscripción.'
-    });
-
-  } finally {
-    this.subscribingPlanId = null;
-  }
-}
-usarMiUbicacionActual(): void {
-  if (!navigator.geolocation) {
-    this.showAppToast('Tu navegador no soporta geolocalización.', 'error');
-    return;
-  }
-
-  this.showAppToast('Obteniendo tu ubicación actual...', 'info');
-
-  navigator.geolocation.getCurrentPosition(
-    async (position) => {
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
-
-      this.selectedLat = lat;
-      this.selectedLng = lng;
-
-      this.global.profileDataPartner.lat = lat;
-      this.global.profileDataPartner.lng = lng;
-
-      if (this.map) {
-        this.map.flyTo({
-          center: [lng, lat],
-          zoom: 17,
-          speed: 0.8,
-          essential: true
+      if (!user?.id) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Inicia sesión',
+          text: 'Debes iniciar sesión para comprar una suscripción.'
         });
-
-        this.placeMarker(lng, lat);
+        return;
       }
 
-      await this.guardarUbicacion();
+      const partnerRecord = await this.pb
+        .collection('usuariosPartner')
+        .getFirstListItem(`userId="${user.id}"`, { requestKey: null });
 
-      this.showAppToast('Ubicación actual guardada correctamente.', 'success');
-    },
-    (error) => {
-      console.error('Error obteniendo ubicación:', error);
-      this.showAppToast('No se pudo obtener tu ubicación actual.', 'error');
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0
+      const amountCOP = Number(plan.priceCOP || 0);
+
+      if (!amountCOP || amountCOP <= 0) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Plan no válido',
+          text: 'Este plan no tiene un precio válido.'
+        });
+        return;
+      }
+
+      const intent = await firstValueFrom(
+        this.http.post<any>('https://db.ongomatch.com:5055/partner/subscription-intent', {
+          userId: user.id,
+          partnerId: partnerRecord.id,
+          planId: plan.id,
+          planName: plan.name,
+          price: amountCOP,
+          customerEmail: user.email || partnerRecord['email'] || ''
+        })
+      );
+
+      const result = await this.wompi.openCheckout({
+        amountInCents: intent.amountInCents,
+        reference: intent.reference,
+        currency: 'COP',
+        customerEmail: user.email || partnerRecord['email'] || '',
+        signature: intent.signature,
+        publicKey: intent.publicKey,
+        redirectUrl: intent.redirectUrl
+      });
+
+      const transaction = result?.transaction;
+
+      await firstValueFrom(
+        this.http.post<any>('https://db.ongomatch.com:5055/partner/confirm-subscription', {
+          reference: intent.reference,
+          status: transaction?.status || 'UNKNOWN',
+          transactionId: transaction?.id || '',
+          paymentData: result
+        })
+      );
+
+      if (transaction?.status === 'APPROVED') {
+        await this.loadProfileDataPartner();
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Suscripción activa',
+          text: `Tu plan ${plan.name} fue activado correctamente.`,
+          timer: 1800,
+          showConfirmButton: false,
+          background: '#101935',
+          color: '#fff'
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Pago no aprobado',
+          text: 'La suscripción no fue activada porque el pago no fue aprobado.'
+        });
+      }
+
+    } catch (error: any) {
+      console.error('Error creando suscripción partner:', error);
+
+      Swal.fire({
+        icon: 'error',
+        title: 'No se pudo procesar',
+        text: error?.error?.error || error?.message || 'Ocurrió un error al procesar la suscripción.'
+      });
+
+    } finally {
+      this.subscribingPlanId = null;
     }
-  );
-}
+  }
+
+  openManualPaymentModal(plan: any): void {
+    this.selectedPlan = plan;
+
+    const modalEl = document.getElementById('manualPaymentModal');
+    if (modalEl) {
+      bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+  }
+
+  onPaymentProofSelected(event: any): void {
+    const file = event.target.files?.[0];
+    this.paymentProofFile = file || null;
+  }
+  usarMiUbicacionActual(): void {
+    if (!navigator.geolocation) {
+      this.showAppToast('Tu navegador no soporta geolocalización.', 'error');
+      return;
+    }
+
+    this.showAppToast('Obteniendo tu ubicación actual...', 'info');
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        this.selectedLat = lat;
+        this.selectedLng = lng;
+
+        this.global.profileDataPartner.lat = lat;
+        this.global.profileDataPartner.lng = lng;
+
+        if (this.map) {
+          this.map.flyTo({
+            center: [lng, lat],
+            zoom: 17,
+            speed: 0.8,
+            essential: true
+          });
+
+          this.placeMarker(lng, lat);
+        }
+
+        await this.guardarUbicacion();
+
+        this.showAppToast('Ubicación actual guardada correctamente.', 'success');
+      },
+      (error) => {
+        console.error('Error obteniendo ubicación:', error);
+        this.showAppToast('No se pudo obtener tu ubicación actual.', 'error');
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  }
 
 }

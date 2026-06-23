@@ -106,10 +106,10 @@
         Productos
       </button>
 
-      <button type="button" (click)="openSubscriptionsModal()">
+      <!--   <button type="button" (click)="openSubscriptionsModal()">
         <i class="flaticon flaticon-bell"></i>
         Planes
-      </button>
+      </button> -->
 
       <button type="button" routerLink="/wallet-partner">
         <i class="fa-solid fa-wallet"></i>
@@ -142,9 +142,9 @@
           <h3>Planes del local</h3>
         </div>
 
-        <button type="button" (click)="openSubscriptionsModal()">
+        <!-- <button type="button" (click)="openSubscriptionsModal()">
           Ver planes
-        </button>
+        </button> -->
       </div>
 
       <div #plansSwiper class="subscription-swiper2 swiper">
@@ -185,10 +185,19 @@
               </ng-container>
 
               <ng-template #paidPartnerPlanButton>
+                <select [(ngModel)]="selectedPaymentCountry" class="form-control subscription-country-select">
+                  <option value="CO">Colombia - Wompi</option>
+                  <option value="VE">Venezuela - Pago manual</option>
+                </select>
+
                 <button type="button" class="subscription-btn" [disabled]="isPartnerPlanButtonDisabled(plan)"
                   (click)="subscribeToPlan(plan)">
                   {{ getPartnerPlanButtonLabel(plan) }}
                 </button>
+                <!--                 <button type="button" class="subscription-btn" [disabled]="isPartnerPlanButtonDisabled(plan)"
+                  (click)="subscribeToPlan(plan)">
+                  {{ getPartnerPlanButtonLabel(plan) }}
+                </button> -->
               </ng-template>
 
             </div>
@@ -1024,7 +1033,10 @@
               {{ item }}
             </li>
           </ul>
-
+          <select [(ngModel)]="selectedPaymentCountry" class="form-control">
+            <option value="CO">Colombia - Wompi</option>
+            <option value="VE">Venezuela - Pago manual</option>
+          </select>
 
           <button type="button" class="subscription-btn" [disabled]="isPartnerPlanButtonDisabled(plan)"
             (click)="subscribeToPlan(plan)">
@@ -1036,7 +1048,56 @@
     </div>
   </div>
 </div>
+<div class="modal fade" id="manualPaymentModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content subscriptions-modal-neon">
+      <div class="modal-header border-0">
+        <h5 class="modal-title">Pago manual Venezuela</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
 
+      <div class="modal-body">
+        <p>Plan: <strong>{{ selectedPlan?.name }}</strong></p>
+
+        <p>
+          Valor:
+          <strong>{{ selectedPlan?.PriceUSD | currency:'USD':'symbol':'1.0-0' }}</strong>
+        </p>
+
+        <div class="manual-payment-box">
+          <h6>Datos de pago OnGo</h6>
+
+          <p><strong>Banco:</strong> Banco de Venezuela</p>
+          <p><strong>Titular:</strong> OnGo</p>
+          <p><strong>RIF / Cédula:</strong> J-00000000-0</p>
+          <p><strong>Teléfono pago móvil:</strong> 04XX-XXXXXXX</p>
+          <p><strong>Concepto:</strong> {{ selectedPlan?.name }} - OnGo Local</p>
+        </div>
+
+        <p class="small">
+          Realiza el pago equivalente en bolívares según la tasa BCV del día.
+          Luego carga tu comprobante. El plan será validado y activado en menos de 12 horas.
+        </p>
+
+        <input
+          type="file"
+          class="form-control"
+          accept="image/*,.pdf"
+          (change)="onPaymentProofSelected($event)"
+        >
+
+        <button
+          type="button"
+          class="subscription-btn mt-3"
+          [disabled]="!paymentProofFile"
+          (click)="submitManualPaymentProof()"
+        >
+          Enviar comprobante
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 <!-- ========================= -->
 <!-- MODAL OPCIONES PRODUCTOS -->
 <!-- ========================= -->
