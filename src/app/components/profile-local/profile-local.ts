@@ -126,6 +126,7 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
   ticketRedeemLoading = false;
   ticketRedeemMessage = '';
   ticketRedeemError = '';
+
   constructor(
     public global: GlobalService,
     public auth: AuthPocketbaseService,
@@ -898,6 +899,9 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
         lng: userData['lng'] || '',
         services: userData['services'] || '',
         purchaseLink: userData['purchaseLink'] || '',
+        paymentMethods: userData['paymentMethods'] || [],
+        accountType: userData['accountType'] || 'corriente',
+        accountNumber: userData['accountNumber'] || '',
         reservationEnabled:
           userData['reservationEnabled'] || false,
         reservationLink:
@@ -1166,6 +1170,13 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
       formData.append('paymentType', this.global.profileDataPartner.paymentType || 'pago_movil');
       formData.append('paymentEnabled', String(this.global.profileDataPartner.paymentEnabled || false));
       formData.append(
+        'paymentMethods',
+        JSON.stringify(this.global.profileDataPartner.paymentMethods || [])
+      );
+
+      formData.append('accountType', this.global.profileDataPartner.accountType || 'corriente');
+      formData.append('accountNumber', this.global.profileDataPartner.accountNumber || '');
+      formData.append(
         'reservationEnabled',
         String(this.global.profileDataPartner.reservationEnabled || false)
       );
@@ -1251,10 +1262,8 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
 
       this.global.profileDataPartner = {
         ...this.global.profileDataPartner,
-
         id: savedRecord.id,
         userId: savedRecord.userId,
-
         venueName: savedRecord.venueName || '',
         description: savedRecord.description || '',
         email: savedRecord.email || '',
@@ -1262,31 +1271,33 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
         address: savedRecord.address || '',
         capacity: savedRecord.capacity || '',
         openingHours: savedRecord.openingHours || '',
-
         lat: savedRecord.lat || '',
         lng: savedRecord.lng || '',
-
         services: savedRecord.services || '',
         purchaseLink: savedRecord.purchaseLink || '',
-
         files: normalizedFiles,
         avatar: avatarUrl,
-
         ticketsEnabled: savedRecord.ticketsEnabled || false,
         ticketPrice: savedRecord.ticketPrice || 0,
         ticketDescription: savedRecord.ticketDescription || '',
-
         ticketDate: savedRecord.ticketDate || '',
         ticketCapacity: savedRecord.ticketCapacity || 0,
-
         reservationEnabled: savedRecord.reservationEnabled || false,
         reservationLink: savedRecord.reservationLink || '',
-
         reservationPrice: savedRecord.reservationPrice || 0,
         reservationDate: savedRecord.reservationDate || '',
         reservationCapacity: savedRecord.reservationCapacity || 0,
-
         whatsappReservations: savedRecord.whatsappReservations || '',
+        country: savedRecord.country || 'CO',
+        paymentMethods: savedRecord.paymentMethods || [],
+        paymentBank: savedRecord.paymentBank || '',
+        paymentHolder: savedRecord.paymentHolder || '',
+        paymentDocument: savedRecord.paymentDocument || '',
+        paymentPhone: savedRecord.paymentPhone || '',
+        paymentType: savedRecord.paymentType || 'pago_movil',
+        accountType: savedRecord.accountType || 'corriente',
+        accountNumber: savedRecord.accountNumber || '',
+        paymentEnabled: savedRecord.paymentEnabled || false,
       };
 
       this.avatarPreview = null;
@@ -1997,5 +2008,48 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
       }
     );
   }
+  newPaymentMethod = {
+    type: 'pago_movil',
+    bank: '',
+    holder: '',
+    document: '',
+    phone: '',
+    accountType: 'corriente',
+    accountNumber: ''
+  };
 
+  venezuelanBanks = [
+    '0102 Banco de Venezuela',
+    '0104 Venezolano de Crédito',
+    '0105 Mercantil',
+    '0108 Provincial',
+    '0134 Banesco',
+    '0172 Bancamiga',
+    '0175 Bicentenario',
+    '0191 BNC'
+  ];
+
+  addPaymentMethod() {
+    if (!this.global.profileDataPartner.paymentMethods) {
+      this.global.profileDataPartner.paymentMethods = [];
+    }
+
+    this.global.profileDataPartner.paymentMethods.push({
+      ...this.newPaymentMethod
+    });
+
+    this.newPaymentMethod = {
+      type: 'pago_movil',
+      bank: '',
+      holder: '',
+      document: '',
+      phone: '',
+      accountType: 'corriente',
+      accountNumber: ''
+    };
+  }
+
+  removePaymentMethod(index: number) {
+    this.global.profileDataPartner.paymentMethods.splice(index, 1);
+  }
 }

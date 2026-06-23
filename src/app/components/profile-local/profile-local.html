@@ -377,12 +377,69 @@
           <i class="icon feather icon-clock"></i>
           <span>{{ global.profileDataPartner.openingHours || 'Horario no definido' }}</span>
         </div>
+        <div>
+          <i class="icon feather icon-heart-on"></i>
+          <p class="local-description">
+            {{ global.profileDataPartner.description || 'Agrega una descripción para que los usuarios conozcan mejor tu
+            local.' }}
+          </p>
+        </div>
+
       </div>
 
-      <p class="local-description">
-        {{ global.profileDataPartner.description || 'Agrega una descripción para que los usuarios conozcan mejor tu
-        local.' }}
-      </p>
+
+      <div class="payment-info-panel" *ngIf="
+    global.profileDataPartner.country === 'VE' &&
+    global.profileDataPartner.paymentMethods?.length
+  ">
+
+        <h4>
+          <i class="fa-solid fa-money-bill-transfer"></i>
+          Métodos de pago
+        </h4>
+
+        <div class="payment-info-card" *ngFor="let method of global.profileDataPartner.paymentMethods">
+
+          <div class="payment-badge">
+            {{
+            method.type === 'pago_movil'
+            ? 'Pago móvil'
+            : 'Transferencia bancaria'
+            }}
+          </div>
+
+          <div class="payment-row">
+            <strong>Banco:</strong>
+            <span>{{ method.bank }}</span>
+          </div>
+
+          <div class="payment-row">
+            <strong>Titular:</strong>
+            <span>{{ method.holder }}</span>
+          </div>
+
+          <div class="payment-row">
+            <strong>Documento:</strong>
+            <span>{{ method.document }}</span>
+          </div>
+
+          <div class="payment-row" *ngIf="method.phone">
+            <strong>Teléfono:</strong>
+            <span>{{ method.phone }}</span>
+          </div>
+
+          <div class="payment-row" *ngIf="method.accountNumber">
+            <strong>Cuenta:</strong>
+            <span>
+              {{ method.accountType }}
+              ·
+              {{ method.accountNumber }}
+            </span>
+          </div>
+
+        </div>
+
+      </div>
     </section>
 
     <!-- REGALOS PENDIENTES -->
@@ -714,85 +771,70 @@
           </div>
         </div>
 
-        <div *ngIf="global.profileDataPartner.country === 'VE'">
-          <div class="card style-4">
-            <div class="card-header">
-              <label>Banco</label>
-            </div>
-            <div class="card-body">
-              <select class="form-control" [(ngModel)]="global.profileDataPartner.paymentBank">
-
-                <option value="">Seleccione banco</option>
-
-                <option>0102 Banco de Venezuela</option>
-                <option>0104 Venezolano de Crédito</option>
-                <option>0105 Mercantil</option>
-                <option>0108 Provincial</option>
-                <option>0114 Bancaribe</option>
-                <option>0115 Exterior</option>
-                <option>0128 Banco Caroní</option>
-                <option>0134 Banesco</option>
-                <option>0137 Sofitasa</option>
-                <option>0138 Plaza</option>
-                <option>0146 Bangente</option>
-                <option>0151 Fondo Común</option>
-                <option>0156 100% Banco</option>
-                <option>0157 DelSur</option>
-                <option>0163 Banco del Tesoro</option>
-                <option>0166 Banco Agrícola</option>
-                <option>0168 Bancrecer</option>
-                <option>0169 Mi Banco</option>
-                <option>0171 Activo</option>
-                <option>0172 Bancamiga</option>
-                <option>0173 Banco Internacional de Desarrollo</option>
-                <option>0174 Banplus</option>
-                <option>0175 Bicentenario</option>
-                <option>0177 Banco de la Fuerza Armada</option>
-                <option>0191 BNC</option>
-
-              </select>
-            </div>
-          </div>
-          <div class="card-body">
-            <select class="form-control" [(ngModel)]="global.profileDataPartner.accountType">
-              <option value="corriente">Corriente</option>
-              <option value="ahorro">Ahorro</option>
-            </select>
-          </div>
-          <div class="card style-4">
-            <div class="card-header">
-              <label>Numero de cuenta</label>
-            </div>
-            <div class="card-body">
-              <input type="text" class="form-control" maxlength="20"
-                [(ngModel)]="global.profileDataPartner.accountNumber" placeholder="0102xxxxxxxxxxxxxxxx">
-            </div>
-          </div>
-          <div class="card style-4">
-            <div class="card-header">
-              <label>Titular</label>
-            </div>
-            <div class="card-body">
-              <input class="form-control" [(ngModel)]="global.profileDataPartner.paymentHolder">
-            </div>
-          </div>
-          <div class="card style-4">
-            <div class="card-header">
-              <label>Cédula / RIF</label>
-            </div>
-            <div class="card-body">
-              <input class="form-control" [(ngModel)]="global.profileDataPartner.paymentDocument">
-            </div>
-          </div>
+        <div *ngIf="global.profileDataPartner.country === 'VE'" class="payment-edit-block">
 
           <div class="card style-4">
             <div class="card-header">
-              <label>Teléfono pago móvil</label>
+              <h6 class="title mb-0">Métodos de pago</h6>
             </div>
+
             <div class="card-body">
-              <input class="form-control" [(ngModel)]="global.profileDataPartner.paymentPhone">
+
+              <div class="payment-field">
+                <label>Tipo de método</label>
+                <select class="form-control" [(ngModel)]="newPaymentMethod.type">
+                  <option value="pago_movil">Pago móvil</option>
+                  <option value="transferencia">Transferencia bancaria</option>
+                </select>
+              </div>
+
+              <div class="payment-field">
+                <label>Banco</label>
+                <select class="form-control" [(ngModel)]="newPaymentMethod.bank">
+                  <option value="">Seleccione banco</option>
+                  <option *ngFor="let bank of venezuelanBanks" [value]="bank">
+                    {{ bank }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="payment-field">
+                <label>Titular</label>
+                <input class="form-control" [(ngModel)]="newPaymentMethod.holder">
+              </div>
+
+              <div class="payment-field">
+                <label>Cédula / RIF</label>
+                <input class="form-control" [(ngModel)]="newPaymentMethod.document">
+              </div>
+
+              <div class="payment-field" *ngIf="newPaymentMethod.type === 'pago_movil'">
+                <label>Teléfono pago móvil</label>
+                <input class="form-control" [(ngModel)]="newPaymentMethod.phone">
+              </div>
+
+              <ng-container *ngIf="newPaymentMethod.type === 'transferencia'">
+                <div class="payment-field">
+                  <label>Tipo de cuenta</label>
+                  <select class="form-control" [(ngModel)]="newPaymentMethod.accountType">
+                    <option value="corriente">Corriente</option>
+                    <option value="ahorro">Ahorro</option>
+                  </select>
+                </div>
+
+                <div class="payment-field">
+                  <label>Número de cuenta</label>
+                  <input class="form-control" maxlength="20" [(ngModel)]="newPaymentMethod.accountNumber">
+                </div>
+              </ng-container>
+
+              <button type="button" class="btn btn-primary w-100 mt-3" (click)="addPaymentMethod()">
+                + Agregar método de pago
+              </button>
+
             </div>
           </div>
+
         </div>
         <div class="card style-4">
           <div class="card-header">
