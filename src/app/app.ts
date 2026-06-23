@@ -184,4 +184,34 @@ this.auth.clearLocalSession();
     this.showPwaPrompt = false;
     localStorage.setItem('ongo-pwa-dismissed', '1');
   }
+  async cleanApp() {
+  const ok = confirm(
+    'Esto limpiará la sesión, caché y datos temporales de OnGo. ¿Deseas continuar?'
+  );
+
+  if (!ok) return;
+
+  try {
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Limpiar cachés PWA
+    if ('caches' in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map(name => caches.delete(name)));
+    }
+
+    // Desregistrar service workers
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map(reg => reg.unregister()));
+    }
+
+    // Recarga limpia
+    window.location.href = '/login';
+  } catch (error) {
+    console.error('Error limpiando app:', error);
+    window.location.reload();
+  }
+}
 }

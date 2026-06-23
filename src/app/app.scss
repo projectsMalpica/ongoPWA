@@ -33,3 +33,44 @@
   font-size: 14px;
   line-height: 1.5;
 }
+.clean-app-btn {
+  position: fixed;
+  right: 16px;
+  bottom: 88px;
+  z-index: 1050;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+
+  background: linear-gradient(135deg, #430d7f, #ff2f92);
+  color: #fff;
+
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(67, 13, 127, 0.35);
+
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.clean-app-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(67, 13, 127, 0.45);
+}
+
+.clean-app-btn i {
+  font-size: 16px;
+}
+
+@media (max-width: 576px) {
+  .clean-app-btn {
+    right: 14px;
+    bottom: 82px;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+}
