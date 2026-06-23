@@ -29,70 +29,70 @@
     <div class="stats-grid">
 
 
-<div class="stat-card">
+      <div class="stat-card">
 
-<i class="fa-solid fa-gift"></i>
+        <i class="fa-solid fa-gift"></i>
 
-<h2>
-{{todayStats.giftsRedeemed}}
-</h2>
+        <h2>
+          {{todayStats.giftsRedeemed}}
+        </h2>
 
-<span>
-Regalos entregados hoy
-</span>
+        <span>
+          Regalos entregados hoy
+        </span>
 
-</div>
-
-
-
-<div class="stat-card">
-
-<i class="fa-solid fa-ticket"></i>
-
-<h2>
-{{todayStats.ticketsSold}}
-</h2>
-
-<span>
-Entradas vendidas hoy
-</span>
-
-</div>
+      </div>
 
 
 
-<div class="stat-card">
+      <div class="stat-card">
 
-<i class="fa-solid fa-door-open"></i>
+        <i class="fa-solid fa-ticket"></i>
 
-<h2>
-{{todayStats.ticketsUsed}}
-</h2>
+        <h2>
+          {{todayStats.ticketsSold}}
+        </h2>
 
-<span>
-Ingresos hoy
-</span>
+        <span>
+          Entradas vendidas hoy
+        </span>
 
-</div>
-
-
-
-<div class="stat-card">
-
-<i class="fa-solid fa-money-bill"></i>
-
-<h2>
-{{todayStats.revenue | currency:'COP':'symbol':'1.0-0'}}
-</h2>
-
-<span>
-Ventas hoy
-</span>
-
-</div>
+      </div>
 
 
-</div>
+
+      <div class="stat-card">
+
+        <i class="fa-solid fa-door-open"></i>
+
+        <h2>
+          {{todayStats.ticketsUsed}}
+        </h2>
+
+        <span>
+          Ingresos hoy
+        </span>
+
+      </div>
+
+
+
+      <div class="stat-card">
+
+        <i class="fa-solid fa-money-bill"></i>
+
+        <h2>
+          {{todayStats.revenue | currency:'COP':'symbol':'1.0-0'}}
+        </h2>
+
+        <span>
+          Ventas hoy
+        </span>
+
+      </div>
+
+
+    </div>
 
     <!-- ACCIONES -->
     <section class="local-actions">
@@ -147,10 +147,8 @@ Ventas hoy
         </button>
       </div>
 
-      <div class="subscription-swiper2 swiper">
-
+      <div #plansSwiper class="subscription-swiper2 swiper">
         <div class="swiper-wrapper">
-
           <div class="swiper-slide" *ngFor="let plan of subscriptionPlans">
 
             <div class="subscription-card-neon">
@@ -173,17 +171,13 @@ Ventas hoy
                 <small>/ mes</small>
               </div>
 
-              <ul class="subscription-benefits">
-                <li *ngFor="let benefit of plan.items">
+              <ul class="subscription-benefits" *ngIf="getPlanItems(plan).length">
+                <li *ngFor="let item of getPlanItems(plan)">
                   <i class="fa-solid fa-check"></i>
-                  {{ benefit }}
+                  {{ item }}
                 </li>
               </ul>
 
-              <!-- <button type="button" class="subscription-btn" [disabled]="isPartnerPlanButtonDisabled(plan)"
-                (click)="subscribeToPlan(plan)">
-                {{ getPartnerPlanButtonLabel(plan) }}
-              </button> -->
               <ng-container *ngIf="isFreePartnerPlan(plan); else paidPartnerPlanButton">
                 <div class="subscription-free-label">
                   Plan incluido al registrarte
@@ -203,8 +197,7 @@ Ventas hoy
 
         </div>
 
-        <div class="swiper-pagination"></div>
-
+        <div #plansPagination class="swiper-pagination"></div>
       </div>
 
     </section>
@@ -476,24 +469,18 @@ Ventas hoy
       <div #mapContainer class="local-map"></div>
 
       <div class="local-map-actions">
-  <button
-    class="primary-neon-btn"
-    type="button"
-    (click)="usarMiUbicacionActual()">
+        <button class="primary-neon-btn" type="button" (click)="usarMiUbicacionActual()">
 
-    Usar mi ubicación actual
+          Usar mi ubicación actual
 
-  </button>
+        </button>
 
-  <button
-    class="primary-neon-btn secondary"
-    type="button"
-    (click)="guardarUbicacion()">
+        <button class="primary-neon-btn secondary" type="button" (click)="guardarUbicacion()">
 
-    Guardar ubicación seleccionada
+          Guardar ubicación seleccionada
 
-  </button>
-</div>
+        </button>
+      </div>
     </section>
 
   </div>
@@ -1031,8 +1018,8 @@ Ventas hoy
 
           </div>
 
-          <ul>
-            <li *ngFor="let item of plan.items">
+          <ul *ngIf="getPlanItems(plan).length">
+            <li *ngFor="let item of getPlanItems(plan)">
               <i class="fa-solid fa-check"></i>
               {{ item }}
             </li>

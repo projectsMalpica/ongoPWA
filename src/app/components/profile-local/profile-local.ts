@@ -136,21 +136,46 @@ loadingStats = false;
     this.pb.autoCancellation(false);
   }
 
+
   async ngOnInit() {
-    this.fetchPartnerData();
+  this.fetchPartnerData();
 
-    this.planningSubscription =
-      this.planningPartnerService.planningPartner$.subscribe((plans) => {
-        this.subscriptionPlans = plans || [];
-        console.log('Planes cargados:', this.subscriptionPlans);
-      });
+  await this.global.initPlanningPartnersRealtime();
 
-    await this.loadProfileDataPartner();
-    await this.loadPartnerProducts();
-    await this.loadTodayStats();
-    this.global.initPlanningPartnersRealtime();
-    this.initMapIfReady();
+  this.plansSwiperSub = this.global.planningPartners$.subscribe((plans) => {
+    this.subscriptionPlans = plans || [];
+    console.log('Planes cargados:', this.subscriptionPlans);
+
+    setTimeout(() => {
+      this.initPlansSwiper();
+      this.cdr.detectChanges();
+    }, 0);
+  });
+
+  await this.loadProfileDataPartner();
+  await this.loadPartnerProducts();
+  await this.loadTodayStats();
+
+  this.initMapIfReady();
+}
+getPlanItems(plan: any): string[] {
+  const items = plan?.items;
+
+  if (!items) return [];
+
+  if (Array.isArray(items)) {
+    return items.map(String).filter(Boolean);
   }
+
+  if (typeof items === 'string') {
+    return items
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
   openSubscriptionsModal() {
     const modalEl = document.getElementById('subscriptionsModal');
     if (modalEl) {
