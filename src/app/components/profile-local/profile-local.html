@@ -142,13 +142,10 @@
         </p>
       </div>
 
-      <div
-  class="subscription-status"
-  [class.active]="global.profileDataPartner.subscriptionStatus === 'active'"
-  [class.pending]="global.profileDataPartner.subscriptionStatus === 'pending'"
->
-  {{ getSubscriptionStatusLabel() }}
-</div>
+      <div class="subscription-status" [class.active]="global.profileDataPartner.subscriptionStatus === 'active'"
+        [class.pending]="global.profileDataPartner.subscriptionStatus === 'pending'">
+        {{ getSubscriptionStatusLabel() }}
+      </div>
     </div>
     <section class="subscription-neon-panel">
 
@@ -705,10 +702,98 @@
               placeholder="+573001112233">
           </div>
         </div>
+        <div class="card style-4">
+          <div class="card-header">
+            <label>País del local</label>
+          </div>
+          <div class="card-body">
+            <select class="form-control" [(ngModel)]="global.profileDataPartner.country">
+              <option value="CO">Colombia</option>
+              <option value="VE">Venezuela</option>
+            </select>
+          </div>
+        </div>
 
+        <div *ngIf="global.profileDataPartner.country === 'VE'">
+          <div class="card style-4">
+            <div class="card-header">
+              <label>Banco</label>
+            </div>
+            <div class="card-body">
+              <select class="form-control" [(ngModel)]="global.profileDataPartner.paymentBank">
 
+                <option value="">Seleccione banco</option>
 
+                <option>0102 Banco de Venezuela</option>
+                <option>0104 Venezolano de Crédito</option>
+                <option>0105 Mercantil</option>
+                <option>0108 Provincial</option>
+                <option>0114 Bancaribe</option>
+                <option>0115 Exterior</option>
+                <option>0128 Banco Caroní</option>
+                <option>0134 Banesco</option>
+                <option>0137 Sofitasa</option>
+                <option>0138 Plaza</option>
+                <option>0146 Bangente</option>
+                <option>0151 Fondo Común</option>
+                <option>0156 100% Banco</option>
+                <option>0157 DelSur</option>
+                <option>0163 Banco del Tesoro</option>
+                <option>0166 Banco Agrícola</option>
+                <option>0168 Bancrecer</option>
+                <option>0169 Mi Banco</option>
+                <option>0171 Activo</option>
+                <option>0172 Bancamiga</option>
+                <option>0173 Banco Internacional de Desarrollo</option>
+                <option>0174 Banplus</option>
+                <option>0175 Bicentenario</option>
+                <option>0177 Banco de la Fuerza Armada</option>
+                <option>0191 BNC</option>
 
+              </select>
+            </div>
+          </div>
+          <div class="card-body">
+            <select class="form-control" [(ngModel)]="global.profileDataPartner.accountType">
+              <option value="corriente">Corriente</option>
+              <option value="ahorro">Ahorro</option>
+            </select>
+          </div>
+          <div class="card style-4">
+            <div class="card-header">
+              <label>Numero de cuenta</label>
+            </div>
+            <div class="card-body">
+              <input type="text" class="form-control" maxlength="20"
+                [(ngModel)]="global.profileDataPartner.accountNumber" placeholder="0102xxxxxxxxxxxxxxxx">
+            </div>
+          </div>
+          <div class="card style-4">
+            <div class="card-header">
+              <label>Titular</label>
+            </div>
+            <div class="card-body">
+              <input class="form-control" [(ngModel)]="global.profileDataPartner.paymentHolder">
+            </div>
+          </div>
+          <div class="card style-4">
+            <div class="card-header">
+              <label>Cédula / RIF</label>
+            </div>
+            <div class="card-body">
+              <input class="form-control" [(ngModel)]="global.profileDataPartner.paymentDocument">
+            </div>
+          </div>
+
+          <div class="card style-4">
+            <div class="card-header">
+              <label>Teléfono pago móvil</label>
+            </div>
+            <div class="card-body">
+              <input class="form-control" [(ngModel)]="global.profileDataPartner.paymentPhone">
+            </div>
+          </div>
+        </div>
         <div class="card style-4">
           <div class="card-header">
             <h6 class="title mb-0">Servicios</h6>

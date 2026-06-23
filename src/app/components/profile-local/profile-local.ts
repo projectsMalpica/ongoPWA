@@ -920,6 +920,13 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
         subscriptionStartsAt: userData['subscriptionStartsAt'] || '',
         subscriptionExpiresAt: userData['subscriptionExpiresAt'] || '',
         subscriptionAutoRenew: userData['subscriptionAutoRenew'] || false,
+        country: userData['country'] || 'CO',
+        paymentBank: userData['paymentBank'] || '',
+        paymentHolder: userData['paymentHolder'] || '',
+        paymentDocument: userData['paymentDocument'] || '',
+        paymentPhone: userData['paymentPhone'] || '',
+        paymentType: userData['paymentType'] || 'pago_movil',
+        paymentEnabled: userData['paymentEnabled'] || false,
       };
       this.global.profileDataPartner.avatar = this.pb.files.getUrl(userData, userData['avatar']);
       if (
@@ -989,14 +996,14 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
   }
 
   getPartnerActivePlanLabel(): string {
-  if (this.global.profileDataPartner.subscriptionStatus === 'pending') {
-    return this.global.profileDataPartner.subscriptionPlanName || 'Plan en validación';
+    if (this.global.profileDataPartner.subscriptionStatus === 'pending') {
+      return this.global.profileDataPartner.subscriptionPlanName || 'Plan en validación';
+    }
+
+    if (!this.hasActivePartnerSubscription()) return 'Sin plan activo';
+
+    return this.global.profileDataPartner.subscriptionPlanName || 'Plan activo';
   }
-
-  if (!this.hasActivePartnerSubscription()) return 'Sin plan activo';
-
-  return this.global.profileDataPartner.subscriptionPlanName || 'Plan activo';
-}
 
   getPartnerSubscriptionExpiresLabel(): string {
     const expiresAt = this.global.profileDataPartner.subscriptionExpiresAt;
@@ -1151,6 +1158,13 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
       formData.append('services', this.selectedServices.join(', '));
       formData.append('files', JSON.stringify(uploadedPhotos));
       formData.append('purchaseLink', this.global.profileDataPartner.purchaseLink || '');
+      formData.append('country', this.global.profileDataPartner.country || 'CO');
+      formData.append('paymentBank', this.global.profileDataPartner.paymentBank || '');
+      formData.append('paymentHolder', this.global.profileDataPartner.paymentHolder || '');
+      formData.append('paymentDocument', this.global.profileDataPartner.paymentDocument || '');
+      formData.append('paymentPhone', this.global.profileDataPartner.paymentPhone || '');
+      formData.append('paymentType', this.global.profileDataPartner.paymentType || 'pago_movil');
+      formData.append('paymentEnabled', String(this.global.profileDataPartner.paymentEnabled || false));
       formData.append(
         'reservationEnabled',
         String(this.global.profileDataPartner.reservationEnabled || false)
