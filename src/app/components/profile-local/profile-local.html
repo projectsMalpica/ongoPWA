@@ -125,14 +125,30 @@
           Vence el {{ getPartnerSubscriptionExpiresLabel() }}
         </p>
 
-        <p *ngIf="!hasActivePartnerSubscription()">
+        <p *ngIf="global.profileDataPartner.subscriptionStatus === 'pending'">
+          Hemos recibido tu comprobante y estamos validando el pago.
+          La activación del plan puede tardar hasta 12 horas.
+        </p>
+
+        <p *ngIf="hasActivePartnerSubscription()">
+          Vence el {{ getPartnerSubscriptionExpiresLabel() }}
+        </p>
+
+        <p *ngIf="
+ !hasActivePartnerSubscription() &&
+ global.profileDataPartner.subscriptionStatus !== 'pending'
+">
           Actualmente el local está usando el plan gratuito.
         </p>
       </div>
 
-      <div class="subscription-status" [class.active]="hasActivePartnerSubscription()">
-        {{ hasActivePartnerSubscription() ? 'Activo' : 'Free' }}
-      </div>
+      <div
+  class="subscription-status"
+  [class.active]="global.profileDataPartner.subscriptionStatus === 'active'"
+  [class.pending]="global.profileDataPartner.subscriptionStatus === 'pending'"
+>
+  {{ getSubscriptionStatusLabel() }}
+</div>
     </div>
     <section class="subscription-neon-panel">
 
@@ -142,9 +158,6 @@
           <h3>Planes del local</h3>
         </div>
 
-        <!-- <button type="button" (click)="openSubscriptionsModal()">
-          Ver planes
-        </button> -->
       </div>
 
       <div #plansSwiper class="subscription-swiper2 swiper">
@@ -194,10 +207,7 @@
                   (click)="subscribeToPlan(plan)">
                   {{ getPartnerPlanButtonLabel(plan) }}
                 </button>
-                <!--                 <button type="button" class="subscription-btn" [disabled]="isPartnerPlanButtonDisabled(plan)"
-                  (click)="subscribeToPlan(plan)">
-                  {{ getPartnerPlanButtonLabel(plan) }}
-                </button> -->
+
               </ng-template>
 
             </div>
@@ -986,68 +996,7 @@
 <!-- ========================= -->
 <!-- MODAL SUBSCRIPCIONES -->
 <!-- ========================= -->
-<div class="modal fade" id="subscriptionsModal" tabindex="-1" aria-labelledby="subscriptionsModalLabel"
-  aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content subscriptions-modal-neon">
 
-      <div class="modal-header border-0">
-        <div>
-          <span class="modal-chip">OnGo Premium</span>
-          <h5 class="modal-title" id="subscriptionsModalLabel">Planes para locales</h5>
-        </div>
-
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-
-      <div class="modal-body" style="padding-bottom: 3rem;">
-
-        <!-- <div class="empty-neon" *ngIf="!subscriptionPlans.length">
-          No hay planes disponibles por ahora.
-        </div> -->
-
-        <div class="modal-plan-card" *ngFor="let plan of subscriptionPlans">
-          <div class="modal-plan-top">
-            <div class="modal-plan-icon">
-              <i class="fa-solid fa-crown"></i>
-            </div>
-
-            <div>
-              <h4>{{ plan.name }}</h4>
-              <p>{{ plan.description }}</p>
-            </div>
-          </div>
-
-          <div class="modal-plan-price">
-            {{ plan.priceCOP | currency:'COP':'symbol':'1.0-0' }} o
-            {{ plan.PriceUSD | currency:'USD':'symbol':'1.0-0' }}
-
-
-            <small>/mes</small>
-
-          </div>
-
-          <ul *ngIf="getPlanItems(plan).length">
-            <li *ngFor="let item of getPlanItems(plan)">
-              <i class="fa-solid fa-check"></i>
-              {{ item }}
-            </li>
-          </ul>
-          <select [(ngModel)]="selectedPaymentCountry" class="form-control">
-            <option value="CO">Colombia - Wompi</option>
-            <option value="VE">Venezuela - Pago manual</option>
-          </select>
-
-          <button type="button" class="subscription-btn" [disabled]="isPartnerPlanButtonDisabled(plan)"
-            (click)="subscribeToPlan(plan)">
-            {{ getPartnerPlanButtonLabel(plan) }}
-          </button>
-        </div>
-
-      </div>
-    </div>
-  </div>
-</div>
 <div class="modal fade" id="manualPaymentModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content subscriptions-modal-neon">
@@ -1079,19 +1028,10 @@
           Luego carga tu comprobante. El plan será validado y activado en menos de 12 horas.
         </p>
 
-        <input
-          type="file"
-          class="form-control"
-          accept="image/*,.pdf"
-          (change)="onPaymentProofSelected($event)"
-        >
+        <input type="file" class="form-control" accept="image/*,.pdf" (change)="onPaymentProofSelected($event)">
 
-        <button
-          type="button"
-          class="subscription-btn mt-3"
-          [disabled]="!paymentProofFile"
-          (click)="submitManualPaymentProof()"
-        >
+        <button type="button" class="subscription-btn mt-3" [disabled]="!paymentProofFile"
+          (click)="submitManualPaymentProof()">
           Enviar comprobante
         </button>
       </div>

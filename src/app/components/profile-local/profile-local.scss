@@ -1856,3 +1856,12 @@ border:1px solid #ff50a2;
   margin-bottom: 6px;
   font-size: 13px;
 }
+.subscription-status.pending {
+  background: #ffb020;
+  color: #111;
+}
+
+.subscription-status.active {
+  background: #00c853;
+  color: #fff;
+}

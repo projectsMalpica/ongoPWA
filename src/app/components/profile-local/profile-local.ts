@@ -161,66 +161,108 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
 
     this.initMapIfReady();
   }
+  getSubscriptionStatusLabel(): string {
 
- async submitManualPaymentProof() {
-  if (!this.selectedPlan || !this.paymentProofFile) return;
+    const status =
+      this.global.profileDataPartner.subscriptionStatus;
 
-  try {
-    await this.auth.restoreSession();
-
-    const user = this.auth.getCurrentUser();
-
-    const partnerId = this.global.profileDataPartner?.id;
-
-    if (!user?.id || !partnerId) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Perfil no disponible',
-        text: 'No se encontró el usuario o el local asociado.'
-      });
-      return;
+    if (status === 'pending') {
+      return 'Validando';
     }
 
-    const formData = new FormData();
+    if (
+      status === 'active' &&
+      this.hasActivePartnerSubscription()
+    ) {
+      return 'Activo';
+    }
 
-    formData.append('partnerId', partnerId);
-    formData.append('userId', user.id);
-    formData.append('planId', this.selectedPlan.id);
-    formData.append('planName', this.selectedPlan.name || '');
-    formData.append('field', 'comprobante_pago_venezuela');
-    formData.append('amountUSD', String(Number(this.selectedPlan.PriceUSD || 0)));
-    formData.append('amountBs', '0');
-    formData.append('bcvRate', '0');
-    formData.append('country', 'VE');
-    formData.append('paymentMethod', 'Pago móvil / transferencia');
-    formData.append('status', 'pending');
-    formData.append('adminNotes', '');
-    formData.append('proofFile', this.paymentProofFile);
-
-    await this.pb.collection('partner_payment_proofs').create(formData, {
-      requestKey: null
-    });
-
-    Swal.fire({
-      icon: 'success',
-      title: 'Comprobante enviado',
-      text: 'Validaremos tu pago y activaremos tu plan en menos de 12 horas.'
-    });
-
-    this.paymentProofFile = null;
-    this.selectedPlan = null;
-
-  } catch (error: any) {
-    console.error('Error enviando comprobante:', error);
-    console.error('Detalle PocketBase:', error?.data?.data);
-
-    Swal.fire({
-      icon: 'error',
-      title: 'No se pudo enviar',
-      text: error?.data?.message || error?.message || 'Error al enviar comprobante.'
-    });
+    return 'Free';
   }
-}
+  async submitManualPaymentProof() {
+    if (!this.selectedPlan || !this.paymentProofFile) return;
+
+    try {
+      await this.auth.restoreSession();
+
+      const user = this.auth.getCurrentUser();
+
+      const partnerId = this.global.profileDataPartner?.id;
+
+      if (!user?.id || !partnerId) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Perfil no disponible',
+          text: 'No se encontró el usuario o el local asociado.'
+        });
+        return;
+      }
+
+      const formData = new FormData();
+
+      formData.append('partnerId', partnerId);
+      formData.append('userId', user.id);
+      formData.append('planId', this.selectedPlan.id);
+      formData.append('planName', this.selectedPlan.name || '');
+      formData.append('field', 'comprobante_pago_venezuela');
+      formData.append('amountUSD', String(Number(this.selectedPlan.PriceUSD || 0)));
+      formData.append('amountBs', '0');
+      formData.append('bcvRate', '0');
+      formData.append('country', 'VE');
+      formData.append('paymentMethod', 'Pago móvil / transferencia');
+      formData.append('status', 'pending');
+      formData.append('adminNotes', '');
+      formData.append('proofFile', this.paymentProofFile);
+
+      await this.pb.collection('partner_payment_proofs').create(formData, {
+        requestKey: null
+      });
+
+      await this.pb.collection('usuariosPartner').update(partnerId, {
+        subscriptionStatus: 'pending',
+        subscriptionPlanId: this.selectedPlan.id,
+        subscriptionPlanName: this.selectedPlan.name || '',
+        subscriptionStartsAt: '',
+        subscriptionExpiresAt: '',
+        subscriptionAutoRenew: false
+      }, {
+        requestKey: null
+      });
+
+      this.global.profileDataPartner.subscriptionStatus = 'pending';
+      this.global.profileDataPartner.subscriptionPlanId = this.selectedPlan.id;
+      this.global.profileDataPartner.subscriptionPlanName = this.selectedPlan.name || '';
+
+      const modalEl = document.getElementById('manualPaymentModal');
+      if (modalEl) {
+        bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+      }
+
+      this.paymentProofFile = null;
+      this.selectedPlan = null;
+
+      this.cdr.detectChanges();
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Comprobante enviado',
+        text: 'Validaremos tu pago y activaremos tu plan en menos de 12 horas.'
+      });
+
+      this.paymentProofFile = null;
+      this.selectedPlan = null;
+
+    } catch (error: any) {
+      console.error('Error enviando comprobante:', error);
+      console.error('Detalle PocketBase:', error?.data?.data);
+
+      Swal.fire({
+        icon: 'error',
+        title: 'No se pudo enviar',
+        text: error?.data?.message || error?.message || 'Error al enviar comprobante.'
+      });
+    }
+  }
   getPlanItems(plan: any): string[] {
     const items = plan?.items;
 
@@ -947,10 +989,14 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
   }
 
   getPartnerActivePlanLabel(): string {
-    if (!this.hasActivePartnerSubscription()) return 'Sin plan activo';
-
-    return this.global.profileDataPartner.subscriptionPlanName || 'Plan activo';
+  if (this.global.profileDataPartner.subscriptionStatus === 'pending') {
+    return this.global.profileDataPartner.subscriptionPlanName || 'Plan en validación';
   }
+
+  if (!this.hasActivePartnerSubscription()) return 'Sin plan activo';
+
+  return this.global.profileDataPartner.subscriptionPlanName || 'Plan activo';
+}
 
   getPartnerSubscriptionExpiresLabel(): string {
     const expiresAt = this.global.profileDataPartner.subscriptionExpiresAt;
