@@ -118,7 +118,7 @@ export class Profile implements OnInit, AfterViewInit, OnDestroy {
   ) { }
 
 
-  async ngOnInit() {
+  /* async ngOnInit() {
     this.fetchClientData();
 
     await this.auth.restoreSession();
@@ -135,7 +135,37 @@ export class Profile implements OnInit, AfterViewInit, OnDestroy {
     // ✔️ Inicializa realtime solo si estás logueado
     await this.global.initClientesRealtime();
     await this.global.initPlanningClientsRealtime();
+  } */
+  async ngOnInit() {
+  this.loadProfileFromCache();
+
+  await this.auth.restoreSession();
+
+  await this.loadProfile();
+
+  this.global.initClientesRealtime().catch(console.error);
+  this.global.initPlanningClientsRealtime().catch(console.error);
+}
+private loadProfileFromCache(): void {
+  const cached = localStorage.getItem('profile');
+
+  if (!cached) return;
+
+  try {
+    const profile = JSON.parse(cached);
+
+    this.profileData = {
+      ...this.profileData,
+      ...profile
+    };
+
+    this.selectedInterests = this.normalizeStringArray(profile.interests);
+    this.photos = this.parsePhotos(profile.photos);
+
+  } catch {
+    localStorage.removeItem('profile');
   }
+}
   async subscribeClientPlan(plan: any): Promise<void> {
     if (this.isFreePlan(plan)) {
   Swal.fire({

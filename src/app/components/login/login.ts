@@ -99,11 +99,16 @@ export class LoginComponent {
           }
 
           if (userType === 'client') {
-            await this.global.loadProfile();
-            await this.global.initClientesRealtime();
-            await this.router.navigateByUrl('/maps');
-            return;
-          }
+  await this.global.loadProfile();
+
+  this.router.navigateByUrl('/maps');
+
+  this.global.initClientesRealtime().catch(error => {
+    console.error('Error iniciando clientes realtime:', error);
+  });
+
+  return;
+}
 
           Swal.fire({
             icon: 'warning',
@@ -176,12 +181,20 @@ export class LoginComponent {
 
       await this.global.loadProfile();
 
-      if (result.type === 'partner') {
-        await this.router.navigate(['/home-local']);
+if (result.type === 'partner') {
+  await this.router.navigate(['/home-local']);
 
-      } else {
-        await this.router.navigate(['/maps']);
-      }
+  this.global.initPartnersRealtime().catch(error => {
+    console.error('Error iniciando partners realtime:', error);
+  });
+
+} else {
+  await this.router.navigate(['/maps']);
+
+  this.global.initClientesRealtime().catch(error => {
+    console.error('Error iniciando clientes realtime:', error);
+  });
+}
 
     } catch (error: any) {
 

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { GlobalService } from '../../services/global.service';
 import { Router } from '@angular/router';
 import { AuthPocketbaseService } from '../../services/authPocketbase.service';
@@ -13,7 +13,7 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './detailprofile.html',
   styleUrl: './detailprofile.scss',
 })
-export class Detailprofile {
+export class Detailprofile implements OnInit {
   showGiftModal = false;
   giftReceiver: any = null;
   partnerProducts: any[] = [];
@@ -22,31 +22,23 @@ export class Detailprofile {
   walletBalance = 0;
   currentWallet: any = null;
   isSendingGift = false;
-      pb: PocketBase;
+  interests: string[] = [];
+
+  pb: PocketBase;
+
   constructor(
     public global: GlobalService,
     private router: Router,
     private authPocketbaseService: AuthPocketbaseService
-  ) { 
+  ) {
     this.pb = this.authPocketbaseService.pb;
-
   }
 
-  getReceiverUserId(cliente: any): string {
-    return cliente?.userId || cliente?.id || '';
-  }
-  async abrirChat(cliente: any) {
-    if (!cliente) return;
-
-    const receiverUserId = this.getReceiverUserId(cliente);
-
-    this.global.selectedClient = { ...cliente };
-    this.global.chatReceiverId = receiverUserId;
-
-    await this.router.navigate(['/chat-detail', receiverUserId]);
+  ngOnInit(): void {
+    this.interests = this.parseInterests(this.global.selectedClient?.interests);
   }
 
-  getInterests(interests: string | string[]): string[] {
+  parseInterests(interests: string | string[]): string[] {
     if (!interests) return [];
 
     if (Array.isArray(interests)) {
@@ -58,18 +50,36 @@ export class Detailprofile {
       .map(item => item.trim())
       .filter(Boolean);
   }
+
+  getReceiverUserId(cliente: any): string {
+    return cliente?.userId || cliente?.id || '';
+  }
+
+  async abrirChat(cliente: any) {
+    if (!cliente) return;
+
+    const receiverUserId = this.getReceiverUserId(cliente);
+
+    this.global.selectedClient = { ...cliente };
+    this.global.chatReceiverId = receiverUserId;
+
+    await this.router.navigate(['/chat-detail', receiverUserId]);
+  }
+
   irAWallet(cliente: any) {
     if (!cliente) return;
 
     this.global.selectedClient = { ...cliente };
     this.router.navigate(['/wallet']);
   }
+
   onGiftClick(event: Event, cliente: any) {
     event.stopPropagation();
     event.preventDefault();
 
     this.openGiftFromHome(cliente);
   }
+
   async openGiftFromHome(cliente: any) {
     if (!cliente?.id) return;
 
@@ -78,11 +88,12 @@ export class Detailprofile {
 
     const partnerId = cliente.currentPartnerId;
 
-    // Modo prueba: si no tiene local activo, carga todos los productos
-    await this.loadProductsForPartner(partnerId || undefined);
-
-    await this.loadWallet();
+    await Promise.all([
+      this.loadProductsForPartner(partnerId || undefined),
+      this.loadWallet()
+    ]);
   }
+
   async loadProductsForPartner(partnerId?: string) {
     let filter = 'isAvailable=true';
 
@@ -90,14 +101,14 @@ export class Detailprofile {
       filter = `partnerId="${partnerId}" && isAvailable=true`;
     }
 
-    const records = await this.pb.collection('partnerProducts').getFullList({
+    const records = await this.pb.collection('partnerProducts').getList(1, 20, {
       filter,
       sort: '-created',
       expand: 'partnerId',
       requestKey: null
     });
 
-    this.partnerProducts = records.map((item: any) => ({
+    this.partnerProducts = records.items.map((item: any) => ({
       id: item.id,
       name: item.name,
       description: item.description,
@@ -111,6 +122,7 @@ export class Detailprofile {
       image: item.image ? this.pb.files.getUrl(item, item.image) : ''
     }));
   }
+
   async loadWallet(): Promise<void> {
     const userId = this.authPocketbaseService.currentUser?.id;
 
@@ -137,13 +149,14 @@ export class Detailprofile {
       this.walletBalance = 0;
     }
   }
-  closeGiftModal(): void {
-  if (this.isSendingGift) return;
 
-  this.showGiftModal = false;
-  this.giftReceiver = null;
-  this.partnerProducts = [];
-  this.selectedGiftProduct = null;
-  this.giftMessage = '';
-}
+  closeGiftModal(): void {
+    if (this.isSendingGift) return;
+
+    this.showGiftModal = false;
+    this.giftReceiver = null;
+    this.partnerProducts = [];
+    this.selectedGiftProduct = null;
+    this.giftMessage = '';
+  }
 }
