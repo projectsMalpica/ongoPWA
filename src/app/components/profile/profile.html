@@ -2,8 +2,27 @@
 <div class="page-content space-top p-b60" *ngIf="!isEditProfile">
   <div class="container pt-0">
     <div class="profile-area">
+      <div class="profile-hero">
+  <div class="profile-avatar-main">
+    <img [src]="profileData.avatar || 'assets/images/avatar/1.jpg'" alt="profile-image">
+  </div>
+
+  <button type="button" class="edit-profile-floating" (click)="enableEditProfile()">
+    <i class="feather icon-edit"></i>
+    Editar perfil
+  </button>
+
+  <div class="profile-info">
+    <h2>{{profileData.name}}, {{profileData.age}}</h2>
+
+    <p>
+      <i class="icon feather icon-map-pin"></i>
+      {{profileData.address || 'No especificada'}}
+    </p>
+  </div>
+</div>
       <div class="main-profile">
-        <div class="about-profile">
+        <!-- <div class="about-profile">
 
           <div class="media rounded-circle position-relative">
             <img [src]="profileData.avatar ||  'assets/images/avatar/1.jpg'" alt="profile-image" class="profile-avatar">
@@ -19,7 +38,7 @@
             </button>
           </div>
 
-        </div>
+        </div> 
 
         <div class="profile-detail">
           <div class="profile-header mb-4">
@@ -30,7 +49,7 @@
             </div>
           </div>
 
-        </div>
+        </div>-->
       </div>
       <div class="detail-area">
 

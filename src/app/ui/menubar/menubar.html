@@ -60,7 +60,15 @@
       title="Explorar">
       <i class="flaticon flaticon-search"></i>
     </a>
-
+ <a
+      *ngIf="auth.isPartner()"
+      class="nav-link"
+      routerLink="/maps"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      title="Mapa">
+      <i class="fas fa-map-marker-alt"></i>
+    </a>
     <a
       *ngIf="auth.isPartner()"
       class="nav-link"
@@ -70,6 +78,7 @@
       title="Perfil">
       <i class="flaticon flaticon-user"></i>
     </a>
+    
 
     <a
       *ngIf="auth.isClient()"
