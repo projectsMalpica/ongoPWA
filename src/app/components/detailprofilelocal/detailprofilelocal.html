@@ -162,7 +162,12 @@
           <div class="product-info">
             <h6>{{ product.name }}</h6>
             <p>{{ product.category || 'Producto' }}</p>
-            <strong>{{ product.price | number:'1.0-0' }} COP</strong>
+            <!-- <strong>{{ product.price | number:'1.0-0' }} COP</strong> -->
+            <strong>{{ getMoneyLabel(product.price, product.currency) }}</strong>
+
+            <small>
+              {{ getPaymentLabelForProduct(product) }}
+            </small>
             <button type="button" class="gift-btn" (click)="openGiftModal(product)">
               Comprar / Enviar regalo
             </button>
@@ -218,7 +223,7 @@
     <ng-template #giftForm>
 
       <div class="gift-modal-header">
-        <h5>Enviar regalo 🎁</h5>
+        <h5>Enviar regalo </h5>
         <button type="button" (click)="closeGiftModal()">×</button>
       </div>
 
@@ -228,15 +233,27 @@
         <div>
           <h6>{{ selectedGiftProduct.name }}</h6>
           <p>{{ selectedGiftProduct.category || 'Producto' }}</p>
-          <strong>{{ selectedGiftProduct.price | number:'1.0-0' }} COP</strong>
+          <!--           <strong>{{ selectedGiftProduct.price | number:'1.0-0' }} COP</strong>
+ --> <strong>
+            {{ getMoneyLabel(selectedGiftProduct?.price, selectedGiftProduct?.currency) }}
+          </strong>
+
+          <small>
+            {{ getPaymentLabelForProduct(selectedGiftProduct) }}
+          </small>
         </div>
       </div>
 
-      <div class="gift-total-box">
+      <!-- <div class="gift-total-box">
         <span>Total</span>
         <strong>{{ selectedGiftProduct?.price | number:'1.0-0' }} COP</strong>
+      </div> -->
+      <div class="gift-total-box">
+        <span>Total</span>
+        <strong>
+          {{ getMoneyLabel(selectedGiftProduct?.price, selectedGiftProduct?.currency) }}
+        </strong>
       </div>
-
       <div class="gift-receiver-box">
         <label>¿Para quién es?</label>
 
@@ -267,7 +284,7 @@
         </div>
       </div>
 
-      <div class="gift-field">
+      <!-- <div class="gift-field">
         <label>Mensaje opcional</label>
         <textarea rows="3" [(ngModel)]="giftMessage" placeholder="Ej: Este trago va por mí 🍸"></textarea>
       </div>
@@ -284,17 +301,70 @@
           <span>Recargar wallet</span>
           <strong>Agregar saldo</strong>
         </div>
-      </div>
+      </div> -->
+      <div class="gift-payment-methods">
+        <label>Método de pago</label>
 
+        <ng-container *ngIf="!isManualPaymentProduct(selectedGiftProduct)">
+          <div class="payment-option active">
+            <span>Wallet</span>
+            <strong>Saldo: {{ walletBalance | number:'1.0-0' }} COP</strong>
+          </div>
+
+          <div class="payment-option" (click)="goToWalletRecharge()">
+            <span>Recargar wallet</span>
+            <strong>Agregar saldo</strong>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="isManualPaymentProduct(selectedGiftProduct)">
+          <div class="manual-payment-box">
+            <h6>Pago manual</h6>
+
+            <p>
+              Total:
+              <strong>
+                {{ getMoneyLabel(selectedGiftProduct?.price, selectedGiftProduct?.currency) }}
+              </strong>
+            </p>
+
+            <p><strong>Banco:</strong> {{ partner.paymentMethods?.[0]?.bank || 'Banco no definido' }}</p>
+            <p><strong>Titular:</strong> {{ partner.paymentMethods?.[0]?.holder || 'No definido' }}</p>
+            <p><strong>Documento:</strong> {{ partner.paymentMethods?.[0]?.document || 'No definido' }}</p>
+
+            <p *ngIf="partner.paymentMethods?.[0]?.phone">
+              <strong>Teléfono pago móvil:</strong> {{ partner.paymentMethods?.[0]?.phone }}
+            </p>
+
+            <p *ngIf="partner.paymentMethods?.[0]?.accountNumber">
+              <strong>Cuenta:</strong>
+              {{ partner.paymentMethods?.[0]?.accountType }}
+              {{ partner.paymentMethods?.[0]?.accountNumber }}
+            </p>
+
+            <input type="file" class="form-control" accept="image/*,.pdf" (change)="onPaymentProofSelected($event)">
+          </div>
+        </ng-container>
+      </div>
       <div class="gift-confirm-info">
         <i class="fa-solid fa-lock"></i>
         <span>Confirma tu compra o regalo</span>
       </div>
 
-      <button type="button" class="send-gift-btn" [disabled]="isSendingGift" (click)="sendGift()">
-        {{ isSendingGift ? 'Procesando...' : 'Confirmar compra / Enviar regalo 🎁' }}
+      <!--   <button type="button" class="send-gift-btn" [disabled]="isSendingGift" (click)="sendGift()">
+        {{ isSendingGift ? 'Procesando...' : 'Confirmar compra / Enviar regalo ' }}
+      </button> -->
+      <button type="button" class="send-gift-btn"
+        [disabled]="isSendingGift || (isManualPaymentProduct(selectedGiftProduct) && !paymentProofFile)"
+        (click)="isManualPaymentProduct(selectedGiftProduct) ? sendGiftManualPayment() : sendGift()">
+        {{
+        isSendingGift
+        ? 'Procesando...'
+        : isManualPaymentProduct(selectedGiftProduct)
+        ? 'Enviar comprobante y reservar compra'
+        : 'Confirmar compra / Enviar regalo'
+        }}
       </button>
-
     </ng-template>
 
   </div>

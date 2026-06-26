@@ -516,8 +516,7 @@
           <div>
             <h4>{{ product.name }}</h4>
             <p>{{ product.category || 'Sin categoría' }}</p>
-            <strong>{{ product.price | number:'1.0-0' }} COP</strong>
-
+            <strong>{{ getMoneyLabel(product.price, product.currency) }}</strong>
             <span [class.off]="!product.isAvailable">
               {{ product.isAvailable ? 'Disponible' : 'No disponible' }}
             </span>
@@ -1219,11 +1218,30 @@
             <label class="form-label">Categoría</label>
             <input type="text" class="form-control" [(ngModel)]="newProduct.category" name="productCategory">
           </div>
-
-          <div class="mb-3">
-            <label class="form-label">Precio</label>
-            <input type="number" class="form-control" [(ngModel)]="newProduct.price" name="productPrice" required>
+          <div class="form-group">
+            <label>País del producto</label>
+            <select class="form-control" [(ngModel)]="newProduct.country" name="productCountry"
+              (change)="onProductCountryChange()">
+              <option value="CO">Colombia</option>
+              <option value="VE">Venezuela</option>
+            </select>
           </div>
+
+          <div class="form-group">
+            <label>Moneda</label>
+            <select class="form-control" [(ngModel)]="newProduct.currency" name="productCurrency">
+              <option value="COP">COP - Peso colombiano</option>
+              <option value="VES">Bs - Bolívar</option>
+              <option value="USD">USD - Dólar</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Precio</label>
+            <input type="number" class="form-control" [(ngModel)]="newProduct.price" name="productPrice" min="0"
+              step="0.01" required>
+          </div>
+
 
           <div class="form-check mb-3">
             <input class="form-check-input" type="checkbox" [(ngModel)]="newProduct.isAvailable" name="productAvailable"
@@ -1278,7 +1296,7 @@
                   <h6>{{ product.name }}</h6>
                   <p class="small text-muted mb-1">{{ product.category }}</p>
                   <p>{{ product.description }}</p>
-                  <strong style="color:#FF50A2;">{{ product.price | number:'1.0-0' }} COP</strong>
+                  <strong style="color:#FF50A2;">{{ getMoneyLabel(product.price, product.currency) }}</strong>
                 </div>
 
                 <div class="card-footer bg-white border-0 d-flex gap-2">

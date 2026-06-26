@@ -41,8 +41,12 @@ export class Detailprofilelocal {
   lastRedeemQr = '';
   giftSentSuccess = false;
   partnerStats: any = null;
-currentVisitors = 0;
-todayVisitors = 0;
+  currentVisitors = 0;
+  todayVisitors = 0;
+  bcvRate = 0;
+  selectedPaymentCountry: 'CO' | 'VE' = 'CO';
+  paymentProofFile: File | null = null;
+
   constructor(public global: GlobalService,
     public changeDetectorRef: ChangeDetectorRef,
     public auth: AuthPocketbaseService,
@@ -82,11 +86,11 @@ todayVisitors = 0;
 
     this.normalizePartnerData();
     this.setAvatarUrl();
-
+    await this.loadRates();
     await Promise.all([
       this.loadPartnerPromos(),
       this.loadPartnerProducts(),
-        this.loadPartnerStats()
+      this.loadPartnerStats()
     ]);
 
     console.log('Partner detalle:', this.partner);
@@ -420,7 +424,9 @@ todayVisitors = 0;
         name: item.name,
         description: item.description,
         category: item.category,
-        price: item.price,
+        price: Number(item.price || 0),
+        currency: item.currency || 'COP',
+        country: item.country || this.partner?.country || 'CO',
         isAvailable: item.isAvailable,
         userId: item.userId,
         partnerId: item.partnerId,
@@ -430,7 +436,40 @@ todayVisitors = 0;
       console.error('Error cargando productos:', error);
     }
   }
+  getMoneyLabel(amount: number, currency: string = 'COP'): string {
+    const value = Number(amount || 0);
 
+    if (currency === 'VES') {
+      return `${value.toLocaleString('es-VE', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })} Bs`;
+    }
+
+    if (currency === 'USD') {
+      return `${value.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })} USD`;
+    }
+
+    return `${value.toLocaleString('es-CO', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    })} COP`;
+  }
+
+  isManualPaymentProduct(product: any): boolean {
+    return product?.country === 'VE' || product?.currency === 'VES' || product?.currency === 'USD';
+  }
+
+  getPaymentLabelForProduct(product: any): string {
+    if (this.isManualPaymentProduct(product)) {
+      return 'Pago manual / comprobante';
+    }
+
+    return 'Wallet COP';
+  }
   normalizeFiles(files: any): string[] {
     if (!files) return [];
 
@@ -466,19 +505,19 @@ todayVisitors = 0;
   }
 
   closeGiftModal(force = false): void {
-  if (this.isSendingGift && !force) return;
+    if (this.isSendingGift && !force) return;
 
-  this.showGiftModal = false;
-  this.selectedGiftProduct = null;
-  this.selectedReceiverUserId = '';
-  this.giftMessage = '';
-  this.giftSentSuccess = false;
+    this.showGiftModal = false;
+    this.selectedGiftProduct = null;
+    this.selectedReceiverUserId = '';
+    this.giftMessage = '';
+    this.giftSentSuccess = false;
 
-  if (!force) {
-    this.lastRedeemCode = '';
-    this.lastRedeemQr = '';
+    if (!force) {
+      this.lastRedeemCode = '';
+      this.lastRedeemQr = '';
+    }
   }
-}
 
   async loadWallet(): Promise<void> {
     const userId = this.auth.currentUser?.id;
@@ -693,19 +732,19 @@ todayVisitors = 0;
         balanceAfter,
         referenceType: 'product_order',
         referenceId: order.id,
-status: 'completed',
+        status: 'completed',
         description: `Regalo enviado: ${product.name}`
       }, { requestKey: null });
 
       this.walletBalance = balanceAfter;
-this.currentWallet.balance = balanceAfter;
+      this.currentWallet.balance = balanceAfter;
 
-this.lastRedeemCode = redeemCode;
-this.lastRedeemQr = redeemQr;
-this.giftSentSuccess = true;
+      this.lastRedeemCode = redeemCode;
+      this.lastRedeemQr = redeemQr;
+      this.giftSentSuccess = true;
 
-this.toastService.show('Regalo enviado correctamente 🎁', 'success');
-this.changeDetectorRef.detectChanges();
+      this.toastService.show('Regalo enviado correctamente 🎁', 'success');
+      this.changeDetectorRef.detectChanges();
 
     } catch (error: any) {
       console.error('Error enviando regalo con wallet:', error);
@@ -721,11 +760,11 @@ this.changeDetectorRef.detectChanges();
     }
   }
   copyRedeemCode(): void {
-  if (!this.lastRedeemCode) return;
+    if (!this.lastRedeemCode) return;
 
-  navigator.clipboard.writeText(this.lastRedeemCode);
-  this.toastService.show('Código copiado ✅', 'success');
-}
+    navigator.clipboard.writeText(this.lastRedeemCode);
+    this.toastService.show('Código copiado ✅', 'success');
+  }
 
 
   async sendGiftWithWompi(): Promise<void> {
@@ -791,10 +830,10 @@ this.changeDetectorRef.detectChanges();
       this.isSendingGift = false;
     }
   }
- goToWalletRecharge(): void {
-  this.closeGiftModal();
-  this.router.navigate(['/wallet']);
-}
+  goToWalletRecharge(): void {
+    this.closeGiftModal();
+    this.router.navigate(['/wallet']);
+  }
   async confirmProductOrderPayment(reference: string, transaction: any): Promise<void> {
     const order = await this.pb.collection('product_orders').getFirstListItem(
       `referenceId="${reference}"`,
@@ -829,40 +868,156 @@ this.changeDetectorRef.detectChanges();
   }
   async loadPartnerStats(): Promise<void> {
 
-  if(!this.partner?.id) return;
+    if (!this.partner?.id) return;
 
 
-  try {
+    try {
 
-    this.partnerStats =
-      await this.pb.collection('partner_stats')
-      .getFirstListItem(
-        `partnerId="${this.partner.id}"`,
-        {
-          requestKey:null
-        }
-      );
+      this.partnerStats =
+        await this.pb.collection('partner_stats')
+          .getFirstListItem(
+            `partnerId="${this.partner.id}"`,
+            {
+              requestKey: null
+            }
+          );
 
 
       this.currentVisitors =
-      Number(this.partnerStats.currentVisitors || 0);
+        Number(this.partnerStats.currentVisitors || 0);
 
 
       this.todayVisitors =
-      Number(this.partnerStats.todayVisitors || 0);
+        Number(this.partnerStats.todayVisitors || 0);
 
 
 
-  } catch(error){
+    } catch (error) {
 
-    console.warn(
-      'Este local no tiene estadísticas todavía'
-    );
+      console.warn(
+        'Este local no tiene estadísticas todavía'
+      );
 
-    this.currentVisitors = 0;
-    this.todayVisitors = 0;
+      this.currentVisitors = 0;
+      this.todayVisitors = 0;
+
+    }
 
   }
+  async loadRates(): Promise<void> {
+    try {
+      const rate = await this.pb
+        .collection('app_settings')
+        .getFirstListItem(`key="bcvRate" && active=true`, {
+          requestKey: null
+        });
 
-}
+      this.bcvRate = Number(rate['value'] || 0);
+    } catch (error) {
+      console.error('Error cargando tasa BCV:', error);
+      this.bcvRate = 0;
+    }
+  }
+
+  getPriceBs(priceUSD: number): number {
+    return Number(priceUSD || 0) * Number(this.bcvRate || 0);
+  }
+
+  getUsdLabel(priceUSD: number): string {
+    return `${Number(priceUSD || 0).toLocaleString('es-VE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })} USD`;
+  }
+
+  getBsLabel(priceUSD: number): string {
+    return `${this.getPriceBs(priceUSD).toLocaleString('es-VE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })} Bs`;
+  }
+
+  onPaymentProofSelected(event: any): void {
+    this.paymentProofFile = event.target.files?.[0] || null;
+  }
+  async sendGiftManualPayment(): Promise<void> {
+    if (!this.selectedGiftProduct || !this.paymentProofFile || !this.partner?.id) return;
+
+    if (!this.bcvRate || this.bcvRate <= 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Tasa BCV no disponible',
+        text: 'No se puede procesar el pago porque no hay tasa configurada.'
+      });
+      return;
+    }
+
+    try {
+      this.isSendingGift = true;
+
+      await this.auth.restoreSession();
+
+      const user = this.auth.getCurrentUser();
+
+      if (!user?.id) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Inicia sesión',
+          text: 'Debes iniciar sesión para comprar.'
+        });
+        return;
+      }
+
+      const redeemCode = `ONGO-${Date.now().toString().slice(-6)}`;
+
+      const amount = Number(this.selectedGiftProduct.price || 0);
+      const currency = this.selectedGiftProduct.currency || 'VES';
+      const country = this.selectedGiftProduct.country || 'VE';
+
+      const formData = new FormData();
+
+      formData.append('partnerId', this.partner.id);
+      formData.append('buyerUserId', user.id);
+      formData.append('receiverUserId', this.selectedReceiverUserId || user.id);
+      formData.append('productId', this.selectedGiftProduct.id);
+      formData.append('productName', this.selectedGiftProduct.name || '');
+      formData.append('amount', String(amount));
+      formData.append('currency', currency);
+      formData.append('country', country);
+      formData.append('bcvRate', String(this.bcvRate));
+      formData.append('paymentMethod', 'Pago móvil / transferencia');
+      formData.append('status', 'pending');
+      formData.append('message', this.giftMessage || '');
+      formData.append('redeemCode', redeemCode);
+      formData.append('proofFile', this.paymentProofFile);
+      formData.append('amountUSD', currency === 'USD' ? String(amount) : '0');
+      formData.append('amountBs', currency === 'VES' ? String(amount) : '0');
+      formData.append('bcvRate', '0');
+
+      await this.pb.collection('product_payment_proofs').create(formData, {
+        requestKey: null
+      });
+
+      this.lastRedeemCode = redeemCode;
+      this.giftSentSuccess = true;
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Comprobante enviado',
+        text: 'El local validará tu pago antes de entregar el producto.'
+      });
+
+    } catch (error: any) {
+      console.error('Error enviando pago manual:', error);
+
+      Swal.fire({
+        icon: 'error',
+        title: 'No se pudo enviar',
+        text: error?.data?.message || error?.message || 'Error al enviar comprobante.'
+      });
+
+    } finally {
+      this.isSendingGift = false;
+    }
+  }
 }

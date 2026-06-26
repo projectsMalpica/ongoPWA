@@ -34,11 +34,22 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
 
   private plansSwiper?: Swiper;
   private plansSwiperSub?: Subscription;
+  /* newProduct = {
+    name: '',
+    description: '',
+    category: '',
+    price: null as number | null,
+    isAvailable: true,
+    userId: '',
+    partnerId: ''
+  }; */
   newProduct = {
     name: '',
     description: '',
     category: '',
     price: null as number | null,
+    currency: 'COP',
+    country: 'CO',
     isAvailable: true,
     userId: '',
     partnerId: ''
@@ -1722,6 +1733,8 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
         description: item.description,
         category: item.category,
         price: item.price,
+        currency: item.currency || this.getDefaultCurrencyByCountry(this.global.profileDataPartner.country || 'CO'),
+        country: item.country || this.global.profileDataPartner.country || 'CO',
         isAvailable: item.isAvailable,
         userId: item.userId,
         partnerId: item.partnerId,
@@ -1743,14 +1756,21 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
       const partner = await this.pb.collection('usuariosPartner').getFirstListItem(`userId="${userId}"`);
 
       const formData = new FormData();
+      const price = Number(this.newProduct.price);
+
+if (Number.isNaN(price) || price <= 0) {
+  this.showAppToast('Ingresa un precio válido', 'error');
+  return;
+}
       formData.append('name', this.newProduct.name || '');
       formData.append('description', this.newProduct.description || '');
       formData.append('category', this.newProduct.category || '');
-      formData.append('price', String(this.newProduct.price || 0));
+formData.append('price', String(price));
       formData.append('isAvailable', String(this.newProduct.isAvailable));
       formData.append('userId', userId);
       formData.append('partnerId', partner.id);
-
+      formData.append('currency', this.newProduct.currency || 'COP');
+      formData.append('country', this.newProduct.country || this.global.profileDataPartner.country || 'CO');
       if (this.productImageFile) {
         formData.append('image', this.productImageFile);
       }
@@ -1786,6 +1806,8 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
       description: product.description || '',
       category: product.category || '',
       price: product.price || null,
+      currency: product.currency || this.getDefaultCurrencyByCountry(product.country || this.global.profileDataPartner.country || 'CO'),
+      country: product.country || this.global.profileDataPartner.country || 'CO',
       isAvailable: product.isAvailable ?? true,
       userId: product.userId || '',
       partnerId: product.partnerId || ''
@@ -1823,20 +1845,24 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
   }
 
   cancelProduct() {
-    this.newProduct = {
-      name: '',
-      description: '',
-      category: '',
-      price: null,
-      isAvailable: true,
-      userId: '',
-      partnerId: ''
-    };
+  const partnerCountry = this.global.profileDataPartner.country || 'CO';
 
-    this.productImageFile = null;
-    this.isEditingProduct = false;
-    this.editingProductId = null;
-  }
+  this.newProduct = {
+    name: '',
+    description: '',
+    category: '',
+    price: null,
+    currency: this.getDefaultCurrencyByCountry(partnerCountry),
+    country: partnerCountry,
+    isAvailable: true,
+    userId: '',
+    partnerId: ''
+  };
+
+  this.productImageFile = null;
+  this.isEditingProduct = false;
+  this.editingProductId = null;
+}
 
   async subscribeToPlan(plan: any): Promise<void> {
     if (this.subscribingPlanId) return;
@@ -1949,7 +1975,36 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
       this.subscribingPlanId = null;
     }
   }
+  getDefaultCurrencyByCountry(country: string): 'COP' | 'VES' {
+    return country === 'VE' ? 'VES' : 'COP';
+  }
 
+  onProductCountryChange(): void {
+    this.newProduct.currency = this.getDefaultCurrencyByCountry(this.newProduct.country);
+  }
+
+  getMoneyLabel(amount: number, currency: string = 'COP'): string {
+    const value = Number(amount || 0);
+
+    if (currency === 'VES') {
+      return `${value.toLocaleString('es-VE', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })} Bs`;
+    }
+
+    if (currency === 'USD') {
+      return `${value.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })} USD`;
+    }
+
+    return `${value.toLocaleString('es-CO', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    })} COP`;
+  }
   openManualPaymentModal(plan: any): void {
     this.selectedPlan = plan;
 

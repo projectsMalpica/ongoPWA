@@ -3,24 +3,24 @@
   <div class="container pt-0">
     <div class="profile-area">
       <div class="profile-hero">
-  <div class="profile-avatar-main">
-    <img [src]="profileData.avatar || 'assets/images/avatar/1.jpg'" alt="profile-image">
-  </div>
+        <div class="profile-avatar-main">
+          <img [src]="profileData.avatar || 'assets/images/avatar/1.jpg'" alt="profile-image">
+        </div>
 
-  <button type="button" class="edit-profile-floating" (click)="enableEditProfile()">
-    <i class="feather icon-edit"></i>
-    Editar perfil
-  </button>
+        <button type="button" class="edit-profile-floating" (click)="enableEditProfile()">
+          <i class="feather icon-edit"></i>
+          Editar perfil
+        </button>
 
-  <div class="profile-info">
-    <h2>{{profileData.name}}, {{profileData.age}}</h2>
+        <div class="profile-info">
+          <h2>{{profileData.name}}, {{profileData.age}}</h2>
 
-    <p>
-      <i class="icon feather icon-map-pin"></i>
-      {{profileData.address || 'No especificada'}}
-    </p>
-  </div>
-</div>
+          <p>
+            <i class="icon feather icon-map-pin"></i>
+            {{profileData.address || 'No especificada'}}
+          </p>
+        </div>
+      </div>
       <div class="main-profile">
         <!-- <div class="about-profile">
 
@@ -209,13 +209,39 @@
             Vence el {{ getSubscriptionExpiresLabel() }}
           </p>
 
-          <p *ngIf="!hasActiveSubscription()">
+          <p *ngIf="!hasActiveSubscription() && profileData?.pendingSubscriptionStatus !== 'pending'">
             Actualmente estás usando el plan gratuito.
+          </p>
+
+          <p *ngIf="!hasActiveSubscription() && profileData?.pendingSubscriptionStatus === 'pending'">
+            Tu plan anterior no está activo. Tienes una solicitud en validación.
           </p>
         </div>
 
         <div class="subscription-status" [class.active]="hasActiveSubscription()">
-          {{ hasActiveSubscription() ? 'Activo' : 'Free' }}
+          {{
+          hasActiveSubscription()
+          ? 'Activo'
+          : profileData?.pendingSubscriptionStatus === 'pending'
+          ? 'Pendiente'
+          : 'Free'
+          }} </div>
+      </div>
+
+      <div class="active-subscription-card pending-card" *ngIf="profileData?.pendingSubscriptionStatus === 'pending'">
+
+        <div>
+          <span>Solicitud pendiente</span>
+          <h4>{{ profileData.pendingSubscriptionPlanName }}</h4>
+
+          <p>
+            Hemos recibido tu comprobante y estamos validando el pago.
+            La activación puede tardar hasta 12 horas.
+          </p>
+        </div>
+
+        <div class="subscription-status pending">
+          Validando
         </div>
       </div>
 
@@ -264,7 +290,18 @@
                   </div>
                 </ng-container>
 
+                <!-- <ng-template #paidClientPlanButton>
+                  <button type="button" class="client-plan-btn" [disabled]="isPlanButtonDisabled(planning)"
+                    (click)="subscribeClientPlan(planning)">
+                    {{ getPlanButtonLabel(planning) }}
+                  </button>
+                </ng-template> -->
                 <ng-template #paidClientPlanButton>
+                  <select [(ngModel)]="selectedPaymentCountry" class="form-control subscription-country-select">
+                    <option value="CO">Colombia - Wompi</option>
+                    <option value="VE">Venezuela - Pago manual</option>
+                  </select>
+
                   <button type="button" class="client-plan-btn" [disabled]="isPlanButtonDisabled(planning)"
                     (click)="subscribeClientPlan(planning)">
                     {{ getPlanButtonLabel(planning) }}
@@ -450,7 +487,46 @@
     </div>
   </div>
 </div>
+<div class="modal fade" id="clientManualPaymentModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content subscriptions-modal-neon">
+      <div class="modal-header border-0">
+        <h5 class="modal-title">Pago manual Venezuela</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
 
+      <div class="modal-body">
+        <p>Plan: <strong>{{ selectedPlan?.name }}</strong></p>
+
+        <p>
+          Valor:
+          <strong>{{ selectedPlan?.PriceUSD | currency:'USD':'symbol':'1.0-0' }}</strong>
+        </p>
+
+        <div class="manual-payment-box">
+          <h6>Datos de pago OnGo</h6>
+          <p><strong>Banco:</strong> Banco de Venezuela</p>
+          <p><strong>Titular:</strong> OnGo</p>
+          <p><strong>RIF / Cédula:</strong> J-00000000-0</p>
+          <p><strong>Teléfono pago móvil:</strong> 04XX-XXXXXXX</p>
+          <p><strong>Concepto:</strong> {{ selectedPlan?.name }} - OnGo Cliente</p>
+        </div>
+
+        <p class="small">
+          Realiza el pago equivalente en bolívares según la tasa BCV del día.
+          Luego carga tu comprobante. El plan será validado y activado en menos de 12 horas.
+        </p>
+
+        <input type="file" class="form-control" accept="image/*,.pdf" (change)="onPaymentProofSelected($event)">
+
+        <button type="button" class="client-plan-btn mt-3" [disabled]="!paymentProofFile"
+          (click)="submitClientManualPaymentProof()">
+          Enviar comprobante
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 <!-- Interest OffCanvas -->
 <div class="offcanvas offcanvas-bottom intrests" tabindex="-1" id="offcanvasBottom1">
   <div class="offcanvas-header share-style">

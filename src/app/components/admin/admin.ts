@@ -271,4 +271,28 @@ resetHotZoneForm(): void {
       minPlan: 'premium'
     };
   }
+  //funcion para aprobar suscripcion de cliente 
+  async approveClientPaymentProof(proof: any): Promise<void> {
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 30);
+
+  await this.pb.collection('client_payment_proofs').update(proof.id, {
+    status: 'approved',
+    validatedAt: new Date().toISOString()
+  });
+
+  await this.pb.collection('usuariosClient').update(proof.clientId, {
+    subscriptionStatus: 'active',
+    subscriptionPlanId: proof.planId,
+    subscriptionPlanName: proof.planName,
+    subscriptionStartsAt: new Date().toISOString(),
+    subscriptionExpiresAt: expiresAt.toISOString(),
+    subscriptionAutoRenew: false,
+
+    pendingSubscriptionStatus: '',
+    pendingSubscriptionPlanId: '',
+    pendingSubscriptionPlanName: '',
+    pendingSubscriptionRequestedAt: ''
+  });
+}
 }
