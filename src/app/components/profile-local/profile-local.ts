@@ -101,15 +101,15 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
   lat: number = 0;
   lng: number = 0;
   newPromo = {
-  name: '',
-  description: '',
-  date: '',
-  price: null as number | null,
-  currency: 'COP',
-  country: 'CO',
-  files: [],
-  userId: '',
-};
+    name: '',
+    description: '',
+    date: '',
+    price: null as number | null,
+    currency: 'COP',
+    country: 'CO',
+    files: [],
+    userId: '',
+  };
   showPromos = false;
   isServicesOffcanvasOpen = false;
   selectedPaymentCountry: 'CO' | 'VE' = 'CO';
@@ -176,8 +176,8 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
     this.initMapIfReady();
   }
   onPromoCountryChange(): void {
-  this.newPromo.currency = this.getDefaultCurrencyByCountry(this.newPromo.country);
-}
+    this.newPromo.currency = this.getDefaultCurrencyByCountry(this.newPromo.country);
+  }
   getSubscriptionStatusLabel(): string {
 
     const status =
@@ -932,6 +932,8 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
         ticketDate: this.toDateTimeLocal(userData['ticketDate'] || ''),
         ticketsLink:
           userData['ticketsLink'] || '',
+        ticketCurrency: userData['ticketCurrency'] || 'COP',
+        ticketCountry: userData['ticketCountry'] || userData['country'] || 'CO',
         whatsappReservations:
           userData['whatsappReservations'] || '',
         subscriptionPlanName: userData['subscriptionPlanName'] || '',
@@ -949,6 +951,7 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
         paymentEnabled: userData['paymentEnabled'] || false,
       };
       this.global.profileDataPartner.avatar = this.pb.files.getUrl(userData, userData['avatar']);
+
       if (
         this.global.profileDataPartner.subscriptionStatus === 'active' &&
         this.isPartnerSubscriptionExpired()
@@ -1225,7 +1228,17 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
         'ticketsLink',
         this.global.profileDataPartner.ticketsLink || ''
       );
+      formData.append(
+        'ticketCurrency',
+        this.global.profileDataPartner.ticketCurrency || 'COP'
+      );
 
+      formData.append(
+        'ticketCountry',
+        this.global.profileDataPartner.ticketCountry ||
+        this.global.profileDataPartner.country ||
+        'CO'
+      );
       formData.append(
         'whatsappReservations',
         this.global.profileDataPartner.whatsappReservations || ''
@@ -1233,6 +1246,7 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
       if (this.newAvatar) {
         formData.append('avatar', this.newAvatar);
       }
+
 
       const existingProfile = await this.pb
         .collection('usuariosPartner')
@@ -1277,44 +1291,47 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
       }
 
       this.global.profileDataPartner = {
-        ...this.global.profileDataPartner,
-        id: savedRecord.id,
-        userId: savedRecord.userId,
-        venueName: savedRecord.venueName || '',
-        description: savedRecord.description || '',
-        email: savedRecord.email || '',
-        phone: savedRecord.phone || '',
-        address: savedRecord.address || '',
-        capacity: savedRecord.capacity || '',
-        openingHours: savedRecord.openingHours || '',
-        lat: savedRecord.lat || '',
-        lng: savedRecord.lng || '',
-        services: savedRecord.services || '',
-        purchaseLink: savedRecord.purchaseLink || '',
-        files: normalizedFiles,
-        avatar: avatarUrl,
-        ticketsEnabled: savedRecord.ticketsEnabled || false,
-        ticketPrice: savedRecord.ticketPrice || 0,
-        ticketDescription: savedRecord.ticketDescription || '',
-        ticketDate: savedRecord.ticketDate || '',
-        ticketCapacity: savedRecord.ticketCapacity || 0,
-        reservationEnabled: savedRecord.reservationEnabled || false,
-        reservationLink: savedRecord.reservationLink || '',
-        reservationPrice: savedRecord.reservationPrice || 0,
-        reservationDate: savedRecord.reservationDate || '',
-        reservationCapacity: savedRecord.reservationCapacity || 0,
-        whatsappReservations: savedRecord.whatsappReservations || '',
-        country: savedRecord.country || 'CO',
-        paymentMethods: savedRecord.paymentMethods || [],
-        paymentBank: savedRecord.paymentBank || '',
-        paymentHolder: savedRecord.paymentHolder || '',
-        paymentDocument: savedRecord.paymentDocument || '',
-        paymentPhone: savedRecord.paymentPhone || '',
-        paymentType: savedRecord.paymentType || 'pago_movil',
-        accountType: savedRecord.accountType || 'corriente',
-        accountNumber: savedRecord.accountNumber || '',
-        paymentEnabled: savedRecord.paymentEnabled || false,
-      };
+  ...this.global.profileDataPartner,
+  id: savedRecord.id,
+  userId: savedRecord.userId,
+  venueName: savedRecord.venueName || '',
+  description: savedRecord.description || '',
+  email: savedRecord.email || '',
+  phone: savedRecord.phone || '',
+  address: savedRecord.address || '',
+  capacity: savedRecord.capacity || '',
+  openingHours: savedRecord.openingHours || '',
+  lat: savedRecord.lat || '',
+  lng: savedRecord.lng || '',
+  services: savedRecord.services || '',
+  purchaseLink: savedRecord.purchaseLink || '',
+  files: normalizedFiles,
+  avatar: avatarUrl,
+
+  ticketsEnabled: savedRecord.ticketsEnabled || false,
+  ticketPrice: savedRecord.ticketPrice || 0,
+  ticketDescription: savedRecord.ticketDescription || '',
+  ticketDate: savedRecord.ticketDate || '',
+  ticketCapacity: savedRecord.ticketCapacity || 0,
+  ticketCurrency: savedRecord.ticketCurrency || 'COP',
+  ticketCountry: savedRecord.ticketCountry || savedRecord.country || 'CO',
+
+  reservationEnabled: savedRecord.reservationEnabled || false,
+  reservationLink: savedRecord.reservationLink || '',
+  reservationPrice: savedRecord.reservationPrice || 0,
+  reservationDate: savedRecord.reservationDate || '',
+  reservationCapacity: savedRecord.reservationCapacity || 0,
+
+  whatsappReservations: savedRecord.whatsappReservations || '',
+  country: savedRecord.country || 'CO',
+  paymentMethods: savedRecord.paymentMethods || [],
+  paymentBank: savedRecord.paymentBank || '',
+  paymentHolder: savedRecord.paymentHolder || '',
+  paymentDocument: savedRecord.paymentDocument || '',
+  paymentPhone: savedRecord.paymentPhone || '',
+  paymentType: savedRecord.paymentType || 'pago_movil',
+  paymentEnabled: savedRecord.paymentEnabled || false,
+};
 
       this.avatarPreview = null;
       this.newAvatar = null;
@@ -1402,125 +1419,125 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async savePromotion() {
-  try {
-    const price = Number(this.newPromo.price || 0);
+    try {
+      const price = Number(this.newPromo.price || 0);
 
-    if (Number.isNaN(price) || price < 0) {
-      this.showAppToast('Ingresa un precio válido para la promoción', 'error');
-      return;
-    }
-
-    let imageUrl = '';
-
-    if (this.promoImageFile) {
-      const fileForm = new FormData();
-      fileForm.append('file', this.promoImageFile);
-      fileForm.append('userId', this.auth.currentUser?.id || '');
-      fileForm.append('type', 'promo');
-
-      const fileRecord = await this.pb.collection('files').create(fileForm, {
-        requestKey: null
-      });
-
-      imageUrl = this.pb.files.getUrl(fileRecord, fileRecord['file']);
-    }
-
-    if (this.isEditingPromo && this.editingPromoId) {
-      const promoForm: any = {
-        name: this.newPromo.name || '',
-        description: `${this.newPromo.description || ''}\nFecha: ${this.newPromo.date || ''}`,
-        userId: this.auth.currentUser?.id || '',
-        price,
-        currency: this.newPromo.currency || 'COP',
-        country: this.newPromo.country || 'CO',
-      };
-
-      if (imageUrl) {
-        promoForm.files = [imageUrl];
+      if (Number.isNaN(price) || price < 0) {
+        this.showAppToast('Ingresa un precio válido para la promoción', 'error');
+        return;
       }
 
-      await this.pb.collection('promos').update(this.editingPromoId, promoForm, {
-        requestKey: null
-      });
+      let imageUrl = '';
 
-    } else {
-      const promoForm = new FormData();
+      if (this.promoImageFile) {
+        const fileForm = new FormData();
+        fileForm.append('file', this.promoImageFile);
+        fileForm.append('userId', this.auth.currentUser?.id || '');
+        fileForm.append('type', 'promo');
 
-      promoForm.append('name', this.newPromo.name || '');
-      promoForm.append('description', `${this.newPromo.description || ''}\nFecha: ${this.newPromo.date || ''}`);
-      promoForm.append('userId', this.auth.currentUser?.id || '');
-      promoForm.append('price', String(price));
-      promoForm.append('currency', this.newPromo.currency || 'COP');
-      promoForm.append('country', this.newPromo.country || 'CO');
+        const fileRecord = await this.pb.collection('files').create(fileForm, {
+          requestKey: null
+        });
 
-      if (imageUrl) {
-        promoForm.append('files', JSON.stringify([imageUrl]));
+        imageUrl = this.pb.files.getUrl(fileRecord, fileRecord['file']);
       }
 
-      const result = await this.pb.collection('promos').create(promoForm, {
-        requestKey: null
-      });
+      if (this.isEditingPromo && this.editingPromoId) {
+        const promoForm: any = {
+          name: this.newPromo.name || '',
+          description: `${this.newPromo.description || ''}\nFecha: ${this.newPromo.date || ''}`,
+          userId: this.auth.currentUser?.id || '',
+          price,
+          currency: this.newPromo.currency || 'COP',
+          country: this.newPromo.country || 'CO',
+        };
 
-      console.log('Promo guardada con imagen:', result);
+        if (imageUrl) {
+          promoForm.files = [imageUrl];
+        }
+
+        await this.pb.collection('promos').update(this.editingPromoId, promoForm, {
+          requestKey: null
+        });
+
+      } else {
+        const promoForm = new FormData();
+
+        promoForm.append('name', this.newPromo.name || '');
+        promoForm.append('description', `${this.newPromo.description || ''}\nFecha: ${this.newPromo.date || ''}`);
+        promoForm.append('userId', this.auth.currentUser?.id || '');
+        promoForm.append('price', String(price));
+        promoForm.append('currency', this.newPromo.currency || 'COP');
+        promoForm.append('country', this.newPromo.country || 'CO');
+
+        if (imageUrl) {
+          promoForm.append('files', JSON.stringify([imageUrl]));
+        }
+
+        const result = await this.pb.collection('promos').create(promoForm, {
+          requestKey: null
+        });
+
+        console.log('Promo guardada con imagen:', result);
+      }
+
+      await this.loadPromotionsForPartner();
+
+      this.resetPromoForm();
+      this.closePromoModal();
+
+      this.showSuccessToast = false;
+
+      setTimeout(() => {
+        this.successPromoToast = true;
+        setTimeout(() => this.successPromoToast = false, 3000);
+      }, 100);
+
+    } catch (error) {
+      console.error('Error guardando la promoción:', error);
+    }
+  }
+
+  resetPromoForm(): void {
+    this.newPromo = {
+      name: '',
+      description: '',
+      date: '',
+      files: [],
+      userId: '',
+      price: null,
+      currency: 'COP',
+      country: 'CO',
+    };
+
+    this.promoImageFile = null;
+    this.isEditingPromo = false;
+    this.editingPromoId = null;
+  }
+
+  closePromoModal(): void {
+    this.modalService.close('promoOptionsModal');
+
+    const modalEl = document.getElementById('promoModal');
+
+    if (modalEl) {
+      const modalInstance =
+        (window as any).bootstrap?.Modal?.getOrCreateInstance(modalEl) ||
+        (window as any).bootstrap?.Modal?.getInstance(modalEl);
+
+      if (modalInstance) {
+        modalInstance.hide();
+      }
     }
 
-    await this.loadPromotionsForPartner();
+    const backdrop = document.querySelector('.modal-backdrop');
 
-    this.resetPromoForm();
-    this.closePromoModal();
-
-    this.showSuccessToast = false;
-
-    setTimeout(() => {
-      this.successPromoToast = true;
-      setTimeout(() => this.successPromoToast = false, 3000);
-    }, 100);
-
-  } catch (error) {
-    console.error('Error guardando la promoción:', error);
-  }
-}
-
-resetPromoForm(): void {
-  this.newPromo = {
-    name: '',
-    description: '',
-    date: '',
-    files: [],
-    userId: '',
-    price: null,
-    currency: 'COP',
-    country: 'CO',
-  };
-
-  this.promoImageFile = null;
-  this.isEditingPromo = false;
-  this.editingPromoId = null;
-}
-
-closePromoModal(): void {
-  this.modalService.close('promoOptionsModal');
-
-  const modalEl = document.getElementById('promoModal');
-
-  if (modalEl) {
-    const modalInstance =
-      (window as any).bootstrap?.Modal?.getOrCreateInstance(modalEl) ||
-      (window as any).bootstrap?.Modal?.getInstance(modalEl);
-
-    if (modalInstance) {
-      modalInstance.hide();
+    if (backdrop) {
+      backdrop.remove();
     }
+
+    document.body.classList.remove('modal-open');
   }
-
-  const backdrop = document.querySelector('.modal-backdrop');
-
-  if (backdrop) {
-    backdrop.remove();
-  }
-
-  document.body.classList.remove('modal-open');
-}
 
   onPromoImageSelected(event: any) {
     const file = event.target.files[0];
@@ -1545,8 +1562,8 @@ closePromoModal(): void {
         files: promo.files,
         userId: promo.userId,
         price: Number(promo.price || 0),
-currency: promo.currency || 'COP',
-country: promo.country || 'CO',
+        currency: promo.currency || 'COP',
+        country: promo.country || 'CO',
 
       }));
     } catch (error) {
@@ -1554,9 +1571,9 @@ country: promo.country || 'CO',
     }
   }
   cancelPromo() {
-  this.resetPromoForm();
-  this.closePromoModal();
-}
+    this.resetPromoForm();
+    this.closePromoModal();
+  }
   async deletePromo(promo: any) {
     try {
       await this.pb.collection('promos').delete(promo.id);
@@ -1586,36 +1603,36 @@ country: promo.country || 'CO',
     }
   }
 
-editPromo(promo: any) {
-  this.newPromo = {
-    name: promo.name || '',
-    description: promo.description?.split('\nFecha:')[0] || '',
-    date: promo.description?.split('\nFecha:')[1]?.trim() || '',
-    files: promo.files || [],
-    userId: promo.userId || '',
-    price: Number(promo.price || 0),
-    currency: promo.currency || 'COP',
-    country: promo.country || 'CO',
-  };
+  editPromo(promo: any) {
+    this.newPromo = {
+      name: promo.name || '',
+      description: promo.description?.split('\nFecha:')[0] || '',
+      date: promo.description?.split('\nFecha:')[1]?.trim() || '',
+      files: promo.files || [],
+      userId: promo.userId || '',
+      price: Number(promo.price || 0),
+      currency: promo.currency || 'COP',
+      country: promo.country || 'CO',
+    };
 
-  this.editingPromoId = promo.id;
-  this.isEditingPromo = true;
-  this.promoImageFile = null;
+    this.editingPromoId = promo.id;
+    this.isEditingPromo = true;
+    this.promoImageFile = null;
 
-  setTimeout(() => {
-    const modalEl = document.getElementById('promoModal');
+    setTimeout(() => {
+      const modalEl = document.getElementById('promoModal');
 
-    if (modalEl) {
-      const modalInstance =
-        (window as any).bootstrap?.Modal?.getOrCreateInstance(modalEl) ||
-        (window as any).bootstrap?.Modal?.getInstance(modalEl);
+      if (modalEl) {
+        const modalInstance =
+          (window as any).bootstrap?.Modal?.getOrCreateInstance(modalEl) ||
+          (window as any).bootstrap?.Modal?.getInstance(modalEl);
 
-      if (modalInstance) {
-        modalInstance.show();
+        if (modalInstance) {
+          modalInstance.show();
+        }
       }
-    }
-  }, 100);
-}
+    }, 100);
+  }
 
   openPromoModal() {
     this.modalService.close('promoOptionsModal'); // Cierra el modal de opciones
@@ -1752,14 +1769,14 @@ editPromo(promo: any) {
       const formData = new FormData();
       const price = Number(this.newProduct.price);
 
-if (Number.isNaN(price) || price <= 0) {
-  this.showAppToast('Ingresa un precio válido', 'error');
-  return;
-}
+      if (Number.isNaN(price) || price <= 0) {
+        this.showAppToast('Ingresa un precio válido', 'error');
+        return;
+      }
       formData.append('name', this.newProduct.name || '');
       formData.append('description', this.newProduct.description || '');
       formData.append('category', this.newProduct.category || '');
-formData.append('price', String(price));
+      formData.append('price', String(price));
       formData.append('isAvailable', String(this.newProduct.isAvailable));
       formData.append('userId', userId);
       formData.append('partnerId', partner.id);
@@ -1839,24 +1856,24 @@ formData.append('price', String(price));
   }
 
   cancelProduct() {
-  const partnerCountry = this.global.profileDataPartner.country || 'CO';
+    const partnerCountry = this.global.profileDataPartner.country || 'CO';
 
-  this.newProduct = {
-    name: '',
-    description: '',
-    category: '',
-    price: null,
-    currency: this.getDefaultCurrencyByCountry(partnerCountry),
-    country: partnerCountry,
-    isAvailable: true,
-    userId: '',
-    partnerId: ''
-  };
+    this.newProduct = {
+      name: '',
+      description: '',
+      category: '',
+      price: null,
+      currency: this.getDefaultCurrencyByCountry(partnerCountry),
+      country: partnerCountry,
+      isAvailable: true,
+      userId: '',
+      partnerId: ''
+    };
 
-  this.productImageFile = null;
-  this.isEditingProduct = false;
-  this.editingProductId = null;
-}
+    this.productImageFile = null;
+    this.isEditingProduct = false;
+    this.editingProductId = null;
+  }
 
   async subscribeToPlan(plan: any): Promise<void> {
     if (this.subscribingPlanId) return;

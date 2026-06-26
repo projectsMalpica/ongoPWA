@@ -751,6 +751,37 @@
         </div>
         <div class="card style-4">
           <div class="card-header">
+            <label>País de la entrada</label>
+          </div>
+
+          <div class="card-body">
+            <select class="form-control" [(ngModel)]="global.profileDataPartner.ticketCountry"
+              (change)="global.profileDataPartner.ticketCurrency = getDefaultCurrencyByCountry(global.profileDataPartner.ticketCountry)">
+
+              <option value="CO">Colombia</option>
+              <option value="VE">Venezuela</option>
+
+            </select>
+          </div>
+        </div>
+
+        <div class="card style-4">
+          <div class="card-header">
+            <label>Moneda</label>
+          </div>
+
+          <div class="card-body">
+            <select class="form-control" [(ngModel)]="global.profileDataPartner.ticketCurrency">
+
+              <option value="COP">COP - Peso colombiano</option>
+              <option value="VES">Bs - Bolívar</option>
+              <option value="USD">USD - Dólar</option>
+
+            </select>
+          </div>
+        </div>
+        <div class="card style-4">
+          <div class="card-header">
             <label>WhatsApp reservas</label>
           </div>
           <div class="card-body">
