@@ -200,16 +200,21 @@
         <i class="fa-solid fa-check"></i>
       </div>
 
-      <h3>Compra lista para reclamar 🎁</h3>
+      <!--  <h3>Compra lista para reclamar 🎁</h3>
 
       <p>
         Comparte este código. El local deberá validarlo antes de entregar el producto.
+      </p> -->
+      <h3>Comprobante enviado</h3>
+      <p>
+        Tu compra quedó pendiente de aprobación. Cuando el local valide el pago,
+        recibirás el código para reclamar el producto.
       </p>
 
-      <div class="redeem-code-box">
-        <small>Código de retiro</small>
-        <strong>{{ lastRedeemCode }}</strong>
-      </div>
+      <div class="redeem-code-box" *ngIf="!manualPaymentPending">
+  <small>Código de retiro</small>
+  <strong>{{ lastRedeemCode }}</strong>
+</div>
 
       <button type="button" class="send-gift-btn" (click)="copyRedeemCode()">
         Copiar código

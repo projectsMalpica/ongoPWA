@@ -49,7 +49,7 @@
 
         <div class="order-price">
           <span>Total pagado</span>
-          <strong>{{ order.amount | currency:'COP':'symbol':'1.0-0' }}</strong>
+          <strong>{{ getMoneyLabel(order.amount, order.currency) }}</strong>
         </div>
 
         <div class="redeem-box" *ngIf="order.redeemCode">

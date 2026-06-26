@@ -6,7 +6,7 @@ import { ActivatedRoute } from '@angular/router';
 
 type OrderItem = {
   id: string;
-  type: 'promo' | 'product' | 'ticket' | 'reservation';
+  type: 'promo' | 'product' | 'ticket' | 'reservation' | 'manual_product_payment';
   title: string;
   description: string;
   amount: number;
@@ -17,6 +17,7 @@ type OrderItem = {
   partnerName?: string;
   date?: string;
   raw: any;
+  currency?: string;
 };
 
 @Component({
@@ -72,7 +73,8 @@ export class MyOrders implements OnInit, OnDestroy {
     'promo_orders',
     'product_orders',
     'ticket_orders',
-    'table_reservations'
+    'table_reservations',
+    'product_payment_proofs'
   ];
 
   for (const collection of collections) {
@@ -123,27 +125,30 @@ export class MyOrders implements OnInit, OnDestroy {
     const authUserId = this.user.id;
 
     const [
-      promoOrders,
-      productOrders,
-      ticketOrders,
-      reservations
-    ] = await Promise.all([
-      this.loadPromoOrders(clientId),
-      this.loadProductOrders(authUserId),
-      this.loadTicketOrders(authUserId),
-      this.loadReservations(authUserId)
-    ]);
+  promoOrders,
+  productOrders,
+  ticketOrders,
+  reservations,
+  manualProductPayments
+] = await Promise.all([
+  this.loadPromoOrders(clientId),
+  this.loadProductOrders(authUserId),
+  this.loadTicketOrders(authUserId),
+  this.loadReservations(authUserId),
+  this.loadManualProductPayments(authUserId)
+]);
 
     const loadedOrders = [
-      ...promoOrders,
-      ...productOrders,
-      ...ticketOrders,
-      ...reservations
-    ].sort((a, b) => {
-      const dateA = new Date(a.date || '').getTime();
-      const dateB = new Date(b.date || '').getTime();
-      return dateB - dateA;
-    });
+  ...manualProductPayments,
+  ...promoOrders,
+  ...productOrders,
+  ...ticketOrders,
+  ...reservations
+].sort((a, b) => {
+  const dateA = new Date(a.date || '').getTime();
+  const dateB = new Date(b.date || '').getTime();
+  return dateB - dateA;
+});
 
     this.zone.run(() => {
       this.orders = [...loadedOrders];
@@ -166,6 +171,34 @@ export class MyOrders implements OnInit, OnDestroy {
   }
 }
 
+async loadManualProductPayments(authUserId: string): Promise<OrderItem[]> {
+  const records = await this.pb.collection('product_payment_proofs').getFullList({
+    filter: `buyerUserId="${authUserId}" || receiverUserId="${authUserId}"`,
+    sort: '-created',
+    expand: 'partnerId,productId',
+    requestKey: null
+  });
+
+  return records.map((item: any) => ({
+    id: item.id,
+    type: 'manual_product_payment',
+    title: item.productName || 'Compra pendiente',
+    description:
+      item.status === 'approved'
+        ? 'Pago aprobado. Puedes reclamar este producto en el local.'
+        : item.status === 'rejected'
+          ? 'El comercio rechazó este comprobante.'
+          : 'Comprobante enviado. El comercio está validando tu pago.',
+    amount: Number(item.amount || item.amountBs || item.amountUSD || 0),
+    currency: item.currency || (item.amountBs ? 'VES' : item.amountUSD ? 'USD' : 'COP'),
+    status: item.status,
+    orderStatus: item.status,
+    redeemCode: item.status === 'approved' ? item.redeemCode : '',
+    partnerName: item.expand?.partnerId?.venueName || item.expand?.partnerId?.name || 'Local',
+    date: item.created,
+    raw: item
+  }));
+}
   async loadPromoOrders(clientId: string): Promise<OrderItem[]> {
     const records = await this.pb.collection('promo_orders').getFullList({
       filter: `buyerUserId="${clientId}"`,
@@ -270,20 +303,44 @@ export class MyOrders implements OnInit, OnDestroy {
   }
 
   getBadgeLabel(order: OrderItem): string {
-    if (order.type === 'promo') return 'Promo';
-    if (order.type === 'product') return 'Regalo / compra';
-    if (order.type === 'ticket') return 'Entrada';
-    return 'Reserva';
+  if (order.type === 'manual_product_payment') return 'Pago manual';
+  if (order.type === 'promo') return 'Promo';
+  if (order.type === 'product') return 'Regalo / compra';
+  if (order.type === 'ticket') return 'Entrada';
+  return 'Reserva';
+}
+
+ getStatusLabel(order: OrderItem): string {
+  if (order.status === 'approved') return 'Aprobado';
+  if (order.status === 'rejected') return 'Rechazado';
+  if (order.orderStatus === 'redeemed') return 'Canjeado';
+  if (order.orderStatus === 'cancelled') return 'Cancelado';
+  if (order.status === 'paid') return 'Pagado';
+  if (order.status === 'pending') return 'Pendiente de aprobación';
+  return order.status || 'Activo';
+}
+getMoneyLabel(amount: number, currency: string = 'COP'): string {
+  const value = Number(amount || 0);
+
+  if (currency === 'VES') {
+    return `${value.toLocaleString('es-VE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })} Bs`;
   }
 
-  getStatusLabel(order: OrderItem): string {
-    if (order.orderStatus === 'redeemed') return 'Canjeado';
-    if (order.orderStatus === 'cancelled') return 'Cancelado';
-    if (order.status === 'paid') return 'Pagado';
-    if (order.status === 'pending') return 'Pendiente';
-    if (order.status === 'rejected') return 'Rechazado';
-    return order.status || 'Activo';
+  if (currency === 'USD') {
+    return `${value.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })} USD`;
   }
+
+  return `${value.toLocaleString('es-CO', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  })} COP`;
+}
 
   async copyCode(code?: string): Promise<void> {
     if (!code) return;

@@ -46,7 +46,7 @@ export class Detailprofilelocal {
   bcvRate = 0;
   selectedPaymentCountry: 'CO' | 'VE' = 'CO';
   paymentProofFile: File | null = null;
-
+  manualPaymentPending = false;
   constructor(public global: GlobalService,
     public changeDetectorRef: ChangeDetectorRef,
     public auth: AuthPocketbaseService,
@@ -941,14 +941,7 @@ export class Detailprofilelocal {
     this.paymentProofFile = event.target.files?.[0] || null;
   }
   async sendGiftManualPayment(): Promise<void> {
-    if (!this.selectedGiftProduct || !this.paymentProofFile || !this.partner?.id) return;
-
-    if (!this.bcvRate || this.bcvRate <= 0) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Tasa BCV no disponible',
-        text: 'No se puede procesar el pago porque no hay tasa configurada.'
-      });
+    if (!this.selectedGiftProduct || !this.paymentProofFile || !this.partner?.id) {
       return;
     }
 
@@ -984,12 +977,12 @@ export class Detailprofilelocal {
       formData.append('amount', String(amount));
       formData.append('currency', currency);
       formData.append('country', country);
-      formData.append('bcvRate', String(this.bcvRate));
       formData.append('paymentMethod', 'Pago móvil / transferencia');
       formData.append('status', 'pending');
       formData.append('message', this.giftMessage || '');
       formData.append('redeemCode', redeemCode);
       formData.append('proofFile', this.paymentProofFile);
+
       formData.append('amountUSD', currency === 'USD' ? String(amount) : '0');
       formData.append('amountBs', currency === 'VES' ? String(amount) : '0');
       formData.append('bcvRate', '0');
@@ -997,18 +990,21 @@ export class Detailprofilelocal {
       await this.pb.collection('product_payment_proofs').create(formData, {
         requestKey: null
       });
-
+      this.manualPaymentPending = true;
+      this.giftSentSuccess = true;
       this.lastRedeemCode = redeemCode;
       this.giftSentSuccess = true;
+      this.paymentProofFile = null;
 
       Swal.fire({
         icon: 'success',
         title: 'Comprobante enviado',
-        text: 'El local validará tu pago antes de entregar el producto.'
+        text: 'Tu compra quedó pendiente de validación por el local.'
       });
 
     } catch (error: any) {
       console.error('Error enviando pago manual:', error);
+      console.error('PocketBase data:', error?.data?.data);
 
       Swal.fire({
         icon: 'error',
@@ -1018,6 +1014,7 @@ export class Detailprofilelocal {
 
     } finally {
       this.isSendingGift = false;
+      this.changeDetectorRef.detectChanges();
     }
   }
 }
