@@ -101,13 +101,15 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
   lat: number = 0;
   lng: number = 0;
   newPromo = {
-    name: '',
-    description: '',
-    date: '',
-    price: null as number | null,
-    files: [],
-    userId: '',
-  };
+  name: '',
+  description: '',
+  date: '',
+  price: null as number | null,
+  currency: 'COP',
+  country: 'CO',
+  files: [],
+  userId: '',
+};
   showPromos = false;
   isServicesOffcanvasOpen = false;
   selectedPaymentCountry: 'CO' | 'VE' = 'CO';
@@ -173,6 +175,9 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
 
     this.initMapIfReady();
   }
+  onPromoCountryChange(): void {
+  this.newPromo.currency = this.getDefaultCurrencyByCountry(this.newPromo.country);
+}
   getSubscriptionStatusLabel(): string {
 
     const status =
@@ -1397,119 +1402,125 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async savePromotion() {
-    try {
-      // Si estamos editando, actualiza la promo existente
-      if (this.isEditingPromo && this.editingPromoId) {
-        let imageUrl = '';
-        if (this.promoImageFile) {
-          const fileForm = new FormData();
-          fileForm.append('file', this.promoImageFile);
-          fileForm.append('userId', this.auth.currentUser?.id || '');
-          fileForm.append('type', 'promo');
-          const fileRecord = await this.pb.collection('files').create(fileForm);
-          imageUrl = this.pb.files.getUrl(fileRecord, fileRecord['file']);
-        }
-        const promoForm: any = {
-          name: this.newPromo.name,
-          description: `${this.newPromo.description}\nFecha: ${this.newPromo.date}`,
-          userId: this.auth.currentUser?.id || '',
-        };
-        if (imageUrl) {
-          promoForm.files = [imageUrl];
-        }
-        await this.pb.collection('promos').update(this.editingPromoId, promoForm);
-        this.loadPromotionsForPartner();
-        this.isEditingPromo = false;
-        this.editingPromoId = null;
-        this.newPromo = {
-          name: '',
-          description: '',
-          date: '',
-          price: null,
-          files: [],
-          userId: '',
-        }; this.promoImageFile = null;
-        // Cierra modal y muestra toast igual que antes
-        const modalEl = document.getElementById('promoModal');
-        if (modalEl) {
-          const modalInstance = (window as any).bootstrap?.Modal?.getOrCreateInstance(modalEl) || (window as any).bootstrap?.Modal?.getInstance(modalEl);
-          if (modalInstance) {
-            modalInstance.hide();
-          }
-        }
-        const backdrop = document.querySelector('.modal-backdrop');
-        if (backdrop) {
-          backdrop.remove();
-        }
-        document.body.classList.remove('modal-open');
-        this.showSuccessToast = false;
-        setTimeout(() => {
-          this.successPromoToast = true;
-          setTimeout(() => this.successPromoToast = false, 3000);
-        }, 100);
-        return;
-      }
-      // Si no, crear promo nueva como antes
+  try {
+    const price = Number(this.newPromo.price || 0);
 
-      let imageUrl = '';
-      // 1. Subir primero la imagen si existe
-      if (this.promoImageFile) {
-        const fileForm = new FormData();
-        fileForm.append('file', this.promoImageFile);
-        fileForm.append('userId', this.auth.currentUser?.id || '');
-        fileForm.append('type', 'promo');
-        // Subir archivo a la colección de archivos
-        const fileRecord = await this.pb.collection('files').create(fileForm);
-        // Obtener la URL del archivo subido
-        imageUrl = this.pb.files.getUrl(fileRecord, fileRecord['file']);
-      }
+    if (Number.isNaN(price) || price < 0) {
+      this.showAppToast('Ingresa un precio válido para la promoción', 'error');
+      return;
+    }
 
-      // 2. Guardar la promoción con el enlace de la imagen
-      const promoForm = new FormData();
-      promoForm.append('name', this.newPromo.name);
-      promoForm.append('description', `${this.newPromo.description}\nFecha: ${this.newPromo.date}`);
-      promoForm.append('userId', this.auth.currentUser?.id || '');
-      promoForm.append('price', String(this.newPromo.price || 0));
+    let imageUrl = '';
+
+    if (this.promoImageFile) {
+      const fileForm = new FormData();
+      fileForm.append('file', this.promoImageFile);
+      fileForm.append('userId', this.auth.currentUser?.id || '');
+      fileForm.append('type', 'promo');
+
+      const fileRecord = await this.pb.collection('files').create(fileForm, {
+        requestKey: null
+      });
+
+      imageUrl = this.pb.files.getUrl(fileRecord, fileRecord['file']);
+    }
+
+    if (this.isEditingPromo && this.editingPromoId) {
+      const promoForm: any = {
+        name: this.newPromo.name || '',
+        description: `${this.newPromo.description || ''}\nFecha: ${this.newPromo.date || ''}`,
+        userId: this.auth.currentUser?.id || '',
+        price,
+        currency: this.newPromo.currency || 'COP',
+        country: this.newPromo.country || 'CO',
+      };
+
       if (imageUrl) {
-        // Guardar el enlace como array de string (JSON)
+        promoForm.files = [imageUrl];
+      }
+
+      await this.pb.collection('promos').update(this.editingPromoId, promoForm, {
+        requestKey: null
+      });
+
+    } else {
+      const promoForm = new FormData();
+
+      promoForm.append('name', this.newPromo.name || '');
+      promoForm.append('description', `${this.newPromo.description || ''}\nFecha: ${this.newPromo.date || ''}`);
+      promoForm.append('userId', this.auth.currentUser?.id || '');
+      promoForm.append('price', String(price));
+      promoForm.append('currency', this.newPromo.currency || 'COP');
+      promoForm.append('country', this.newPromo.country || 'CO');
+
+      if (imageUrl) {
         promoForm.append('files', JSON.stringify([imageUrl]));
       }
 
-      const result = await this.pb.collection('promos').create(promoForm);
+      const result = await this.pb.collection('promos').create(promoForm, {
+        requestKey: null
+      });
+
       console.log('Promo guardada con imagen:', result);
+    }
 
-      // Reset
-      this.newPromo = { name: '', description: '', date: '', files: [], userId: '', price: null as number | null };
-      this.promoImageFile = null;
+    await this.loadPromotionsForPartner();
 
-      // Cerrar modal y limpiar backdrop
-      this.modalService.close('promoOptionsModal'); // Cierra el modal de opciones
-      const modalEl = document.getElementById('promoModal');
-      if (modalEl) {
-        const modalInstance = (window as any).bootstrap?.Modal?.getOrCreateInstance(modalEl) || (window as any).bootstrap?.Modal?.getInstance(modalEl);
-        if (modalInstance) {
-          modalInstance.hide();
-        }
-      }
-      // Eliminar backdrop manualmente si quedó
-      const backdrop = document.querySelector('.modal-backdrop');
-      if (backdrop) {
-        backdrop.remove();
-      }
-      document.body.classList.remove('modal-open');
+    this.resetPromoForm();
+    this.closePromoModal();
 
-      // Mostrar mensaje distinto
-      this.showSuccessToast = false;
-      this.loadPromotionsForPartner();
-      setTimeout(() => {
-        this.successPromoToast = true;
-        setTimeout(() => this.successPromoToast = false, 3000);
-      }, 100);
-    } catch (error) {
-      console.error('Error guardando la promoción:', error);
+    this.showSuccessToast = false;
+
+    setTimeout(() => {
+      this.successPromoToast = true;
+      setTimeout(() => this.successPromoToast = false, 3000);
+    }, 100);
+
+  } catch (error) {
+    console.error('Error guardando la promoción:', error);
+  }
+}
+
+resetPromoForm(): void {
+  this.newPromo = {
+    name: '',
+    description: '',
+    date: '',
+    files: [],
+    userId: '',
+    price: null,
+    currency: 'COP',
+    country: 'CO',
+  };
+
+  this.promoImageFile = null;
+  this.isEditingPromo = false;
+  this.editingPromoId = null;
+}
+
+closePromoModal(): void {
+  this.modalService.close('promoOptionsModal');
+
+  const modalEl = document.getElementById('promoModal');
+
+  if (modalEl) {
+    const modalInstance =
+      (window as any).bootstrap?.Modal?.getOrCreateInstance(modalEl) ||
+      (window as any).bootstrap?.Modal?.getInstance(modalEl);
+
+    if (modalInstance) {
+      modalInstance.hide();
     }
   }
 
+  const backdrop = document.querySelector('.modal-backdrop');
+
+  if (backdrop) {
+    backdrop.remove();
+  }
+
+  document.body.classList.remove('modal-open');
+}
 
   onPromoImageSelected(event: any) {
     const file = event.target.files[0];
@@ -1533,7 +1544,9 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
         description: promo.description,
         files: promo.files,
         userId: promo.userId,
-        price: Number(promo.price || 0)
+        price: Number(promo.price || 0),
+currency: promo.currency || 'COP',
+country: promo.country || 'CO',
 
       }));
     } catch (error) {
@@ -1541,33 +1554,9 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
     }
   }
   cancelPromo() {
-    this.newPromo = {
-      name: '',
-      description: '',
-      date: '',
-      files: [],
-      userId: '',
-      price: null as number | null,
-    };
-    this.promoImageFile = null;
-    this.isEditingPromo = false;
-    this.editingPromoId = null;
-
-    // Cerrar el modal si está abierto y limpiar el backdrop
-    const modalEl = document.getElementById('promoModal');
-    if (modalEl) {
-      const modalInstance = (window as any).bootstrap?.Modal?.getOrCreateInstance(modalEl) || (window as any).bootstrap?.Modal?.getInstance(modalEl);
-      if (modalInstance) {
-        modalInstance.hide();
-      }
-    }
-    // Eliminar backdrop manualmente si quedó
-    const backdrop = document.querySelector('.modal-backdrop');
-    if (backdrop) {
-      backdrop.remove();
-    }
-    document.body.classList.remove('modal-open');
-  }
+  this.resetPromoForm();
+  this.closePromoModal();
+}
   async deletePromo(promo: any) {
     try {
       await this.pb.collection('promos').delete(promo.id);
@@ -1597,31 +1586,36 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+editPromo(promo: any) {
+  this.newPromo = {
+    name: promo.name || '',
+    description: promo.description?.split('\nFecha:')[0] || '',
+    date: promo.description?.split('\nFecha:')[1]?.trim() || '',
+    files: promo.files || [],
+    userId: promo.userId || '',
+    price: Number(promo.price || 0),
+    currency: promo.currency || 'COP',
+    country: promo.country || 'CO',
+  };
 
-  editPromo(promo: any) {
-    // Llena el formulario con la info existente
-    this.newPromo = {
-      name: promo.name,
-      description: promo.description.split('\nFecha:')[0] || '',
-      date: promo.description.split('\nFecha:')[1]?.trim() || '',
-      files: promo.files || [],
-      userId: promo.userId || '',
-      price: Number(this.newPromo.price || 0),
-    };
-    this.editingPromoId = promo.id;
-    this.isEditingPromo = true;
-    this.promoImageFile = null;
-    // Abre el modal
-    setTimeout(() => {
-      const modalEl = document.getElementById('promoModal');
-      if (modalEl) {
-        const modalInstance = (window as any).bootstrap?.Modal?.getOrCreateInstance(modalEl) || (window as any).bootstrap?.Modal?.getInstance(modalEl);
-        if (modalInstance) {
-          modalInstance.show();
-        }
+  this.editingPromoId = promo.id;
+  this.isEditingPromo = true;
+  this.promoImageFile = null;
+
+  setTimeout(() => {
+    const modalEl = document.getElementById('promoModal');
+
+    if (modalEl) {
+      const modalInstance =
+        (window as any).bootstrap?.Modal?.getOrCreateInstance(modalEl) ||
+        (window as any).bootstrap?.Modal?.getInstance(modalEl);
+
+      if (modalInstance) {
+        modalInstance.show();
       }
-    }, 100);
-  }
+    }
+  }, 100);
+}
 
   openPromoModal() {
     this.modalService.close('promoOptionsModal'); // Cierra el modal de opciones
