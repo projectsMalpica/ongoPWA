@@ -23,7 +23,9 @@ export class Detailprofile implements OnInit {
   currentWallet: any = null;
   isSendingGift = false;
   interests: string[] = [];
-
+  clientPhotos: string[] = [];
+galleryOpen = false;
+galleryIndex = 0;
   pb: PocketBase;
 
   constructor(
@@ -34,10 +36,90 @@ export class Detailprofile implements OnInit {
     this.pb = this.authPocketbaseService.pb;
   }
 
-  ngOnInit(): void {
-    this.interests = this.parseInterests(this.global.selectedClient?.interests);
+  async ngOnInit(): Promise<void> {
+    await this.loadSelectedClientFullData();
+  }
+  async loadSelectedClientFullData(): Promise<void> {
+    const clientId = this.global.selectedClient?.id || this.global.selectedClient?.userId;
+
+    if (!clientId) {
+      return;
+    }
+
+    try {
+      const client = await this.pb.collection('users').getOne(clientId, {
+        requestKey: null
+      });
+
+      this.global.selectedClient = {
+        ...this.global.selectedClient,
+        ...client,
+        avatar: client['avatar']
+          ? this.pb.files.getUrl(client, client['avatar'])
+          : this.global.selectedClient?.avatar
+      };
+      this.clientPhotos = this.buildClientPhotos(this.global.selectedClient);
+      this.interests = this.parseInterests(this.global.selectedClient?.interests);
+
+    } catch (error) {
+      console.error('Error cargando datos completos del cliente:', error);
+    }
+  }
+  buildClientPhotos(client: any): string[] {
+  const photos: string[] = [];
+
+  if (client?.avatar) {
+    photos.push(client.avatar);
   }
 
+  const galleryFields = [
+    client?.photo1,
+    client?.photo2,
+    client?.photo3,
+    client?.photo4,
+    client?.photo5,
+    client?.photo6
+  ];
+
+  galleryFields.forEach(photo => {
+    if (photo && !photos.includes(photo)) {
+      photos.push(photo);
+    }
+  });
+
+  if (Array.isArray(client?.photos)) {
+    client.photos.forEach((photo: any) => {
+      const url = photo?.url || photo;
+
+      if (url && !photos.includes(url)) {
+        photos.push(url);
+      }
+    });
+  }
+
+  return photos;
+}
+
+openGallery(index: number): void {
+  this.galleryIndex = index;
+  this.galleryOpen = true;
+}
+
+closeGallery(): void {
+  this.galleryOpen = false;
+}
+
+nextPhoto(): void {
+  if (this.galleryIndex < this.clientPhotos.length - 1) {
+    this.galleryIndex++;
+  }
+}
+
+prevPhoto(): void {
+  if (this.galleryIndex > 0) {
+    this.galleryIndex--;
+  }
+}
   parseInterests(interests: string | string[]): string[] {
     if (!interests) return [];
 

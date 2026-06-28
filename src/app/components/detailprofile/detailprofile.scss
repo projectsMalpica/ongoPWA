@@ -343,3 +343,161 @@
     transform: translateY(0) scale(1);
   }
 }
+.dating-gallery {
+  padding: 0 14px 18px;
+}
+
+.gallery-main {
+  position: relative;
+  height: 260px;
+  border-radius: 28px;
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+  box-shadow: 0 18px 45px rgba(0,0,0,.45);
+}
+
+.gallery-main::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0,0,0,0) 45%,
+    rgba(0,0,0,.72) 100%
+  );
+}
+
+.gallery-badge {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 2;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
+  padding: 8px 14px;
+  border-radius: 999px;
+
+  background: rgba(255,255,255,.14);
+  color: #fff;
+
+  font-size: 13px;
+  font-weight: 800;
+
+  backdrop-filter: blur(12px);
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.gallery-thumb {
+  position: relative;
+  height: 95px;
+
+  border: 0;
+  border-radius: 20px;
+
+  background-size: cover;
+  background-position: center;
+
+  overflow: hidden;
+}
+
+.gallery-thumb span {
+  position: absolute;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(0,0,0,.58);
+  color: #fff;
+
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.gallery-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(0,0,0,.94);
+  backdrop-filter: blur(12px);
+}
+
+.gallery-full-image {
+  max-width: 94vw;
+  max-height: 82vh;
+  object-fit: contain;
+  border-radius: 20px;
+}
+
+.gallery-close {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 18px);
+  right: 18px;
+
+  width: 44px;
+  height: 44px;
+
+  border: 0;
+  border-radius: 50%;
+
+  background: rgba(255,255,255,.12);
+  color: #fff;
+
+  font-size: 20px;
+}
+
+.gallery-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+
+  width: 46px;
+  height: 46px;
+
+  border: 0;
+  border-radius: 50%;
+
+  background: rgba(255,255,255,.14);
+  color: #fff;
+
+  font-size: 26px;
+  font-weight: 900;
+}
+
+.gallery-arrow.left {
+  left: 12px;
+}
+
+.gallery-arrow.right {
+  right: 12px;
+}
+
+.gallery-counter {
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom) + 28px);
+
+  padding: 8px 14px;
+  border-radius: 999px;
+
+  background: rgba(255,255,255,.14);
+  color: #fff;
+
+  font-size: 13px;
+  font-weight: 800;
+}

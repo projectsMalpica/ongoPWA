@@ -14,6 +14,27 @@
                     <a href="javascript:void(0);" class="dz-icon"><i class="flaticon flaticon-star-1"></i></a>
                 </div>
             </div>
+            <div class="dating-gallery" *ngIf="clientPhotos.length > 0">
+                <div class="gallery-main" [ngStyle]="{'background-image': 'url(' + clientPhotos[0] + ')'}"
+                    (click)="openGallery(0)">
+
+                    <div class="gallery-badge">
+                        <i class="icon feather icon-image"></i>
+                        {{ clientPhotos.length }} fotos
+                    </div>
+                </div>
+
+                <div class="gallery-grid" *ngIf="clientPhotos.length > 1">
+                    <button type="button" class="gallery-thumb"
+                        *ngFor="let photo of clientPhotos.slice(1, 4); let i = index"
+                        [ngStyle]="{'background-image': 'url(' + photo + ')'}" (click)="openGallery(i + 1)">
+
+                        <span *ngIf="i === 2 && clientPhotos.length > 4">
+                            +{{ clientPhotos.length - 4 }}
+                        </span>
+                    </button>
+                </div>
+            </div>
             <div class="detail-bottom-area">
                 <div class="about" style="margin-bottom: 1rem;">
                     <h6 class="title">Soy {{global.selectedClient?.name}}</h6>
@@ -68,7 +89,8 @@
                 <div class="about" style="margin-bottom: 2rem;">
                     <h6 class="title">Me gusta </h6>
                     <ul class="dz-tag-list single">
-<li *ngFor="let interest of interests">                            <div class="dz-tag">
+                        <li *ngFor="let interest of interests">
+                            <div class="dz-tag">
                                 <i class="icon feather icon-plus"></i>
 
                                 <span style="color: #FF50A2;">
@@ -96,46 +118,69 @@
         </div>
     </div>
 </div>
-<div class="gift-modal-overlay" *ngIf="showGiftModal" (click)="closeGiftModal()">
-  <div class="gift-modal-card" (click)="$event.stopPropagation()">
+<div class="gallery-overlay" *ngIf="galleryOpen" (click)="closeGallery()">
+  <button type="button" class="gallery-close" (click)="closeGallery()">
+    <i class="fa-solid fa-xmark"></i>
+  </button>
 
-    <button type="button" class="gift-close" (click)="closeGiftModal()">
-      <i class="fa-solid fa-xmark"></i>
-    </button>
+  <button
+    type="button"
+    class="gallery-arrow left"
+    *ngIf="galleryIndex > 0"
+    (click)="$event.stopPropagation(); prevPhoto()">
+    ❮
+  </button>
 
-    <h3>Invitar un trago 🍸</h3>
-    <p>Para: <strong>{{ giftReceiver?.name }}</strong></p>
+  <img
+    class="gallery-full-image"
+    [src]="clientPhotos[galleryIndex]"
+    (click)="$event.stopPropagation()">
 
-    <span class="wallet-balance">
-      Saldo: {{ walletBalance | currency:'COP':'symbol':'1.0-0' }}
-    </span>
+  <button
+    type="button"
+    class="gallery-arrow right"
+    *ngIf="galleryIndex < clientPhotos.length - 1"
+    (click)="$event.stopPropagation(); nextPhoto()">
+    ❯
+  </button>
 
-    <div class="gift-products">
-      <button
-        type="button"
-        class="gift-product"
-        *ngFor="let product of partnerProducts"
-        [class.active]="selectedGiftProduct?.id === product.id"
-        (click)="selectedGiftProduct = product">
-
-        <img *ngIf="product.image" [src]="product.image" alt="gift">
-
-        <div class="gift-info">
-          <strong>{{ product.name }}</strong>
-          <small>{{ product.partnerName }}</small>
-          <span>{{ product.price | currency:'COP':'symbol':'1.0-0' }}</span>
-        </div>
-      </button>
-    </div>
-
-    <textarea [(ngModel)]="giftMessage" placeholder="Mensaje opcional..."></textarea>
-
-    <button
-      type="button"
-      class="send-gift-btn"
-      [disabled]="!selectedGiftProduct || isSendingGift">
-      {{ isSendingGift ? 'Enviando...' : 'Enviar regalo 🎁' }}
-    </button>
-
+  <div class="gallery-counter">
+    {{ galleryIndex + 1 }} / {{ clientPhotos.length }}
   </div>
+</div>
+<div class="gift-modal-overlay" *ngIf="showGiftModal" (click)="closeGiftModal()">
+    <div class="gift-modal-card" (click)="$event.stopPropagation()">
+
+        <button type="button" class="gift-close" (click)="closeGiftModal()">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <h3>Invitar un trago 🍸</h3>
+        <p>Para: <strong>{{ giftReceiver?.name }}</strong></p>
+
+        <span class="wallet-balance">
+            Saldo: {{ walletBalance | currency:'COP':'symbol':'1.0-0' }}
+        </span>
+
+        <div class="gift-products">
+            <button type="button" class="gift-product" *ngFor="let product of partnerProducts"
+                [class.active]="selectedGiftProduct?.id === product.id" (click)="selectedGiftProduct = product">
+
+                <img *ngIf="product.image" [src]="product.image" alt="gift">
+
+                <div class="gift-info">
+                    <strong>{{ product.name }}</strong>
+                    <small>{{ product.partnerName }}</small>
+                    <span>{{ product.price | currency:'COP':'symbol':'1.0-0' }}</span>
+                </div>
+            </button>
+        </div>
+
+        <textarea [(ngModel)]="giftMessage" placeholder="Mensaje opcional..."></textarea>
+
+        <button type="button" class="send-gift-btn" [disabled]="!selectedGiftProduct || isSendingGift">
+            {{ isSendingGift ? 'Enviando...' : 'Enviar regalo 🎁' }}
+        </button>
+
+    </div>
 </div>
