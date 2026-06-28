@@ -458,36 +458,7 @@ export class Profile implements OnInit, AfterViewInit, OnDestroy {
           .filter(Boolean);
       }
 
-      /*  this.profileData = {
-         name: userData['name'] || '',
-         interestedIn: userData['interestedIn'] || '',
-         lookingFor: userData['lookingFor'] || '',
-         language: userData['language'] || '',
-         orientation: userData['orientation'] || '',
-         birthday: userData['birthday'] || '',
-         gender: userData['gender'] || '',
-         address: userData['address'] || '',
-         about: userData['about'] || '',
-         age: userData['age'] ?? null,
-         photos: userData['photos'] || [],
-         email: userData['email'] || '',
-         userId: userData['userId'] || '',
-         status: userData['status'] || '',
-         interests: interestsArray.join(', '),
-         avatar: userData['avatar'] || '',
- 
-         subscriptions: userData['subscriptions'] || 'Sin plan',
-         subscriptionPlanName: userData['subscriptionPlanName'] || '',
-         subscriptionPlanId: userData['subscriptionPlanId'] || '',
-         subscriptionStatus: userData['subscriptionStatus'] || '',
-         subscriptionStartsAt: userData['subscriptionStartsAt'] || '',
-         subscriptionExpiresAt: userData['subscriptionExpiresAt'] || '',
-         subscriptionAutoRenew: userData['subscriptionAutoRenew'] || false,
-         pendingSubscriptionStatus: userData['pendingSubscriptionStatus'] || '',
-         pendingSubscriptionPlanId: userData['pendingSubscriptionPlanId'] || '',
-         pendingSubscriptionPlanName: userData['pendingSubscriptionPlanName'] || '',
-         pendingSubscriptionRequestedAt: userData['pendingSubscriptionRequestedAt'] || '',
-       }; */
+      
       this.profileData = {
         name: userData['name'] || '',
         interestedIn: userData['interestedIn'] || '',
@@ -1082,5 +1053,28 @@ isPlanButtonDisabled(plan: any): boolean {
       )
     )
   );
+}
+galleryOpen = false;
+galleryIndex = 0;
+
+openGallery(index: number) {
+  this.galleryIndex = index;
+  this.galleryOpen = true;
+}
+
+closeGallery() {
+  this.galleryOpen = false;
+}
+
+nextPhoto() {
+  if (this.galleryIndex < this.photos.length - 1) {
+    this.galleryIndex++;
+  }
+}
+
+prevPhoto() {
+  if (this.galleryIndex > 0) {
+    this.galleryIndex--;
+  }
 }
 }

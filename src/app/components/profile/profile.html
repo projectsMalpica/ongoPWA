@@ -156,7 +156,8 @@
             <div class="row g-2 m-b30" data-masonry='{"percentPosition": true }'>
               <div class="col-4" *ngFor="let photo of photos; let i = index">
                 <div class="photo-container">
-                  <div class="photo-preview" [ngStyle]="{'background-image': 'url(' + photo.url + ')'}">
+                  <div class="photo-preview" [ngStyle]="{'background-image': 'url(' + photo.url + ')'}"
+                    (click)="photo.url && openGallery(i)">
                   </div>
                 </div>
               </div>
@@ -358,6 +359,7 @@
               <input type="file" [id]="'imageUpload' + i" class="d-none" (change)="onPhotoSelected($event, i)"
                 accept=".png, .jpg, .jpeg">
             </div>
+
           </div>
         </div>
 
@@ -486,6 +488,39 @@
       </button>
     </div>
   </div>
+</div>
+<div
+    class="gallery-overlay"
+    *ngIf="galleryOpen">
+
+    <button
+        class="gallery-close"
+        (click)="closeGallery()">
+        ✕
+    </button>
+
+    <button
+        class="gallery-arrow left"
+        *ngIf="galleryIndex > 0"
+        (click)="prevPhoto()">
+        ❮
+    </button>
+
+    <img
+        class="gallery-image"
+        [src]="photos[galleryIndex]?.url">
+
+    <button
+        class="gallery-arrow right"
+        *ngIf="galleryIndex < photos.length-1"
+        (click)="nextPhoto()">
+        ❯
+    </button>
+
+    <div class="gallery-counter">
+        {{galleryIndex + 1}} / {{photos.length}}
+    </div>
+
 </div>
 <div class="modal fade" id="clientManualPaymentModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
