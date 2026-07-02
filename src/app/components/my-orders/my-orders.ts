@@ -6,7 +6,8 @@ import { ActivatedRoute } from '@angular/router';
 
 type OrderItem = {
   id: string;
-  type: 'promo' | 'product' | 'ticket' | 'reservation' | 'manual_product_payment';
+/*   type: 'promo' | 'product' | 'ticket' | 'reservation' | 'manual_product_payment';
+ */  type: 'promo' | 'product' | 'ticket' | 'reservation' | 'manual_product_payment' | 'manual_promo_payment' | 'manual_ticket_payment';
   title: string;
   description: string;
   amount: number;
@@ -33,6 +34,36 @@ export class MyOrders implements OnInit, OnDestroy {
   pb!: PocketBase;
 
   orders: OrderItem[] = [];
+  activeFilter: 'all' | 'pending' | 'approved' | 'paid' = 'all';
+
+get filteredOrders(): OrderItem[] {
+  if (this.activeFilter === 'all') return this.orders;
+
+  if (this.activeFilter === 'pending') {
+    return this.orders.filter(order =>
+      order.status === 'pending' ||
+      order.orderStatus === 'pending' ||
+      order.orderStatus === 'pending_payment'
+    );
+  }
+
+  if (this.activeFilter === 'approved') {
+    return this.orders.filter(order =>
+      order.status === 'approved' ||
+      order.orderStatus === 'approved'
+    );
+  }
+
+  if (this.activeFilter === 'paid') {
+    return this.orders.filter(order =>
+      order.status === 'paid' ||
+      order.orderStatus === 'active' ||
+      order.orderStatus === 'pending_redeem'
+    );
+  }
+
+  return this.orders;
+}
   loading = false;
   error = '';
 
@@ -69,13 +100,22 @@ export class MyOrders implements OnInit, OnDestroy {
   async listenOrdersChanges() {
   if (this.unsubscribers.length) return;
 
-  const collections = [
+  /* const collections = [
     'promo_orders',
     'product_orders',
     'ticket_orders',
     'table_reservations',
     'product_payment_proofs'
-  ];
+  ]; */
+
+  const collections = [
+  'promo_orders',
+  'product_orders',
+  'ticket_orders',
+  'table_reservations',
+  'product_payment_proofs',
+  'ticket_payment_proofs'
+];
 
   for (const collection of collections) {
     const unsubscribe = await this.pb.collection(collection).subscribe('*', async () => {
@@ -129,17 +169,20 @@ export class MyOrders implements OnInit, OnDestroy {
   productOrders,
   ticketOrders,
   reservations,
-  manualProductPayments
+  manualProductPayments,
+  manualTicketPromoPayments
 ] = await Promise.all([
   this.loadPromoOrders(clientId),
   this.loadProductOrders(authUserId),
   this.loadTicketOrders(authUserId),
   this.loadReservations(authUserId),
-  this.loadManualProductPayments(authUserId)
+  this.loadManualProductPayments(authUserId),
+  this.loadManualTicketPromoPayments(authUserId)
 ]);
 
-    const loadedOrders = [
+   const loadedOrders = [
   ...manualProductPayments,
+  ...manualTicketPromoPayments,
   ...promoOrders,
   ...productOrders,
   ...ticketOrders,
@@ -170,7 +213,40 @@ export class MyOrders implements OnInit, OnDestroy {
     });
   }
 }
+async loadManualTicketPromoPayments(authUserId: string): Promise<OrderItem[]> {
+  const records = await this.pb.collection('ticket_payment_proofs').getFullList({
+    filter: `buyerUserId="${authUserId}"`,
+    sort: '-created',
+    expand: 'partnerId',
+    requestKey: null
+  });
 
+  return records.map((item: any) => {
+    const isPromo =
+      item.productName === 'Promoción' ||
+      item.itemName?.toLowerCase?.().includes('promo');
+
+    return {
+      id: item.id,
+      type: isPromo ? 'manual_promo_payment' : 'manual_ticket_payment',
+      title: item.itemName || item.productName || (isPromo ? 'Promoción pendiente' : 'Entrada pendiente'),
+      description:
+        item.status === 'approved'
+          ? 'Pago aprobado. Ya puedes reclamar en el local.'
+          : item.status === 'rejected'
+            ? 'El comercio rechazó este comprobante.'
+            : 'Comprobante enviado. El comercio está validando tu pago.',
+      amount: Number(item.amount || 0),
+      currency: item.currency || 'COP',
+      status: item.status,
+      orderStatus: item.status,
+      redeemCode: item.status === 'approved' ? item.redeemCode : '',
+      partnerName: item.expand?.partnerId?.venueName || item.expand?.partnerId?.name || 'Local',
+      date: item.created,
+      raw: item
+    };
+  });
+}
 async loadManualProductPayments(authUserId: string): Promise<OrderItem[]> {
   const records = await this.pb.collection('product_payment_proofs').getFullList({
     filter: `buyerUserId="${authUserId}" || receiverUserId="${authUserId}"`,
@@ -309,7 +385,15 @@ async loadManualProductPayments(authUserId: string): Promise<OrderItem[]> {
   if (order.type === 'ticket') return 'Entrada';
   return 'Reserva';
 }
-
+/* getBadgeLabel(order: OrderItem): string {
+  if (order.type === 'manual_product_payment') return 'Producto manual';
+  if (order.type === 'manual_promo_payment') return 'Promo manual';
+  if (order.type === 'manual_ticket_payment') return 'Entrada manual';
+  if (order.type === 'promo') return 'Promo';
+  if (order.type === 'product') return 'Regalo / compra';
+  if (order.type === 'ticket') return 'Entrada';
+  return 'Reserva';
+} */
  getStatusLabel(order: OrderItem): string {
   if (order.status === 'approved') return 'Aprobado';
   if (order.status === 'rejected') return 'Rechazado';

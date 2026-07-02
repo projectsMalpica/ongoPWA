@@ -4,7 +4,7 @@
     <div class="orders-header">
       <span>OnGo Wallet</span>
       <h2>Mis regalos y compras</h2>
-<p>Consulta regalos enviados, recibidos, promociones, entradas y códigos canjeables.</p>
+      <p>Consulta regalos enviados, recibidos, promociones, entradas y códigos canjeables.</p>
     </div>
 
     <div class="orders-loading" *ngIf="loading">
@@ -20,9 +20,25 @@
       <h3>Aún no tienes compras</h3>
       <p>Cuando compres promociones, regalos o entradas aparecerán aquí.</p>
     </div>
+    <div class="orders-tabs" *ngIf="!loading && orders.length">
+      <button type="button" [class.active]="activeFilter === 'all'" (click)="activeFilter = 'all'">
+        Todas
+      </button>
 
-    <div class="orders-list" *ngIf="!loading && orders.length">
-      <div class="order-card" *ngFor="let order of orders">
+      <button type="button" [class.active]="activeFilter === 'pending'" (click)="activeFilter = 'pending'">
+        Pendientes
+      </button>
+
+      <button type="button" [class.active]="activeFilter === 'paid'" (click)="activeFilter = 'paid'">
+        Pagadas
+      </button>
+
+      <button type="button" [class.active]="activeFilter === 'approved'" (click)="activeFilter = 'approved'">
+        Aprobadas
+      </button>
+    </div>
+    <div class="orders-list" *ngIf="!loading && filteredOrders.length">
+      <div class="order-card" *ngFor="let order of filteredOrders">
 
         <div class="order-card-top">
           <span class="order-badge">{{ getBadgeLabel(order) }}</span>

@@ -30,6 +30,7 @@ export class Detailprofilelocal {
   selectedReceiverUserId = '';
   giftMessage = '';
   giftPaymentMethod: 'wallet' | 'wompi' = 'wallet';
+purchaseMode: 'product' | 'ticket' | 'promo' = 'product';  
   walletBalance = 0;
   currentWallet: any = null;
   giftReceivers: any[] = [];
@@ -98,6 +99,34 @@ export class Detailprofilelocal {
     console.log('Productos:', this.partnerProducts);
     this.changeDetectorRef.detectChanges();
   }
+  isPromoPurchase(): boolean {
+  return this.purchaseMode === 'promo';
+}
+
+openPromoModal(promo: any): void {
+  this.purchaseMode = 'promo';
+
+  this.selectedGiftProduct = {
+    id: promo.id,
+    name: promo.name || 'Promoción',
+    category: 'Promoción',
+    price: Number(promo.price || 0),
+    currency: promo.currency || this.partner?.ticketCurrency || 'COP',
+    country: promo.country || this.partner?.ticketCountry || this.partner?.country || 'CO',
+    image: promo.files?.[0] || this.avatarUrl || '',
+    description: promo.description || ''
+  };
+
+  this.selectedReceiverUserId = '';
+  this.giftMessage = '';
+  this.paymentProofFile = null;
+  this.giftSentSuccess = false;
+  this.manualPaymentPending = false;
+  this.showGiftModal = true;
+
+  this.loadWallet();
+  this.changeDetectorRef.detectChanges();
+}
   getAvatarUrl(user: any): string {
     if (!user?.avatar) {
       return 'assets/images/user/pic1.jpg';
@@ -198,74 +227,262 @@ export class Detailprofilelocal {
     return `${prefix}-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
   }
 
-  async buyTicket(): Promise<void> {
-    try {
-      this.isBuyingTicket = true;
-
-      const buyerUserId = this.auth.currentUser?.id;
-
-      if (!buyerUserId) {
-        this.toastService.show('Debes iniciar sesión para comprar entrada.', 'error');
-        return;
-      }
-
-      const amount = Number(this.partner.ticketPrice || 0);
-
-      if (!amount || amount <= 0) {
-        this.toastService.show('Este local no tiene precio de entrada configurado.', 'error');
-        return;
-      }
-
-      const redeemCode = this.generateRedeemCode('TICKET');
-
-      const order = await this.pb.collection('ticket_orders').create({
-        buyerUserId,
-        partnerId: this.partner.id,
-        partnerUserId: this.partner.userId,
-        partnerName: this.partner.venueName,
-        amount,
-        status: 'pending',
-        orderStatus: 'pending_redeem',
-        paymentMethod: 'wallet',
-        ticketDate: this.partner.ticketDate || '',
-        redeemCode,
-        referenceId: `ticket_${this.partner.id}_${Date.now()}`
-      }, { requestKey: null });
-
-      const paid = await this.payWithWallet({
-        amount,
-        description: `Entrada comprada: ${this.partner.venueName}`,
-        referenceType: 'ticket_order',
-        referenceId: order.id
-      });
-
-      if (!paid) {
-        await this.pb.collection('ticket_orders').update(order.id, {
-          status: 'cancelled',
-          orderStatus: 'cancelled'
-        }, { requestKey: null });
-        return;
-      }
-
-      await this.pb.collection('ticket_orders').update(order.id, {
-        status: 'paid',
-        orderStatus: 'pending_redeem',
-        paidAt: new Date().toISOString()
-      }, { requestKey: null });
-
-      this.lastTicketCode = redeemCode;
-      this.showTicketSuccess = true;
-
-      this.toastService.show(`Entrada comprada. Código: ${redeemCode}`, 'success');
-
-    } catch (error) {
-      console.error('Error comprando entrada:', error);
-      this.toastService.show('No se pudo comprar la entrada.', 'error');
-    } finally {
-      this.isBuyingTicket = false;
-      this.changeDetectorRef.detectChanges();
-    }
+ async buyTicketWithWallet(): Promise<void> {
+  if (this.isManualPaymentTicket()) {
+    await this.buyTicketManualPayment();
+    return;
   }
+
+  await this.buyTicketWithWallet();
+}
+async confirmCurrentPurchase(): Promise<void> {
+  if (this.isTicketPurchase()) {
+    if (this.isManualPaymentTicket()) {
+      await this.buyTicketManualPayment();
+      return;
+    }
+
+    await this.buyTicketWithWallet();
+    return;
+  }
+
+  if (this.isPromoPurchase()) {
+    if (this.isManualPaymentProduct(this.selectedGiftProduct)) {
+      await this.sendPromoManualPayment();
+      return;
+    }
+
+    await this.sendPromoWithWallet();
+    return;
+  }
+
+  if (this.isManualPaymentProduct(this.selectedGiftProduct)) {
+    await this.sendGiftManualPayment();
+    return;
+  }
+
+  await this.sendGift();
+}
+async sendPromoManualPayment(): Promise<void> {
+  if (!this.selectedGiftProduct || !this.paymentProofFile || !this.partner?.id) return;
+
+  try {
+    this.isSendingGift = true;
+
+    await this.auth.restoreSession();
+    const user = this.auth.getCurrentUser();
+
+    if (!user?.id) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Inicia sesión',
+        text: 'Debes iniciar sesión para comprar la promoción.'
+      });
+      return;
+    }
+
+    const redeemCode = this.generateRedeemCode('PROMO');
+    const amount = Number(this.selectedGiftProduct.price || 0);
+    const currency = this.selectedGiftProduct.currency || 'VES';
+    const country = this.selectedGiftProduct.country || 'VE';
+
+    const formData = new FormData();
+
+    formData.append('partnerId', this.partner.id);
+    formData.append('buyerUserId', user.id);
+    formData.append('productName', 'Promoción');
+    formData.append('itemId', this.selectedGiftProduct.id);
+    formData.append('itemName', this.selectedGiftProduct.name || 'Promoción');
+    formData.append('amount', String(amount));
+    formData.append('country', country);
+    formData.append('currency', currency);
+    formData.append('status', 'pending');
+    formData.append('paymentMethod', 'manual');
+    formData.append('message', 'Compra de promoción pendiente de validación');
+    formData.append('redeemCode', redeemCode);
+    formData.append('proofFile', this.paymentProofFile);
+
+    await this.pb.collection('ticket_payment_proofs').create(formData, {
+      requestKey: null
+    });
+
+    this.manualPaymentPending = true;
+    this.giftSentSuccess = true;
+    this.lastRedeemCode = redeemCode;
+    this.paymentProofFile = null;
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Comprobante enviado',
+      text: 'Tu promoción quedó pendiente de aprobación por el local.'
+    });
+
+  } finally {
+    this.isSendingGift = false;
+    this.changeDetectorRef.detectChanges();
+  }
+}
+async sendPromoWithWallet(): Promise<void> {
+  if (!this.selectedGiftProduct || !this.partner?.id) return;
+
+  const buyerUserId = this.auth.currentUser?.id;
+
+  if (!buyerUserId) {
+    this.toastService.show('Debes iniciar sesión.', 'error');
+    return;
+  }
+
+  const amount = Number(this.selectedGiftProduct.price || 0);
+  const redeemCode = this.generateRedeemCode('PROMO');
+
+  const order = await this.pb.collection('ticket_orders').create({
+    buyerUserId,
+    partnerId: this.partner.id,
+    partnerUserId: this.partner.userId,
+    partnerName: this.partner.venueName,
+    amount,
+    status: 'pending',
+    orderStatus: 'pending_redeem',
+    paymentMethod: 'wallet',
+    redeemCode,
+    referenceId: `promo_${this.selectedGiftProduct.id}_${Date.now()}`
+  }, { requestKey: null });
+
+  const paid = await this.payWithWallet({
+    amount,
+    description: `Promoción comprada: ${this.selectedGiftProduct.name}`,
+    referenceType: 'promo_order',
+    referenceId: order.id
+  });
+
+  if (!paid) {
+    await this.pb.collection('ticket_orders').update(order.id, {
+      status: 'cancelled',
+      orderStatus: 'cancelled'
+    }, { requestKey: null });
+    return;
+  }
+
+  await this.pb.collection('ticket_orders').update(order.id, {
+    status: 'paid',
+    orderStatus: 'pending_redeem',
+    paidAt: new Date().toISOString()
+  }, { requestKey: null });
+
+  this.lastRedeemCode = redeemCode;
+  this.giftSentSuccess = true;
+
+  this.toastService.show(`Promoción comprada. Código: ${redeemCode}`, 'success');
+} 
+async buyTicket(): Promise<void> {
+  this.purchaseMode = 'ticket';
+  this.selectedGiftProduct = {
+    id: this.partner.id,
+    name: this.partner.ticketDescription || 'Entrada',
+    category: 'Entrada',
+    price: Number(this.partner.ticketPrice || 0),
+    currency: this.partner.ticketCurrency || 'COP',
+    country: this.partner.ticketCountry || this.partner.country || 'CO',
+    image: this.avatarUrl || this.partner.files?.[0] || '',
+  };
+
+  this.selectedReceiverUserId = '';
+  this.giftMessage = '';
+  this.paymentProofFile = null;
+  this.giftSentSuccess = false;
+  this.manualPaymentPending = false;
+  this.showGiftModal = true;
+
+  await this.loadWallet();
+  this.changeDetectorRef.detectChanges();
+}
+isManualPaymentTicket(): boolean {
+  return (
+    this.partner?.ticketCountry === 'VE' ||
+    this.partner?.ticketCurrency === 'VES' ||
+    this.partner?.ticketCurrency === 'USD'
+  );
+}
+
+
+  async buyTicketManualPayment(): Promise<void> {
+  if (!this.paymentProofFile || !this.partner?.id) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Comprobante requerido',
+      text: 'Debes subir el comprobante de pago.'
+    });
+    return;
+  }
+
+  try {
+    this.isBuyingTicket = true;
+
+    await this.auth.restoreSession();
+    const user = this.auth.getCurrentUser();
+
+    if (!user?.id) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Inicia sesión',
+        text: 'Debes iniciar sesión para comprar entrada.'
+      });
+      return;
+    }
+
+    const amount = Number(this.partner.ticketPrice || 0);
+    const currency = this.partner.ticketCurrency || 'VES';
+    const country = this.partner.ticketCountry || this.partner.country || 'VE';
+    const redeemCode = this.generateRedeemCode('TICKET');
+
+    const formData = new FormData();
+
+    formData.append('partnerId', this.partner.id);
+    formData.append('buyerUserId', user.id);
+
+    formData.append('productName', 'Entrada');
+    formData.append('itemId', this.partner.id);
+    formData.append('itemName', this.partner.ticketDescription || `Entrada - ${this.partner.venueName}`);
+
+    formData.append('amount', String(amount));
+    formData.append('country', country);
+    formData.append('currency', currency);
+    formData.append('status', 'pending');
+    formData.append('paymentMethod', 'manual');
+    formData.append('message', 'Compra de entrada pendiente de validación');
+    formData.append('redeemCode', redeemCode);
+
+    formData.append('proofFile', this.paymentProofFile);
+
+    await this.pb.collection('ticket_payment_proofs').create(formData, {
+      requestKey: null
+    });
+
+    this.lastTicketCode = redeemCode;
+    this.showTicketSuccess = true;
+    this.paymentProofFile = null;
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Comprobante enviado',
+      text: 'Tu entrada quedó pendiente de aprobación por el local.'
+    });
+
+  } catch (error: any) {
+    console.error('Error enviando comprobante de entrada:', error);
+    console.error('PocketBase response:', error?.response || error?.data);
+
+    Swal.fire({
+      icon: 'error',
+      title: 'No se pudo enviar',
+      text: error?.data?.message || error?.response?.message || error?.message || 'Error al enviar comprobante.'
+    });
+
+  } finally {
+    this.isBuyingTicket = false;
+    this.changeDetectorRef.detectChanges();
+  }
+}
   async reserveTable(): Promise<void> {
     try {
       this.isReservingTable = true;
@@ -375,29 +592,34 @@ export class Detailprofilelocal {
   }
 
   async loadPartnerPromos(): Promise<void> {
-    try {
-      if (!this.partner?.userId) {
-        console.warn('El partner no tiene userId para cargar promociones');
-        return;
-      }
-
-      const records = await this.pb.collection('promos').getFullList({
-        filter: `userId="${this.partner.userId}"`,
-        sort: '-created',
-        requestKey: null
-      });
-
-      this.partnerPromos = records.map((promo: any) => ({
-        id: promo.id,
-        name: promo.name,
-        description: promo.description,
-        userId: promo.userId,
-        files: this.normalizeFiles(promo.files)
-      }));
-    } catch (error) {
-      console.error('Error cargando promociones:', error);
+  try {
+    if (!this.partner?.userId) {
+      console.warn('El partner no tiene userId para cargar promociones');
+      return;
     }
+
+    const records = await this.pb.collection('promos').getFullList({
+      filter: `userId="${this.partner.userId}"`,
+      sort: '-created',
+      requestKey: null
+    });
+
+    this.partnerPromos = records.map((promo: any) => ({
+      id: promo.id,
+      name: promo.name,
+      description: promo.description,
+      userId: promo.userId,
+      date: promo.date,
+      price: Number(promo.price || 0),
+      currency: promo.currency || 'COP',
+      country: promo.country || this.partner?.country || 'CO',
+      files: this.normalizeFiles(promo.files)
+    }));
+
+  } catch (error) {
+    console.error('Error cargando promociones:', error);
   }
+}
 
   async loadPartnerProducts(): Promise<void> {
     try {
@@ -490,19 +712,22 @@ export class Detailprofilelocal {
   }
 
   async openGiftModal(product: any): Promise<void> {
-    this.selectedGiftProduct = product;
-    this.selectedReceiverUserId = '';
-    this.giftMessage = '';
-    this.giftPaymentMethod = 'wallet';
-    this.showGiftModal = true;
+  this.purchaseMode = 'product';
 
-    await Promise.all([
-      this.loadWallet(),
-      this.loadGiftReceivers()
-    ]);
+  this.selectedGiftProduct = product;
+  this.selectedReceiverUserId = '';
+  this.giftMessage = '';
+  this.giftPaymentMethod = 'wallet';
+  this.paymentProofFile = null;
+  this.showGiftModal = true;
 
-    this.changeDetectorRef.detectChanges();
-  }
+  await Promise.all([
+    this.loadWallet(),
+    this.loadGiftReceivers()
+  ]);
+
+  this.changeDetectorRef.detectChanges();
+}
 
   closeGiftModal(force = false): void {
     if (this.isSendingGift && !force) return;
@@ -1017,4 +1242,17 @@ export class Detailprofilelocal {
       this.changeDetectorRef.detectChanges();
     }
   }
+  isTicketPurchase(): boolean {
+  return this.purchaseMode === 'ticket';
+}
+
+
+
+isManualCurrentPurchase(): boolean {
+  if (this.isTicketPurchase()) {
+    return this.isManualPaymentTicket();
+  }
+
+  return this.isManualPaymentProduct(this.selectedGiftProduct);
+}
 }

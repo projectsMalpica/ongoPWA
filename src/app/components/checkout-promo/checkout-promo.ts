@@ -1,13 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import PocketBase from 'pocketbase';
 import { AuthPocketbaseService } from '../../services/authPocketbase.service';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-checkout-promo',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './checkout-promo.html',
   styleUrl: './checkout-promo.scss',
 })
@@ -22,7 +23,8 @@ export class CheckoutPromo implements OnInit {
   loading = false;
   error = '';
   promoOrderSuccess = false;
-
+  paymentProofFile: File | null = null;
+partnerPaymentMethods: any[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -59,6 +61,7 @@ export class CheckoutPromo implements OnInit {
 
     if (id) {
       await this.loadPromo(id);
+      await this.loadPartnerPaymentMethods();
     }
 
     if (!this.currentUser?.id) {
@@ -66,26 +69,28 @@ export class CheckoutPromo implements OnInit {
     }
 
     await this.loadWallet();
+      this.cdr.detectChanges();
+
   }
   copyRedeemCode(): void {
     if (!this.lastRedeemCode) return;
 
     navigator.clipboard.writeText(this.lastRedeemCode);
   }
-  async loadPromo(id: string): Promise<void> {
-    try {
-      this.promo = await this.pb.collection('promos').getOne(id, {
-        expand: 'partner,userId',
-        requestKey: null,
-      });
+async loadPromo(id: string): Promise<void> {
+  try {
+    this.promo = await this.pb.collection('promos').getOne(id, {
+      requestKey: null,
+    });
 
-      localStorage.setItem('selectedPromoToBuy', JSON.stringify(this.promo));
-    } catch (error) {
-      console.error(error);
-      this.error = 'No fue posible cargar la promoción.';
-    }
+    localStorage.setItem('selectedPromoToBuy', JSON.stringify(this.promo));
+  } catch (error) {
+    console.error(error);
+    this.error = 'No fue posible cargar la promoción.';
+  } finally {
+    this.cdr.detectChanges();
   }
-
+}
   generateRedeemCode(): string {
     return 'PROMO-' + Math.random().toString(36).substring(2, 8).toUpperCase();
   }
@@ -169,7 +174,8 @@ export class CheckoutPromo implements OnInit {
       }
 
       const balanceAfter = balanceBefore - amount;
-      const redeemCode = `PROMO-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
+/*       const redeemCode = `PROMO-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
+ */      const redeemCode = '';
       const redeemQr = `${window.location.origin}/redeem-promo/${redeemCode}`;
       const referenceId = `wallet_promo_${this.promo.id}_${Date.now()}`;
 
@@ -282,4 +288,125 @@ type: 'purchase',
       this.walletBalance = 0;
     }
   }
+  getMoneyLabel(amount: number, currency: string = 'COP'): string {
+  const value = Number(amount || 0);
+
+  if (currency === 'VES') {
+    return `${value.toLocaleString('es-VE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })} Bs`;
+  }
+
+  if (currency === 'USD') {
+    return `${value.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })} USD`;
+  }
+
+  return `${value.toLocaleString('es-CO', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  })} COP`;
+}
+isManualPromo(): boolean {
+  return this.promo?.country === 'VE'
+    || this.promo?.currency === 'VES'
+    || this.promo?.currency === 'USD';
+}
+
+onPaymentProofSelected(event: any): void {
+  this.paymentProofFile = event.target.files?.[0] || null;
+}
+
+async loadPartnerPaymentMethods(): Promise<void> {
+  if (!this.promo?.userId) return;
+
+  try {
+    const partner = await this.pb.collection('usuariosPartner').getFirstListItem(
+      `userId="${this.promo.userId}"`,
+      { requestKey: null }
+    );
+
+    this.partnerPaymentMethods = Array.isArray(partner['paymentMethods'])
+      ? partner['paymentMethods']
+      : [];
+
+  } catch (error) {
+    console.error('Error cargando métodos de pago del local:', error);
+    this.partnerPaymentMethods = [];
+  }
+}
+async createPromoManualOrder(): Promise<void> {
+  if (this.loading) return;
+
+  this.error = '';
+
+  if (!this.paymentProofFile) {
+    this.error = 'Debes subir el comprobante de pago.';
+    return;
+  }
+
+  this.loading = true;
+
+  try {
+    const user =
+      this.auth.currentUser ||
+      this.auth.pb.authStore.record ||
+      this.auth.pb.authStore.model;
+
+    if (!user?.id) {
+      this.error = 'Debes iniciar sesión.';
+      return;
+    }
+
+    if (!this.promo?.id) {
+      this.error = 'No se encontró la promoción.';
+      return;
+    }
+
+    const partnerProfile = await this.pb.collection('usuariosPartner').getFirstListItem(
+      `userId="${this.promo.userId}"`,
+      { requestKey: null }
+    );
+
+    const redeemCode = `PROMO-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
+
+    const formData = new FormData();
+
+    formData.append('partnerId', partnerProfile.id);
+    formData.append('buyerUserId', user.id);
+    formData.append('productName', 'Promoción');
+    formData.append('amount', String(this.getAmount()));
+    formData.append('country', this.promo.country || 'VE');
+    formData.append('currency', this.promo.currency || 'USD');
+    formData.append('status', 'pending');
+    formData.append('message', `Compra manual de promoción: ${this.promo.name}`);
+    formData.append('paymentMethod', 'manual');
+    formData.append('itemId', this.promo.id);
+    formData.append('itemName', this.promo.name || 'Promoción');
+/*     formData.append('redeemCode', redeemCode);
+ */    formData.append('redeemCode', '');
+    formData.append('proofFile', this.paymentProofFile);
+
+    await this.pb.collection('ticket_payment_proofs').create(formData, {
+      requestKey: null
+    });
+
+    this.lastRedeemCode = '';
+    this.promoOrderSuccess = true;
+    this.paymentProofFile = null;
+
+  } catch (error: any) {
+    console.error('Error creando pago manual promo:', error);
+    this.error =
+      error?.response?.message ||
+      error?.message ||
+      'No se pudo enviar el comprobante.';
+  } finally {
+    this.loading = false;
+    this.cdr.detectChanges();
+  }
+}
 }

@@ -23,7 +23,7 @@
 
         <div class="ticket-row">
           <span>Precio</span>
-          <strong>{{ getAmount() | currency:'COP':'symbol':'1.0-0' }}</strong>
+<strong>{{ getMoneyLabel(getAmount(), promo.currency) }}</strong>
         </div>
 
         <div class="ticket-row wallet">
@@ -35,31 +35,97 @@
           {{ error }}
         </div>
 
-        <button
+        <!-- <button
           type="button"
           class="pay-btn"
           [disabled]="loading"
           (click)="createPromoOrder()">
           {{ loading ? 'Procesando...' : 'Pagar con wallet' }}
-        </button>
-      </div>
+        </button> -->
+      <!--   <button
+  type="button"
+  class="pay-btn"
+  [disabled]="loading || promo.currency !== 'COP'"
+  (click)="createPromoOrder()">
+  {{
+    loading
+      ? 'Procesando...'
+      : promo.currency === 'COP'
+        ? 'Pagar con wallet'
+        : 'Pago manual requerido'
+  }}
+</button> -->
+<div class="manual-payment-box" *ngIf="isManualPromo()">
+  <h6>Pago manual</h6>
 
+  <p><strong>Banco:</strong> {{ partnerPaymentMethods[0]?.bank || 'Banco no definido' }}</p>
+  <p><strong>Titular:</strong> {{ partnerPaymentMethods[0]?.holder || 'No definido' }}</p>
+  <p><strong>Documento:</strong> {{ partnerPaymentMethods[0]?.document || 'No definido' }}</p>
+
+  <p *ngIf="partnerPaymentMethods[0]?.phone">
+    <strong>Pago móvil:</strong> {{ partnerPaymentMethods[0]?.phone }}
+  </p>
+
+  <p *ngIf="partnerPaymentMethods[0]?.accountNumber">
+    <strong>Cuenta:</strong>
+    {{ partnerPaymentMethods[0]?.accountType }}
+    {{ partnerPaymentMethods[0]?.accountNumber }}
+  </p>
+</div>
+<input
+  *ngIf="isManualPromo()"
+  type="file"
+  accept="image/*,.pdf"
+  class="form-control"
+  (change)="onPaymentProofSelected($event)"
+/>
+
+<button
+  type="button"
+  class="pay-btn"
+  [disabled]="loading || (isManualPromo() && !paymentProofFile)"
+  (click)="isManualPromo() ? createPromoManualOrder() : createPromoOrder()">
+  {{
+    loading
+      ? 'Procesando...'
+      : isManualPromo()
+        ? 'Enviar comprobante'
+        : 'Pagar con wallet'
+  }}
+</button>
+      </div>
+<!-- <div class="alert-error" *ngIf="promo.currency !== 'COP'">
+  Esta promoción está en {{ promo.currency }}. Debes pagar con comprobante manual.
+</div> -->
       <div class="promo-ticket-success" *ngIf="promoOrderSuccess">
         <div class="success-icon">
           <i class="fa-solid fa-check"></i>
         </div>
 
-        <h2>Promo comprada 🎟️</h2>
-        <p>Muestra este código en el local para reclamar tu promoción.</p>
+          <h2>
+  {{ isManualPromo() ? 'Comprobante enviado' : 'Promo comprada 🎟️' }}
+</h2>
 
-        <div class="redeem-code-box">
-          <small>Código de promoción</small>
-          <strong>{{ lastRedeemCode }}</strong>
-        </div>
+<p>
+  {{
+    isManualPromo()
+      ? 'Tu comprobante quedó pendiente de validación. Cuando el local apruebe el pago, recibirás tu código.'
+      : 'Muestra este código en el local para reclamar tu promoción.'
+  }}
+</p>
 
-        <button type="button" class="pay-btn" (click)="copyRedeemCode()">
-          Copiar código
-        </button>
+<div class="redeem-code-box" *ngIf="!isManualPromo() && lastRedeemCode">
+  <small>Código de promoción</small>
+  <strong>{{ lastRedeemCode }}</strong>
+</div>
+
+<button
+  *ngIf="!isManualPromo() && lastRedeemCode"
+  type="button"
+  class="pay-btn"
+  (click)="copyRedeemCode()">
+  Copiar código
+</button>
 
         <button type="button" class="secondary-btn" routerLink="/my-orders">
           Ver mis compras

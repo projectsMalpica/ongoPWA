@@ -142,8 +142,15 @@
             <span class="promo-badge">Promo</span>
             <h5>{{ promo.name }}</h5>
             <p>{{ promo.description }}</p>
+             <strong>
+    {{ getMoneyLabel(promo.price, promo.currency) }}
+  </strong>
+              <button type="button" class="gift-btn" (click)="openPromoModal(promo)">
+      Comprar promoción
+    </button>
           </div>
         </div>
+        
       </div>
     </div>
 
@@ -212,9 +219,9 @@
       </p>
 
       <div class="redeem-code-box" *ngIf="!manualPaymentPending">
-  <small>Código de retiro</small>
-  <strong>{{ lastRedeemCode }}</strong>
-</div>
+        <small>Código de retiro</small>
+        <strong>{{ lastRedeemCode }}</strong>
+      </div>
 
       <button type="button" class="send-gift-btn" (click)="copyRedeemCode()">
         Copiar código
@@ -228,7 +235,7 @@
     <ng-template #giftForm>
 
       <div class="gift-modal-header">
-        <h5>Enviar regalo </h5>
+<h5>{{ isTicketPurchase() ? 'Comprar entrada' : 'Enviar regalo' }}</h5>
         <button type="button" (click)="closeGiftModal()">×</button>
       </div>
 
@@ -259,7 +266,7 @@
           {{ getMoneyLabel(selectedGiftProduct?.price, selectedGiftProduct?.currency) }}
         </strong>
       </div>
-      <div class="gift-receiver-box">
+      <div class="gift-receiver-box" *ngIf="!isTicketPurchase()">
         <label>¿Para quién es?</label>
 
         <div class="receiver-option" [class.active]="selectedReceiverUserId === ''"
@@ -310,7 +317,7 @@
       <div class="gift-payment-methods">
         <label>Método de pago</label>
 
-        <ng-container *ngIf="!isManualPaymentProduct(selectedGiftProduct)">
+        <ng-container *ngIf="!isManualCurrentPurchase()">
           <div class="payment-option active">
             <span>Wallet</span>
             <strong>Saldo: {{ walletBalance | number:'1.0-0' }} COP</strong>
@@ -322,7 +329,7 @@
           </div>
         </ng-container>
 
-        <ng-container *ngIf="isManualPaymentProduct(selectedGiftProduct)">
+        <ng-container *ngIf="isManualCurrentPurchase()">
           <div class="manual-payment-box">
             <h6>Pago manual</h6>
 
@@ -359,7 +366,7 @@
       <!--   <button type="button" class="send-gift-btn" [disabled]="isSendingGift" (click)="sendGift()">
         {{ isSendingGift ? 'Procesando...' : 'Confirmar compra / Enviar regalo ' }}
       </button> -->
-      <button type="button" class="send-gift-btn"
+      <!-- <button type="button" class="send-gift-btn"
         [disabled]="isSendingGift || (isManualPaymentProduct(selectedGiftProduct) && !paymentProofFile)"
         (click)="isManualPaymentProduct(selectedGiftProduct) ? sendGiftManualPayment() : sendGift()">
         {{
@@ -367,6 +374,22 @@
         ? 'Procesando...'
         : isManualPaymentProduct(selectedGiftProduct)
         ? 'Enviar comprobante y reservar compra'
+        : 'Confirmar compra / Enviar regalo'
+        }}
+      </button> -->
+      <button type="button" class="send-gift-btn"
+        [disabled]="isSendingGift || (isManualCurrentPurchase() && !paymentProofFile)"
+        (click)="confirmCurrentPurchase()">
+
+        {{
+        isSendingGift
+        ? 'Procesando...'
+        : isManualCurrentPurchase()
+        ? isTicketPurchase()
+        ? 'Enviar comprobante de entrada'
+        : 'Enviar comprobante y reservar compra'
+        : isTicketPurchase()
+        ? 'Comprar entrada'
         : 'Confirmar compra / Enviar regalo'
         }}
       </button>
