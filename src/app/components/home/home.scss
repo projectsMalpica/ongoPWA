@@ -1610,3 +1610,20 @@
 .radar-mode-tabs button.active {
   background: linear-gradient(135deg, #22d3ee, #ec4899);
 }
+.gift-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0, 0, 0, .65);
+}
+
+.gift-modal {
+  position: relative;
+  z-index: 100000;
+  max-height: 86vh;
+  overflow-y: auto;
+}
+.toast-container,
+.swal2-container {
+  z-index: 999999 !important;
+}

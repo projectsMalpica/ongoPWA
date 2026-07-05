@@ -193,8 +193,14 @@
                 Ver perfil completo
               </button>
 
-              <button class="gift-floating-btn" type="button" (click)="onGiftClick($event, clientes[currentIndex])">
-
+<button
+  class="gift-floating-btn"
+  type="button"
+  (mousedown)="$event.stopPropagation()"
+  (mouseup)="$event.stopPropagation()"
+  (touchstart)="$event.stopPropagation()"
+  (touchend)="$event.stopPropagation()"
+  (click)="onGiftClick($event, clientes[currentIndex])">
                 <i class="fa-solid fa-martini-glass-citrus"></i>
 
                 <div class="gift-btn-text">

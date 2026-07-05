@@ -91,11 +91,36 @@ export class Home implements OnInit {
     private router: Router,
     private toastService: ToastService
   ) {
-/*     this.pb = this.global.pb;
- */    this.pb = this.authPocketbaseService.pb;
+    this.pb = this.authPocketbaseService.pb;
   }
+  /*  async openGiftFromHome(cliente: any): Promise<void> {
+     if (!cliente?.id) return;
+ 
+     this.giftReceiver = cliente;
+     this.giftSentSuccess = false;
+     this.lastGiftOrder = null;
+     this.lastRedeemCode = '';
+     this.lastRedeemQr = '';
+     this.selectedGiftProduct = null;
+     this.giftMessage = '';
+ 
+     this.showGiftModal = true;
+ 
+     await this.loadProductsForPartner(cliente.currentPartnerId || undefined);
+     await this.loadWallet();
+   } */
   async openGiftFromHome(cliente: any): Promise<void> {
     if (!cliente?.id) return;
+
+    const partnerId =
+      cliente.currentPartnerId ||
+      this.currentPartnerId ||
+      this.currentLocalId;
+
+    if (!partnerId) {
+      this.toastService.show('Solo puedes invitar productos de un local donde estés conectado.', 'error');
+      return;
+    }
 
     this.giftReceiver = cliente;
     this.giftSentSuccess = false;
@@ -107,7 +132,7 @@ export class Home implements OnInit {
 
     this.showGiftModal = true;
 
-    await this.loadProductsForPartner(cliente.currentPartnerId || undefined);
+    await this.loadProductsForPartner(partnerId);
     await this.loadWallet();
   }
   getReceiverUserId(cliente: any): string {
@@ -282,22 +307,27 @@ export class Home implements OnInit {
 
     try {
       await this.loadWallet();
-
       const amount = Number(product.price || 0);
-      const balanceBefore = Number(this.currentWallet?.balance || 0);
+      const currency = this.getProductCurrency(product);
 
-      if (balanceBefore < amount) {
-        this.toastService.show('Saldo insuficiente.', 'error');
-        return;
-      }
+      const walletBalanceField = currency === 'USD' ? 'balanceUsd' : 'balanceCop';
+      const balanceBefore = Number(this.currentWallet?.[walletBalanceField] || 0);
 
       const balanceAfter = balanceBefore - amount;
       const redeemCode = `ONGO-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
       const redeemQr = `${window.location.origin}/redeem/${redeemCode}`;
+      if (balanceBefore < amount) {
+  this.toastService.show(`Saldo insuficiente en ${currency}.`, 'error');
 
+  setTimeout(() => {
+    this.router.navigate(['/wallet']);
+  }, 800);
+
+  return;
+}
       await this.pb.collection('wallet').update(this.currentWallet.id, {
-        balance: balanceAfter
-      }, { requestKey: null });
+  [walletBalanceField]: balanceAfter
+}, { requestKey: null });
 
       const order = await this.pb.collection('product_orders').create({
         buyerUserId,
@@ -307,6 +337,7 @@ export class Home implements OnInit {
         productName: product.name,
         productImage: product.image || '',
         amount,
+        currency,
         paymentMethod: 'wallet',
         status: 'paid',
         orderStatus: 'pending_redeem',
@@ -321,12 +352,14 @@ export class Home implements OnInit {
         order.id,
         product.name
       );
+      
       await this.pb.collection('wallet_transactions').create({
         walletId: this.currentWallet.id,
         userId: buyerUserId,
         partnerId,
         type: 'gift_sent',
         amount,
+        currency,
         direction: 'debit',
         balanceBefore,
         balanceAfter,
@@ -369,6 +402,7 @@ export class Home implements OnInit {
       this.isSendingGift = false;
     }
   }
+  
   async creditPartnerWallet(
     partnerId: string,
     amount: number,
@@ -776,26 +810,53 @@ export class Home implements OnInit {
     this.showMatchOverlay = false;
   }
   canSendGiftTo(cliente: any): boolean {
-  const hasPro = this.hasClientProPlan();
+    const hasPro = this.hasClientProPlan();
 
-  const sameLocal =
-    this.currentLocalId &&
-    cliente?.currentPartnerId &&
-    cliente.currentPartnerId === this.currentLocalId;
+    const sameLocal =
+      this.currentLocalId &&
+      cliente?.currentPartnerId &&
+      cliente.currentPartnerId === this.currentLocalId;
 
-  if (hasPro) {
-    return true;
+    if (hasPro) {
+      return true;
+    }
+
+    return !!sameLocal;
   }
-
-  return !!sameLocal;
-}
-  async loadProductsForPartner(partnerId?: string): Promise<void> {
-    const filter = partnerId
-      ? `partnerId="${partnerId}" && isAvailable=true`
-      : `isAvailable=true`;
+  /*  async loadProductsForPartner(partnerId?: string): Promise<void> {
+     const filter = partnerId
+       ? `partnerId="${partnerId}" && isAvailable=true`
+       : `isAvailable=true`;
+ 
+     const records = await this.pb.collection('partnerProducts').getFullList({
+       filter,
+       sort: '-created',
+       expand: 'partnerId',
+       requestKey: null
+     });
+ 
+     this.partnerProducts = records.map((item: any) => ({
+       id: item.id,
+       name: item.name,
+       description: item.description,
+       category: item.category,
+       price: Number(item.price || 0),
+       partnerId: item.partnerId,
+       partnerName:
+         item.expand?.partnerId?.venueName ||
+         item.expand?.partnerId?.name ||
+         'Local',
+       image: item.image ? this.pb.files.getUrl(item, item.image) : ''
+     }));
+   } */
+  async loadProductsForPartner(partnerId: string): Promise<void> {
+    if (!partnerId) {
+      this.partnerProducts = [];
+      return;
+    }
 
     const records = await this.pb.collection('partnerProducts').getFullList({
-      filter,
+      filter: `partnerId="${partnerId}" && isAvailable=true`,
       sort: '-created',
       expand: 'partnerId',
       requestKey: null
@@ -807,6 +868,8 @@ export class Home implements OnInit {
       description: item.description,
       category: item.category,
       price: Number(item.price || 0),
+      currency: item.currency || 'COP',
+      country: item.country || 'CO',
       partnerId: item.partnerId,
       partnerName:
         item.expand?.partnerId?.venueName ||
@@ -815,7 +878,20 @@ export class Home implements OnInit {
       image: item.image ? this.pb.files.getUrl(item, item.image) : ''
     }));
   }
+  getProductCurrency(product: any): 'COP' | 'USD' {
+    return product?.currency === 'USD' ? 'USD' : 'COP';
+  }
 
+  getProductMoneyLabel(product: any): string {
+    const amount = Number(product?.price || 0);
+    const currency = this.getProductCurrency(product);
+
+    if (currency === 'USD') {
+      return `$${amount.toLocaleString('en-US')} USD`;
+    }
+
+    return `$ ${amount.toLocaleString('es-CO')} COP`;
+  }
   openMatchedChat() {
     if (!this.matchedClient) return;
 
@@ -996,52 +1072,52 @@ export class Home implements OnInit {
       }
     );
   }
-  async registerLocalVisit(partnerId:string){
+  async registerLocalVisit(partnerId: string) {
 
- try{
+    try {
 
- const stats = await this.pb.collection('partner_stats')
- .getFirstListItem(
-   `partnerId="${partnerId}"`,
-   {
-    requestKey:null
-   }
- );
-
-
- await this.pb.collection('partner_stats')
- .update(stats.id,{
-    currentVisitors: Number(stats['currentVisitors'] || 0)+1,
-    todayVisitors: Number(stats['todayVisitors'] || 0)+1,
-    totalVisits: Number(stats['totalVisits'] || 0)+1,
-    lastUpdated:new Date()
- },{
-    requestKey:null
- });
+      const stats = await this.pb.collection('partner_stats')
+        .getFirstListItem(
+          `partnerId="${partnerId}"`,
+          {
+            requestKey: null
+          }
+        );
 
 
- }catch{
+      await this.pb.collection('partner_stats')
+        .update(stats.id, {
+          currentVisitors: Number(stats['currentVisitors'] || 0) + 1,
+          todayVisitors: Number(stats['todayVisitors'] || 0) + 1,
+          totalVisits: Number(stats['totalVisits'] || 0) + 1,
+          lastUpdated: new Date()
+        }, {
+          requestKey: null
+        });
 
- await this.pb.collection('partner_stats')
- .create({
 
-    partnerId,
+    } catch {
 
-    currentVisitors:1,
+      await this.pb.collection('partner_stats')
+        .create({
 
-    todayVisitors:1,
+          partnerId,
 
-    totalVisits:1,
+          currentVisitors: 1,
 
-    lastUpdated:new Date()
+          todayVisitors: 1,
 
- },{
-    requestKey:null
- });
+          totalVisits: 1,
 
- }
+          lastUpdated: new Date()
 
-}
+        }, {
+          requestKey: null
+        });
+
+    }
+
+  }
   undoLastSwipe() {
     if (this.swipeHistory.length === 0) return;
 
@@ -1120,28 +1196,44 @@ export class Home implements OnInit {
 
     this.currentPhotoIndex = (this.currentPhotoIndex + 1) % total;
   }
- async onGiftClick(event: Event, cliente: any) {
+  async onGiftClick(event: Event, cliente: any): Promise<void> {
   event.stopPropagation();
   event.preventDefault();
 
+  console.log('Click invitar trago:', cliente);
+
   await this.refreshCurrentClientProfile();
 
-if (!this.canSendGiftTo(cliente)) {
-  Swal.fire({
-    icon: 'info',
-    title: 'Regalos disponibles en el local',
-    text: 'Con OnGo Free solo puedes enviar regalos a personas dentro de tu mismo local. Activa Premium para más opciones.',
-    confirmButtonText: 'Ver planes',
-    showCancelButton: true,
-    cancelButtonText: 'Cerrar'
-  }).then(result => {
+  const partnerId =
+    cliente?.currentPartnerId ||
+    this.currentPartnerId ||
+    this.currentLocalId;
+
+  if (!partnerId) {
+    await Swal.fire({
+      icon: 'info',
+      title: 'Sin local activo',
+      text: 'Solo puedes invitar productos del local donde estás conectado.'
+    });
+    return;
+  }
+
+  if (!this.canSendGiftTo(cliente)) {
+    const result = await Swal.fire({
+      icon: 'info',
+      title: 'Regalos disponibles en el local',
+      text: 'Con OnGo Free solo puedes enviar regalos a personas dentro de tu mismo local. Activa Premium para más opciones.',
+      confirmButtonText: 'Ver planes',
+      showCancelButton: true,
+      cancelButtonText: 'Cerrar'
+    });
+
     if (result.isConfirmed) {
       this.openClientPlans();
     }
-  });
 
-  return;
-}
+    return;
+  }
 
   const allowed = await this.canUseDailyFeature('gifts');
 
@@ -1151,7 +1243,7 @@ if (!this.canSendGiftTo(cliente)) {
   }
 
   await this.incrementDailyFeature('gifts');
-  this.openGiftFromHome(cliente);
+  await this.openGiftFromHome(cliente);
 }
   prevPhoto(event?: Event) {
     event?.stopPropagation();
@@ -1311,29 +1403,29 @@ if (!this.canSendGiftTo(cliente)) {
     this.router.navigate(['/profile']);
   }
   hasClientProPlan(): boolean {
-  const profile =
-    this.global.profileData ||
-    this.authPocketbaseService.getCurrentProfile();
+    const profile =
+      this.global.profileData ||
+      this.authPocketbaseService.getCurrentProfile();
 
-  const planName = String(profile?.subscriptionPlanName || '').toLowerCase();
-  const planId = String(profile?.subscriptionPlanId || '');
-  const status = String(profile?.subscriptionStatus || '').toLowerCase();
-  const expiresAt = profile?.subscriptionExpiresAt;
+    const planName = String(profile?.subscriptionPlanName || '').toLowerCase();
+    const planId = String(profile?.subscriptionPlanId || '');
+    const status = String(profile?.subscriptionStatus || '').toLowerCase();
+    const expiresAt = profile?.subscriptionExpiresAt;
 
-  const isActive =
-    status === 'active' &&
-    (!expiresAt || new Date(expiresAt).getTime() > Date.now());
+    const isActive =
+      status === 'active' &&
+      (!expiresAt || new Date(expiresAt).getTime() > Date.now());
 
-  const isPaidPlan =
-    planName.includes('premium') ||
-    planName.includes('platinum') ||
-    [
-      'ruglhjy5kr7h8a8',
-      '6ha3ke9bapjz4av'
-    ].includes(planId);
+    const isPaidPlan =
+      planName.includes('premium') ||
+      planName.includes('platinum') ||
+      [
+        'ruglhjy5kr7h8a8',
+        '6ha3ke9bapjz4av'
+      ].includes(planId);
 
-  return isActive && isPaidPlan;
-}
+    return isActive && isPaidPlan;
+  }
   openClientPlans(): void {
     this.router.navigate(['/profile'], {
       queryParams: {
@@ -1440,33 +1532,33 @@ if (!this.canSendGiftTo(cliente)) {
     });
   }
   async refreshCurrentClientProfile(): Promise<any> {
-  const user =
-    this.authPocketbaseService.getCurrentUser?.() ||
-    this.authPocketbaseService.currentUser ||
-    this.authPocketbaseService.pb.authStore.record ||
-    this.authPocketbaseService.pb.authStore.model;
+    const user =
+      this.authPocketbaseService.getCurrentUser?.() ||
+      this.authPocketbaseService.currentUser ||
+      this.authPocketbaseService.pb.authStore.record ||
+      this.authPocketbaseService.pb.authStore.model;
 
-  if (!user?.id) return null;
+    if (!user?.id) return null;
 
-  try {
-    const profile = await this.pb.collection('usuariosClient').getFirstListItem(
-      `userId="${user.id}"`,
-      { requestKey: null }
-    );
+    try {
+      const profile = await this.pb.collection('usuariosClient').getFirstListItem(
+        `userId="${user.id}"`,
+        { requestKey: null }
+      );
 
-    this.global.profileData = {
-      ...this.global.profileData,
-      ...profile
-    };
+      this.global.profileData = {
+        ...this.global.profileData,
+        ...profile
+      };
 
-    localStorage.setItem('profile', JSON.stringify(this.global.profileData));
+      localStorage.setItem('profile', JSON.stringify(this.global.profileData));
 
-    return profile;
+      return profile;
 
-  } catch (error) {
-    console.error('Error refrescando perfil cliente:', error);
-    return null;
+    } catch (error) {
+      console.error('Error refrescando perfil cliente:', error);
+      return null;
+    }
   }
-}
 
 }
