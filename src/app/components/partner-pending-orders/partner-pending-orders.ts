@@ -42,7 +42,9 @@ export class PartnerPendingOrders implements OnInit, OnDestroy {
   proofs: PartnerProofItem[] = [];
 
   activeFilter: 'pending' | 'approved' | 'rejected' = 'pending';
-
+  showProofPreview = false;
+selectedProofUrl = '';
+selectedProofType: 'image' | 'pdf' | 'unknown' = 'unknown';
   constructor(
     private auth: AuthPocketbaseService,
     private cdr: ChangeDetectorRef,
@@ -167,7 +169,36 @@ export class PartnerPendingOrders implements OnInit, OnDestroy {
       this.unsubscribers.push(unsubscribe);
     }
   }
+  openProofPreview(item: PartnerProofItem): void {
+  const url = this.getProofFileUrl(item);
 
+  if (!url) return;
+
+  this.selectedProofUrl = url;
+
+  const fileName = String(item.proofFile || '').toLowerCase();
+
+  if (
+    fileName.endsWith('.jpg') ||
+    fileName.endsWith('.jpeg') ||
+    fileName.endsWith('.png') ||
+    fileName.endsWith('.webp')
+  ) {
+    this.selectedProofType = 'image';
+  } else if (fileName.endsWith('.pdf')) {
+    this.selectedProofType = 'pdf';
+  } else {
+    this.selectedProofType = 'unknown';
+  }
+
+  this.showProofPreview = true;
+}
+
+closeProofPreview(): void {
+  this.showProofPreview = false;
+  this.selectedProofUrl = '';
+  this.selectedProofType = 'unknown';
+}
   async changeFilter(status: 'pending' | 'approved' | 'rejected'): Promise<void> {
     this.activeFilter = status;
     await this.loadProofs();

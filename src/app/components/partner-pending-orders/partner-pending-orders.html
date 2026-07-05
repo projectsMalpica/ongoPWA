@@ -1,112 +1,129 @@
 <div class="page-content my-orders-page p-t50 p-b70">
-  <div class="container">
+    <div class="container">
 
-    <div class="orders-header">
-      <span>OnGo Comercio</span>
-      <h2>Validar compras</h2>
-      <p>Aprueba comprobantes de productos, promociones y entradas de tu local.</p>
-    </div>
-
-    <div class="orders-tabs">
-      <button
-        type="button"
-        class="tab-btn"
-        [class.active]="activeFilter === 'pending'"
-        (click)="changeFilter('pending')">
-        <i class="fa-regular fa-clock"></i>
-        <span>Pendientes</span>
-      </button>
-
-      <button
-        type="button"
-        class="tab-btn"
-        [class.active]="activeFilter === 'approved'"
-        (click)="changeFilter('approved')">
-        <i class="fa-regular fa-circle-check"></i>
-        <span>Aprobadas</span>
-      </button>
-
-      <button
-        type="button"
-        class="tab-btn"
-        [class.active]="activeFilter === 'rejected'"
-        (click)="changeFilter('rejected')">
-        <i class="fa-regular fa-circle-xmark"></i>
-        <span>Rechazadas</span>
-      </button>
-    </div>
-
-    <div class="orders-loading" *ngIf="loading">
-      Cargando comprobantes...
-    </div>
-
-    <div class="alert-error" *ngIf="error">
-      {{ error }}
-    </div>
-
-    <div class="empty-orders" *ngIf="!loading && !error && !proofs.length">
-      <div class="empty-icon">🧾</div>
-      <h3>No hay compras {{ getStatusLabel(activeFilter).toLowerCase() }}</h3>
-      <p>Cuando un cliente suba un comprobante aparecerá aquí.</p>
-    </div>
-
-    <div class="orders-list" *ngIf="!loading && proofs.length">
-      <div class="order-card" *ngFor="let item of proofs">
-
-        <div class="order-card-top">
-          <span class="order-badge">{{ getTypeLabel(item.type) }}</span>
-          <span class="order-status">{{ getStatusLabel(item.status) }}</span>
+        <div class="orders-header">
+            <span>OnGo Comercio</span>
+            <h2>Validar compras</h2>
+            <p>Aprueba comprobantes de productos, promociones y entradas de tu local.</p>
         </div>
 
-        <h3>{{ item.title }}</h3>
+        <div class="orders-tabs">
+            <button type="button" class="tab-btn" [class.active]="activeFilter === 'pending'"
+                (click)="changeFilter('pending')">
+                <i class="fa-regular fa-clock"></i>
+                <span>Pendientes</span>
+            </button>
 
-        <p class="order-description">
-          Comprobante de pago pendiente de validación por el comercio.
-        </p>
+            <button type="button" class="tab-btn" [class.active]="activeFilter === 'approved'"
+                (click)="changeFilter('approved')">
+                <i class="fa-regular fa-circle-check"></i>
+                <span>Aprobadas</span>
+            </button>
 
-        <div class="order-info">
-          <div>
-            <small>Monto</small>
-            <strong>{{ getMoneyLabel(item.amount, item.currency) }}</strong>
-          </div>
-
-          <div>
-            <small>Fecha</small>
-            <strong>{{ item.date | date:'dd/MM/yyyy, h:mm a' }}</strong>
-          </div>
+            <button type="button" class="tab-btn" [class.active]="activeFilter === 'rejected'"
+                (click)="changeFilter('rejected')">
+                <i class="fa-regular fa-circle-xmark"></i>
+                <span>Rechazadas</span>
+            </button>
         </div>
 
-        <div class="redeem-box" *ngIf="item.redeemCode">
-          <small>Código asignado</small>
-          <strong>{{ item.redeemCode }}</strong>
+        <div class="orders-loading" *ngIf="loading">
+            Cargando comprobantes...
         </div>
 
-        <a
-          class="proof-link"
-          *ngIf="item.proofFile"
-          [href]="getProofFileUrl(item)"
-          target="_blank">
-          Ver comprobante
+        <div class="alert-error" *ngIf="error">
+            {{ error }}
+        </div>
+
+        <div class="empty-orders" *ngIf="!loading && !error && !proofs.length">
+            <div class="empty-icon">🧾</div>
+            <h3>No hay compras {{ getStatusLabel(activeFilter).toLowerCase() }}</h3>
+            <p>Cuando un cliente suba un comprobante aparecerá aquí.</p>
+        </div>
+
+        <div class="orders-list" *ngIf="!loading && proofs.length">
+            <div class="order-card" *ngFor="let item of proofs">
+
+                <div class="order-card-top">
+                    <span class="order-badge">{{ getTypeLabel(item.type) }}</span>
+                    <span class="order-status">{{ getStatusLabel(item.status) }}</span>
+                </div>
+
+                <h3>{{ item.title }}</h3>
+
+                <p class="order-description">
+                    Comprobante de pago pendiente de validación por el comercio.
+                </p>
+
+                <div class="order-info">
+                    <div>
+                        <small>Monto</small>
+                        <strong>{{ getMoneyLabel(item.amount, item.currency) }}</strong>
+                    </div>
+
+                    <div>
+                        <small>Fecha</small>
+                        <strong>{{ item.date | date:'dd/MM/yyyy, h:mm a' }}</strong>
+                    </div>
+                </div>
+
+                <div class="redeem-box" *ngIf="item.redeemCode">
+                    <small>Código asignado</small>
+                    <strong>{{ item.redeemCode }}</strong>
+                </div>
+
+                <button type="button" class="proof-link proof-button" *ngIf="item.proofFile"
+                    (click)="openProofPreview(item)">
+                    Ver comprobante
+                </button>
+
+                <div class="order-actions" *ngIf="item.status === 'pending'">
+                    <button type="button" class="approve-btn" [disabled]="processingId === item.id"
+                        (click)="approveProof(item)">
+                        {{ processingId === item.id ? 'Procesando...' : 'Aprobar' }}
+                    </button>
+
+                    <button type="button" class="reject-btn" [disabled]="processingId === item.id"
+                        (click)="rejectProof(item)">
+                        Rechazar
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+<div class="proof-preview-backdrop" *ngIf="showProofPreview" (click)="closeProofPreview()">
+  <div class="proof-preview-modal" (click)="$event.stopPropagation()">
+
+    <div class="proof-preview-header">
+      <h3>Comprobante de pago</h3>
+
+      <button type="button" (click)="closeProofPreview()">
+        ×
+      </button>
+    </div>
+
+    <div class="proof-preview-body">
+      <img
+        *ngIf="selectedProofType === 'image'"
+        [src]="selectedProofUrl"
+        alt="Comprobante de pago"
+        class="proof-preview-img">
+
+      <iframe
+        *ngIf="selectedProofType === 'pdf'"
+        [src]="selectedProofUrl"
+        class="proof-preview-pdf">
+      </iframe>
+
+      <div class="proof-preview-unknown" *ngIf="selectedProofType === 'unknown'">
+        <p>No se puede previsualizar este archivo.</p>
+
+        <a [href]="selectedProofUrl" target="_blank">
+          Abrir archivo
         </a>
-
-        <div class="order-actions" *ngIf="item.status === 'pending'">
-          <button
-            type="button"
-            class="approve-btn"
-            [disabled]="processingId === item.id"
-            (click)="approveProof(item)">
-            {{ processingId === item.id ? 'Procesando...' : 'Aprobar' }}
-          </button>
-
-          <button
-            type="button"
-            class="reject-btn"
-            [disabled]="processingId === item.id"
-            (click)="rejectProof(item)">
-            Rechazar
-          </button>
-        </div>
-
       </div>
     </div>
 
