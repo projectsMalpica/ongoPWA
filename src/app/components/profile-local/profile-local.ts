@@ -20,10 +20,11 @@ import { Pagination, Autoplay } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import { RealtimePlanningPartnerService } from '../../services/realtime-planningPartner.service';
+import { RouterLink } from '@angular/router';
 @Component({
   selector: 'app-profile-local',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
   templateUrl: './profile-local.html',
   styleUrl: './profile-local.scss',
 })

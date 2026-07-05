@@ -114,6 +114,12 @@ export const routes: Routes = [
     title: 'Perfil local'
   },
   {
+  path: 'partner-pending-orders',
+  loadComponent: () =>
+    import('./components/partner-pending-orders/partner-pending-orders')
+      .then(m => m.PartnerPendingOrders)
+},
+  {
     path: 'detailprofile',
     loadComponent: () =>
       import('./components/detailprofile/detailprofile').then(c => c.Detailprofile),
