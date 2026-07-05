@@ -18392,7 +18392,7 @@ svg.radial-progress {
   align-items: center;
   justify-content: center;
   border-radius: var(--border-radius-sm);
-  gap: 10px; }
+  gap: 1px; }
   .dz-subscribe-area .subscribe-area-top .subscribe-box .title {
     color: #fff;
     margin-bottom: 0;

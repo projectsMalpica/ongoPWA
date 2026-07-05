@@ -3,15 +3,19 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { GlobalService } from '../../services/global.service';
 import { AuthPocketbaseService } from '../../services/authPocketbase.service';
+
 interface WalletTransaction {
   id: string;
-  type: 'topup' | 'gift_sent' | 'gift_received' | 'refund' | 'bonus' | string;
+  type: string;
   description: string;
   amount: number;
   direction: 'credit' | 'debit';
-  status: 'completed' | 'pending' | 'failed' | string;
+  status: string;
   created: string;
+  currency?: string;
+  paymentMethod?: string;
 }
+
 @Component({
   selector: 'app-wallet-history',
   standalone: true,
@@ -35,43 +39,74 @@ export class WalletHistory implements OnInit {
   }
 
   async loadTransactions(): Promise<void> {
-  const userId = this.auth.currentUser?.id;
+    const userId = this.auth.currentUser?.id;
+    if (!userId) return;
 
-  if (!userId) return;
+    try {
+      this.loading = true;
 
-  try {
-    this.loading = true;
+      const wallet = await this.global.pb.collection('wallet').getFirstListItem(
+        `userId="${userId}"`,
+        { requestKey: null }
+      );
 
-    const wallet = await this.global.pb.collection('wallet').getFirstListItem(
-      `userId="${userId}"`,
-      { requestKey: null }
-    );
+      const walletRecords = await this.global.pb
+        .collection('wallet_transactions')
+        .getFullList({
+          filter: `walletId="${wallet.id}"`,
+          sort: '-created',
+          requestKey: null
+        });
 
-    const records = await this.global.pb.collection('wallet_transactions').getFullList({
-      filter: `walletId="${wallet.id}"`,
-      sort: '-created',
-      requestKey: null
-    });
+      const rechargeProofs = await this.global.pb
+        .collection('wallet_recharge_proofs')
+        .getFullList({
+          filter: `walletId="${wallet.id}"`,
+          sort: '-created',
+          requestKey: null
+        });
 
-    this.transactions = records.map((item: any) => ({
-      id: item.id,
-      type: item.type,
-      description: item.description || 'Movimiento wallet',
-      amount: Number(item.amount || 0),
-      direction: item.direction,
-      status: item.status,
-      created: item.created
-    }));
-this.cdr.detectChanges();
-  } catch (error) {
-    console.error('Error cargando historial wallet:', error);
-    this.transactions = [];
-  } finally {
-    this.loading = false;
+      const walletTransactions: WalletTransaction[] = walletRecords.map((item: any) => ({
+        id: item.id,
+        type: item.type,
+        description: item.description || 'Movimiento wallet',
+        amount: Number(item.amount || 0),
+        direction: item.direction || 'credit',
+        status: item.status || 'completed',
+        created: item.created,
+        currency: item.currency || 'COP',
+        paymentMethod: item.paymentMethod || 'wompi'
+      }));
+
+      const manualTransactions: WalletTransaction[] = rechargeProofs.map((item: any) => ({
+        id: item.id,
+        type: 'manual_topup',
+        description: 'Recarga manual Binance',
+        amount: Number(item.price || item.amountPaid || 0),
+        direction: 'credit',
+        status: item.status || 'pending',
+        created: item.created,
+        currency: item.currency || 'USD',
+        paymentMethod: item.paymentMethod || 'binance'
+      }));
+
+      this.transactions = [
+        ...walletTransactions,
+        ...manualTransactions
+      ].sort((a, b) =>
+        new Date(b.created).getTime() - new Date(a.created).getTime()
+      );
+
+    } catch (error) {
+      console.error('Error cargando historial wallet:', error);
+      this.transactions = [];
+    } finally {
+      this.loading = false;
+      this.cdr.detectChanges();
+    }
   }
-}
 
-  goBack() {
+  goBack(): void {
     this.router.navigate(['/wallet']);
   }
 
@@ -82,7 +117,9 @@ this.cdr.detectChanges();
   getTypeLabel(type: string): string {
     switch (type) {
       case 'topup':
-        return 'Recarga';
+        return 'Recarga Wompi';
+      case 'manual_topup':
+        return 'Recarga manual';
       case 'gift_sent':
         return 'Regalo enviado';
       case 'gift_received':
@@ -108,8 +145,21 @@ this.cdr.detectChanges();
         return 'Fallido';
       case 'approved':
         return 'Aprobado';
+      case 'rejected':
+        return 'Rechazado';
       default:
         return status || 'Sin estado';
+    }
+  }
+
+  getPaymentMethodLabel(method?: string): string {
+    switch (method) {
+      case 'binance':
+        return 'Binance Pay';
+      case 'wompi':
+        return 'Wompi';
+      default:
+        return method || '';
     }
   }
 }

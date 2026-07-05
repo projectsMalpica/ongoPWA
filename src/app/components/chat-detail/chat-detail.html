@@ -43,17 +43,18 @@
 </div>
 <div class="chat-quick-actions" *ngIf="isMatched">
 
-  <button type="button" *ngIf="insideSameLocal">
+  <button type="button" *ngIf="insideSameLocal" (click)="openDrinkOptions()">
     🍸 Enviar copa
   </button>
 
-  <button type="button" *ngIf="insideSameLocal">
-    Enviar regalo
+  <button type="button" (click)="openGiftOptions()">
+  🎁 Enviar regalo
+</button>
+
+  <button type="button" (click)="showDistance()">
+     Ver distancia
   </button>
 
-  <button type="button">
-    Ver distancia
-  </button>
 </div>
 <div class="chat-locked" *ngIf="!isMatched">
   🔒 El chat se desbloquea cuando ambos hacen match.
@@ -70,3 +71,51 @@
     </button>
   </form>
 </footer>
+<div class="gift-sheet-backdrop" *ngIf="showGiftOptions" (click)="showGiftOptions = false"></div>
+
+<div class="gift-sheet" *ngIf="showGiftOptions">
+  <h3>Enviar un detalle</h3>
+  <p>Elige algo para sorprender a {{ receiverProfile?.name || 'esta persona' }}.</p>
+
+  <button
+    type="button"
+    class="gift-option"
+    *ngFor="let gift of giftOptions"
+    (click)="sendSymbolicGift(gift)">
+
+    <span>{{ gift.icon }}</span>
+
+    <div>
+      <strong>{{ gift.name }}</strong>
+<small>
+  {{ getMoneyLabel(getGiftPrice(gift).amount, getGiftPrice(gift).currency) }}
+</small>    </div>
+  </button>
+
+  <button type="button" class="sheet-close" (click)="showGiftOptions = false">
+    Cerrar
+  </button>
+</div>
+<div class="gift-sheet-backdrop" *ngIf="showDrinkOptions" (click)="showDrinkOptions = false"></div>
+
+<div class="gift-sheet" *ngIf="showDrinkOptions">
+  <h3>Enviar copa 🍸</h3>
+  <p>Productos disponibles en este local.</p>
+
+  <button
+    type="button"
+    class="gift-option"
+    *ngFor="let product of localProducts"
+    (click)="sendDrinkProduct(product)">
+
+    <img *ngIf="product.image" [src]="product.image" alt="producto">
+
+    <div>
+      <strong>{{ product.name }}</strong>
+<small>{{ getMoneyLabel(product.price, product.currency) }}</small>    </div>
+  </button>
+
+  <button type="button" class="sheet-close" (click)="showDrinkOptions = false">
+    Cerrar
+  </button>
+</div>

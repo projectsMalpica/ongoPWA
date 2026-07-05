@@ -89,26 +89,59 @@
       title="Perfil">
       <i class="flaticon flaticon-user"></i>
     </a>
+ <!--    <a
+  *ngIf="auth.isAdmin()"
+  class="nav-link"
+  routerLink="/admin"
+  routerLinkActive="active"
+  [routerLinkActiveOptions]="{ exact: true }"
+  title="Panel">
+  <i class="fa-solid fa-shield-halved"></i>
+</a> -->
+<a
+  *ngIf="auth.isAdmin()"
+  class="nav-link"
+  routerLink="/admin"
+  routerLinkActive="active"
+  title="Clientes">
+  <i class="fa-solid flaticon-dog-house"></i>
+</a>
+<a
+  *ngIf="auth.isAdmin()"
+  class="nav-link"
+  routerLink="/admin-clientes"
+  routerLinkActive="active"
+  title="Clientes">
+  <i class="fa-solid fa-users"></i>
+</a>
 
+<a
+  *ngIf="auth.isAdmin()"
+  class="nav-link"
+  routerLink="/admin-locales"
+  routerLinkActive="active"
+  title="Locales">
+  <i class="fa-solid fa-store"></i>
+</a>
+
+<!-- <a
+  *ngIf="auth.isAdmin()"
+  class="nav-link"
+  routerLink="/admin-wallets"
+  routerLinkActive="active"
+  title="Wallets">
+  <i class="fa-solid fa-wallet"></i>
+</a> -->
+
+<a
+  *ngIf="auth.isAdmin()"
+  class="nav-link"
+  routerLink="/admin-payments"
+  routerLinkActive="active"
+  title="Pagos">
+  <i class="fa-solid fa-receipt"></i>
+</a>
   </div>
 </div> 
 
-<!-- <div class="menubar-area footer-fixed">
-  <div class="toolbar-inner menubar-nav">
-    <a class="nav-link" routerLink="/maps">
-      <i class="fas fa-map-marker-alt"></i>
-    </a>
 
-    <a class="nav-link" routerLink="/home">
-      <i class="fas fa-fire"></i>
-    </a>
-
-    <a class="nav-link" routerLink="/chat">
-      <i class="flaticon flaticon-chat-1"></i>
-    </a>
-
-    <a class="nav-link" routerLink="/profile">
-      <i class="flaticon flaticon-user"></i>
-    </a>
-  </div>
-</div> -->

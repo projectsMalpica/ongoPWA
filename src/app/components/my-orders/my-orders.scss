@@ -169,3 +169,101 @@
     background: linear-gradient(90deg, #ff2ebd, #9b00ff);
   }
 }
+.orders-tabs {
+  display: flex;
+  gap: 10px;
+  margin: 22px 0 26px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  border: 1px solid rgba(255,255,255,.08);
+
+  background: rgba(255,255,255,.03);
+
+  color: rgba(255,255,255,.72);
+
+  border-radius: 999px;
+
+  padding: 11px 18px;
+
+  white-space: nowrap;
+
+  transition: .25s;
+
+  font-size: .92rem;
+
+  font-weight: 600;
+
+  i{
+    font-size: 18px;
+    opacity: .9;
+  }
+
+  &:hover{
+
+    background: rgba(255,0,150,.08);
+
+    border-color: rgba(255,0,150,.25);
+
+    color:#fff;
+
+  }
+
+  &.active{
+
+    background: linear-gradient(
+      135deg,
+      #ff2aa3,
+      #9c27ff
+    );
+
+    color:#fff;
+
+    border-color: transparent;
+
+    box-shadow:
+      0 8px 24px rgba(255,0,150,.28);
+
+    i{
+      color:#fff;
+    }
+
+  }
+
+}
+
+.tab-btn.active{
+
+    position: relative;
+
+    &::after{
+
+        content:"";
+
+        position:absolute;
+
+        left:18px;
+        right:18px;
+        bottom:-8px;
+
+        height:3px;
+
+        border-radius:20px;
+
+        background:#ff3db5;
+
+        box-shadow:0 0 12px #ff3db5;
+
+    }
+
+}

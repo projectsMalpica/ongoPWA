@@ -63,6 +63,22 @@ export const routes: Routes = [
     title: 'Ongo admin'
   },
   {
+    path: 'admin',
+    loadComponent: () => import('./components/admin/admin').then(m => m.Admin)
+  },
+  {
+    path: 'admin-clientes',
+    loadComponent: () => import('./components/admin-clientes/admin-clientes').then(m => m.AdminClientes)
+  },
+  {
+    path: 'admin-locales',
+    loadComponent: () => import('./components/admin-locales/admin-locales').then(m => m.AdminLocales)
+  },
+  {
+    path: 'admin-payments',
+    loadComponent: () => import('./components/admin-payments/admin-payments').then(m => m.AdminPayments)
+  },
+  {
     path: 'maps',
     loadComponent: () =>
       import('./components/maps/maps').then(c => c.Maps),
@@ -81,10 +97,10 @@ export const routes: Routes = [
     title: 'Detalle de promocion'
   },
   {
-  path: 'checkout-promo/:id',
-  loadComponent: () =>
-    import('./components/checkout-promo/checkout-promo').then(m => m.CheckoutPromo)
-},
+    path: 'checkout-promo/:id',
+    loadComponent: () =>
+      import('./components/checkout-promo/checkout-promo').then(m => m.CheckoutPromo)
+  },
   {
     path: 'profile',
     loadComponent: () =>
@@ -153,11 +169,11 @@ export const routes: Routes = [
     title: 'Recuperar contraseña'
   },
   {
-  path: 'my-orders',
-  loadComponent: () =>
-    import('./components/my-orders/my-orders').then(m => m.MyOrders),
-      title: 'Mis ordenes'
-},
+    path: 'my-orders',
+    loadComponent: () =>
+      import('./components/my-orders/my-orders').then(m => m.MyOrders),
+    title: 'Mis ordenes'
+  },
   {
     path: 'reset-password',
     loadComponent: () =>

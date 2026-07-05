@@ -33,7 +33,9 @@
             <div class="history-top">
               <h4>{{ getTypeLabel(item.type) }}</h4>
               <span class="history-amount" [ngClass]="item.direction">
-                {{ getAmountPrefix(item.direction) }} $ {{ item.amount | number:'1.0-0' }}
+                {{ getAmountPrefix(item.direction) }}
+                {{ item.amount | number:'1.0-0' }}
+                {{ item.currency || 'COP' }}
               </span>
             </div>
 
@@ -45,6 +47,9 @@
               </span>
               <span class="date">
                 {{ item.created | date:'short' }}
+              </span>
+              <span class="method" *ngIf="item.paymentMethod">
+                {{ getPaymentMethodLabel(item.paymentMethod) }}
               </span>
             </div>
           </div>

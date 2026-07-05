@@ -775,38 +775,20 @@ export class Home implements OnInit {
   closeMatchOverlay() {
     this.showMatchOverlay = false;
   }
-  /* canSendGiftTo(cliente: any): boolean {
-    const myProfile = this.global.profileData;
-
-    if (!myProfile || !cliente) return false;
-
-    const myPlan = myProfile.plan || 'free';
-
-    const sameLocal =
-      myProfile.currentPartnerId &&
-      cliente.currentPartnerId &&
-      myProfile.currentPartnerId === cliente.currentPartnerId;
-
-    if (myPlan === 'free') {
-      return sameLocal;
-    }
-
-    return !!cliente.currentPartnerId;
-  } */
   canSendGiftTo(cliente: any): boolean {
-    const hasPro = this.hasClientProPlan();
+  const hasPro = this.hasClientProPlan();
 
-    const sameLocal =
-      this.currentLocalId &&
-      cliente?.currentPartnerId &&
-      cliente.currentPartnerId === this.currentLocalId;
+  const sameLocal =
+    this.currentLocalId &&
+    cliente?.currentPartnerId &&
+    cliente.currentPartnerId === this.currentLocalId;
 
-    if (hasPro) {
-      return !!cliente?.currentPartnerId;
-    }
-
-    return !!sameLocal;
+  if (hasPro) {
+    return true;
   }
+
+  return !!sameLocal;
+}
   async loadProductsForPartner(partnerId?: string): Promise<void> {
     const filter = partnerId
       ? `partnerId="${partnerId}" && isAvailable=true`
@@ -1138,43 +1120,39 @@ export class Home implements OnInit {
 
     this.currentPhotoIndex = (this.currentPhotoIndex + 1) % total;
   }
-  /*  onGiftClick(event: Event, cliente: any) {
-     event.stopPropagation();
-     event.preventDefault();
- 
-     this.openGiftFromHome(cliente);
- 
-   } */
-  async onGiftClick(event: Event, cliente: any) {
-    event.stopPropagation();
-    event.preventDefault();
+ async onGiftClick(event: Event, cliente: any) {
+  event.stopPropagation();
+  event.preventDefault();
 
-    if (!this.canSendGiftTo(cliente)) {
-      Swal.fire({
-        icon: 'info',
-        title: 'Regalos disponibles en el local',
-        text: 'Con OnGo Free solo puedes enviar regalos a personas dentro de tu mismo local. Activa Premium para más opciones.',
-        confirmButtonText: 'Ver planes',
-        showCancelButton: true,
-        cancelButtonText: 'Cerrar'
-      }).then(result => {
-        if (result.isConfirmed) {
-          this.openClientPlans();
-        }
-      });
+  await this.refreshCurrentClientProfile();
 
-      return;
+if (!this.canSendGiftTo(cliente)) {
+  Swal.fire({
+    icon: 'info',
+    title: 'Regalos disponibles en el local',
+    text: 'Con OnGo Free solo puedes enviar regalos a personas dentro de tu mismo local. Activa Premium para más opciones.',
+    confirmButtonText: 'Ver planes',
+    showCancelButton: true,
+    cancelButtonText: 'Cerrar'
+  }).then(result => {
+    if (result.isConfirmed) {
+      this.openClientPlans();
     }
-    const allowed = await this.canUseDailyFeature('gifts');
+  });
 
-    if (!allowed) {
-      this.showLimitModal('regalos');
-      return;
-    }
+  return;
+}
 
-    await this.incrementDailyFeature('gifts');
-    this.openGiftFromHome(cliente);
+  const allowed = await this.canUseDailyFeature('gifts');
+
+  if (!allowed) {
+    this.showLimitModal('regalos');
+    return;
   }
+
+  await this.incrementDailyFeature('gifts');
+  this.openGiftFromHome(cliente);
+}
   prevPhoto(event?: Event) {
     event?.stopPropagation();
 
@@ -1333,30 +1311,29 @@ export class Home implements OnInit {
     this.router.navigate(['/profile']);
   }
   hasClientProPlan(): boolean {
-    const profile = this.authPocketbaseService.getCurrentProfile();
+  const profile =
+    this.global.profileData ||
+    this.authPocketbaseService.getCurrentProfile();
 
-    const planName = String(profile?.subscriptionPlanName || '').toLowerCase();
-    const planId = String(profile?.subscriptionPlanId || '');
-    const status = String(profile?.subscriptionStatus || '').toLowerCase();
-    const expiresAt = profile?.subscriptionExpiresAt;
+  const planName = String(profile?.subscriptionPlanName || '').toLowerCase();
+  const planId = String(profile?.subscriptionPlanId || '');
+  const status = String(profile?.subscriptionStatus || '').toLowerCase();
+  const expiresAt = profile?.subscriptionExpiresAt;
 
-    const isActive =
-      status === 'active' &&
-      expiresAt &&
-      new Date(expiresAt).getTime() > Date.now();
+  const isActive =
+    status === 'active' &&
+    (!expiresAt || new Date(expiresAt).getTime() > Date.now());
 
-    const paidPlanNames =
-      planName.includes('premium') ||
-      planName.includes('platinum');
-
-    const paidPlanIds = [
-      'ruglhjy5kr7h8a8', // OnGo Premium
-      '6ha3ke9bapjz4av'  // OnGo Platinum
+  const isPaidPlan =
+    planName.includes('premium') ||
+    planName.includes('platinum') ||
+    [
+      'ruglhjy5kr7h8a8',
+      '6ha3ke9bapjz4av'
     ].includes(planId);
 
-    return !!isActive && (paidPlanNames || paidPlanIds);
-  }
-
+  return isActive && isPaidPlan;
+}
   openClientPlans(): void {
     this.router.navigate(['/profile'], {
       queryParams: {
@@ -1462,5 +1439,34 @@ export class Home implements OnInit {
       }
     });
   }
+  async refreshCurrentClientProfile(): Promise<any> {
+  const user =
+    this.authPocketbaseService.getCurrentUser?.() ||
+    this.authPocketbaseService.currentUser ||
+    this.authPocketbaseService.pb.authStore.record ||
+    this.authPocketbaseService.pb.authStore.model;
+
+  if (!user?.id) return null;
+
+  try {
+    const profile = await this.pb.collection('usuariosClient').getFirstListItem(
+      `userId="${user.id}"`,
+      { requestKey: null }
+    );
+
+    this.global.profileData = {
+      ...this.global.profileData,
+      ...profile
+    };
+
+    localStorage.setItem('profile', JSON.stringify(this.global.profileData));
+
+    return profile;
+
+  } catch (error) {
+    console.error('Error refrescando perfil cliente:', error);
+    return null;
+  }
+}
 
 }

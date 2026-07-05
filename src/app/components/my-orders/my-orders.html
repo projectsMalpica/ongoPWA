@@ -21,22 +21,52 @@
       <p>Cuando compres promociones, regalos o entradas aparecerán aquí.</p>
     </div>
     <div class="orders-tabs" *ngIf="!loading && orders.length">
-      <button type="button" [class.active]="activeFilter === 'all'" (click)="activeFilter = 'all'">
-        Todas
-      </button>
 
-      <button type="button" [class.active]="activeFilter === 'pending'" (click)="activeFilter = 'pending'">
-        Pendientes
-      </button>
+  <button
+    type="button"
+    class="tab-btn"
+    [class.active]="activeFilter === 'all'"
+    (click)="activeFilter='all'">
 
-      <button type="button" [class.active]="activeFilter === 'paid'" (click)="activeFilter = 'paid'">
-        Pagadas
-      </button>
+    <i class="fa-solid fa-table-cells-large"></i>
+    <span>Todas</span>
 
-      <button type="button" [class.active]="activeFilter === 'approved'" (click)="activeFilter = 'approved'">
-        Aprobadas
-      </button>
-    </div>
+  </button>
+
+  <button
+    type="button"
+    class="tab-btn"
+    [class.active]="activeFilter === 'pending'"
+    (click)="activeFilter='pending'">
+
+    <i class="fa-regular fa-clock"></i>
+    <span>Pendientes</span>
+
+  </button>
+
+  <button
+    type="button"
+    class="tab-btn"
+    [class.active]="activeFilter === 'paid'"
+    (click)="activeFilter='paid'">
+
+    <i class="fa-solid fa-circle-check"></i>
+    <span>Pagadas</span>
+
+  </button>
+
+  <button
+    type="button"
+    class="tab-btn"
+    [class.active]="activeFilter === 'approved'"
+    (click)="activeFilter='approved'">
+
+    <i class="fa-regular fa-circle-check"></i>
+    <span>Aprobadas</span>
+
+  </button>
+
+</div>
     <div class="orders-list" *ngIf="!loading && filteredOrders.length">
       <div class="order-card" *ngFor="let order of filteredOrders">
 

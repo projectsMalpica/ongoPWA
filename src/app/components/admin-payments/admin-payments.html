@@ -1,0 +1,143 @@
+<div class="page-content space-top p-b60">
+    <div class="local-dashboard admin-dashboard payments-admin">
+
+        <section class="local-hero">
+            <div class="local-profile">
+                <div class="local-avatar">
+                    <i class="fa-solid fa-receipt"></i>
+                </div>
+
+                <div class="local-info">
+                    <span class="local-badge">Pagos manuales</span>
+                    <h2>Comprobantes</h2>
+                    <p>Clientes y comercios</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="admin-tabs">
+            <button type="button" [class.active]="target === 'client'" (click)="changeTarget('client')">
+                Clientes
+            </button>
+
+            <button type="button" [class.active]="target === 'partner'" (click)="changeTarget('partner')">
+                Comercios
+            </button>
+            <button type="button" [class.active]="target === 'wallet'" (click)="changeTarget('wallet')">
+                Wallet
+            </button>
+        </div>
+
+        <div class="admin-tabs status-tabs">
+            <button type="button" [class.active]="status === 'pending'" (click)="changeStatus('pending')">
+                Pendientes
+            </button>
+
+            <button type="button" [class.active]="status === 'approved'" (click)="changeStatus('approved')">
+                Aprobados
+            </button>
+
+            <button type="button" [class.active]="status === 'rejected'" (click)="changeStatus('rejected')">
+                Rechazados
+            </button>
+
+        </div>
+
+        <div class="gift-loading" *ngIf="loading">
+            Cargando comprobantes...
+        </div>
+
+        <article class="gift-ticket" *ngFor="let proof of proofs">
+            <div class="ticket-left">
+                <div class="ticket-icon">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                </div>
+
+                <div>
+                   <!--  <h4>{{ proof.planName || 'Plan sin nombre' }}</h4>
+                    <p>{{ proof.paymentMethod || 'Pago manual' }} · {{ proof.country || 'VE' }}</p>
+
+                    <strong *ngIf="proof.amountUSD">
+                        {{ proof.amountUSD | currency:'USD':'symbol':'1.0-0' }}
+                    </strong>
+
+                    <small>
+                        {{ proof.created | date:'dd/MM/yyyy, h:mm a' }}
+                    </small>
+
+                    <br>
+
+                    <a *ngIf="proof.proofFile" [href]="getProofFileUrl(proof)" target="_blank">
+                        Ver comprobante
+                    </a> -->
+
+                    <h4>
+  {{ target === 'wallet'
+      ? (proof.packageName || 'Recarga Wallet')
+      : (proof.planName || 'Plan sin nombre') }}
+</h4>
+
+<p>
+  {{ proof.paymentMethod || 'Pago manual' }}
+  <ng-container *ngIf="target !== 'wallet'">
+    · {{ proof.country || 'VE' }}
+  </ng-container>
+</p>
+
+<strong>
+  {{ target === 'wallet'
+      ? (proof.amountPaid || proof.price || 0) + ' ' + (proof.currency || 'USD')
+      : (proof.amountUSD | currency:'USD':'symbol':'1.0-0') }}
+</strong>
+
+<small class="d-block mt-1">
+  {{ proof.created | date:'dd/MM/yyyy, h:mm a' }}
+</small>
+
+<a
+  *ngIf="target === 'wallet' ? proof.proofImage : proof.proofFile"
+  [href]="getProofFileUrl(proof)"
+  target="_blank">
+  Ver comprobante
+</a>
+
+<p *ngIf="proof.adminNotes">
+  Nota: {{ proof.adminNotes }}
+</p>
+                </div>
+            </div>
+
+            <div class="ticket-right">
+                <span>{{ proof.status }}</span>
+
+                <ng-container *ngIf="proof.status === 'pending'">
+                    <button type="button" [disabled]="processingId === proof.id" (click)="approveProof(proof)">
+                        {{ processingId === proof.id ? 'Procesando...' : 'Aprobar' }}
+                    </button>
+
+                    <button type="button" class="danger-btn" [disabled]="processingId === proof.id"
+                        (click)="rejectProof(proof)">
+                        Rechazar
+                    </button>
+                </ng-container>
+            </div>
+        </article>
+
+        <div class="gift-tip" *ngIf="!loading && proofs.length === 0">
+            No hay comprobantes para este filtro.
+        </div>
+
+        <div class="admin-pagination" *ngIf="totalPages > 1">
+            <button type="button" [disabled]="page <= 1" (click)="prevPage()">
+                Anterior
+            </button>
+
+            <span>Página {{ page }} de {{ totalPages }}</span>
+
+            <button type="button" [disabled]="page >= totalPages" (click)="nextPage()">
+                Siguiente
+            </button>
+        </div>
+
+    </div>
+</div>

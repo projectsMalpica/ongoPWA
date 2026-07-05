@@ -3,7 +3,7 @@
   <div class="container">
     <div class="header-content">
       <div class="left-content me-3">
-        <a  class="back-btn" (click)="goBack()">
+        <a class="back-btn" (click)="goBack()">
           <i class="icon feather icon-chevron-left"></i>
         </a>
         <h6 class="title">Mi Wallet</h6>
@@ -12,7 +12,7 @@
       <div class="mid-content"></div>
 
       <div class="right-content">
-        <a  class="wallet-history-btn" (click)="goToHistory()">
+        <a class="wallet-history-btn" (click)="goToHistory()">
           Historial
         </a>
       </div>
@@ -35,7 +35,18 @@
       <h2 class="wallet-balance">{{ currencySymbol }} {{ currentBalance | number:'1.0-0' }}</h2>
       <p class="wallet-balance-note">Usa tu saldo para enviar regalos o realizar compras dentro de la app.</p>
     </div>
+    <div class="wallet-pending-mini" *ngIf="pendingRecharge">
+  <div>
+    <strong>⏳ Recarga Binance en validación</strong>
+    <span>
+      {{ pendingRecharge.amountPaid }} {{ pendingRecharge.currency }} · Pendiente
+    </span>
+  </div>
 
+  <button type="button" (click)="goToHistory()">
+    Ver
+  </button>
+</div>
     <div class="dz-subscribe-area">
       <div class="subscribe-area-top">
         <div class="wallet-packages-slider">
@@ -45,17 +56,17 @@
               (click)="selectPackage(pkg.id)">
               <div class="subscribe-box" [ngClass]="pkg.theme">
                 <h3 class="title">{{ pkg.name }}</h3>
-                <div class="badge" style="color:#fff;">
-                  {{ pkg.credits | number:'1.0-0' }} créditos
-                </div>
+               
 
                 <p class="wallet-price">
-                  {{ currencySymbol }} {{ pkg.price | number:'1.0-0' }}
+                  {{ getCopAmount(pkg) }}
                 </p>
 
-                <small class="wallet-bonus" *ngIf="pkg.bonus && pkg.bonus > 0">
-                  + {{ pkg.bonus | number:'1.0-0' }} de bono
+                <small class="wallet-bonus">
+                  Manual USD: {{ getUsdAmount(pkg) }}
                 </small>
+
+               
               </div>
             </div>
 
@@ -72,27 +83,38 @@
         </ul>
 
         <div class="wallet-summary-box">
-          <div class="summary-row">
-            <span>Créditos</span>
-            <strong>{{ selected.credits | number:'1.0-0' }}</strong>
-          </div>
-
-          <div class="summary-row" *ngIf="selected.bonus && selected.bonus > 0">
-            <span>Bono</span>
-            <strong>+ {{ selected.bonus | number:'1.0-0' }}</strong>
-          </div>
+         
 
           <div class="summary-row total">
-            <span>Total a pagar</span>
-            <strong>{{ currencySymbol }} {{ selected.price | number:'1.0-0' }}</strong>
+            <span>Pago automático Wompi</span>
+            <strong>{{ getCopAmount(selected) }}</strong>
+          </div>
+
+          <div class="summary-row">
+            <span>Pago manual Binance</span>
+            <strong>{{ getUsdAmount(selected) }}</strong>
           </div>
         </div>
 
-<div class="bottom-btn text-center wallet-sticky-btn" style="    left: 50%;">
-            <a href="javascript:void(0);" class="btn btn-gradient dz-flex-box btn-shadow rounded-xl"
-            (click)="rechargeWallet()">
-            Recargar con {{ currencySymbol }} {{ selected.price | number:'1.0-0' }}
-          </a>
+        <div class="bottom-btn text-center wallet-sticky-btn" style="    left: 50%;">
+          <div class="wallet-actions">
+  <button
+    type="button"
+    class="wallet-action-btn wompi"
+    (click)="confirmRechargeFromSelected()"
+    [disabled]="isProcessingRecharge"
+  >
+    {{ isProcessingRecharge ? 'Procesando...' : ('Pagar Wompi ' + getCopAmount(selected)) }}
+  </button>
+
+  <button
+    type="button"
+    class="wallet-action-btn binance"
+    (click)="openManualRecharge()"
+  >
+    Pagar Binance {{ getUsdAmount(selected) }}
+  </button>
+</div>
         </div>
       </div>
     </div>
@@ -111,9 +133,6 @@
     <div class="wallet-modal-body" *ngIf="selectedRechargePackage as pkg">
       <div class="wallet-modal-card" [ngClass]="pkg.theme">
         <h4>{{ pkg.name }}</h4>
-        <p>{{ pkg.credits | number:'1.0-0' }} créditos</p>
-        <strong>{{ currencySymbol }} {{ pkg.price | number:'1.0-0' }}</strong>
-        <small *ngIf="pkg.bonus && pkg.bonus > 0">+ {{ pkg.bonus | number:'1.0-0' }} de bono</small>
       </div>
 
       <div class="wallet-modal-summary">
@@ -124,23 +143,48 @@
 
         <div class="wallet-modal-row">
           <span>Recarga</span>
-          <strong>{{ currencySymbol }} {{ pkg.price | number:'1.0-0' }}</strong>
+          <small>Manual Binance: {{ getUsdAmount(pkg) }}</small>
         </div>
 
-        <div class="wallet-modal-row total">
-          <span>Total a pagar</span>
-          <strong>{{ currencySymbol }} {{ pkg.price | number:'1.0-0' }}</strong>
-        </div>
       </div>
 
-      <button
-        type="button"
-        class="wallet-modal-confirm"
-        [disabled]="isProcessingRecharge"
-        (click)="confirmRecharge()"
-      >
-        {{ isProcessingRecharge ? 'Procesando...' : ('Pagar con Wompi ' + currencySymbol + ' ' + (pkg.price | number:'1.0-0')) }}
-      </button>
+      <div class="manual-payment-box">
+        <h4 style="color: black;">Pago manual</h4>
+
+        <div class="wallet-payment-methods">
+          <button type="button" class="payment-method-card" [class.active]="manualPaymentMethod === 'binance'"
+            (click)="manualPaymentMethod = 'binance'">
+            <strong>Binance Pay</strong>
+            <small>Pagar manual en {{ getUsdAmount(pkg) }}</small>
+          </button>
+
+        </div>
+
+        <ng-container *ngIf="manualPaymentMethod === 'binance'">
+          <p><strong>Binance Pay:</strong> binance-user-o-email@correo.com</p>
+          <p><strong>Monto:</strong> {{ getUsdAmount(pkg) }}</p>
+        </ng-container>
+
+
+        <label class="proof-upload-box">
+          <input type="file" hidden accept="image/jpeg,image/png,image/webp,application/pdf"
+            (change)="onManualProofSelected($event)">
+
+          <span *ngIf="!manualProofFile">Subir comprobante</span>
+          <span *ngIf="manualProofFile && !manualProofPreview">{{ manualProofFile.name }}</span>
+          <img *ngIf="manualProofPreview" [src]="manualProofPreview" alt="Comprobante">
+        </label>
+
+        <textarea class="manual-notes" rows="3" placeholder="Referencia o nota del pago"
+          [(ngModel)]="manualPaymentNotes">
+  </textarea>
+
+        <button type="button" class="wallet-modal-confirm manual"
+          [disabled]="isUploadingManualProof || !manualProofFile" (click)="submitManualRecharge()">
+          {{ isUploadingManualProof ? 'Enviando...' : ('Enviar comprobante ' + getManualAmount(pkg)) }}
+        </button>
+      </div>
+      
     </div>
   </div>
 </div>

@@ -243,32 +243,46 @@ export class AuthPocketbaseService {
     try { return await res.json(); } catch { return null; }
   }
   async loadProfileFromBackend() {
-    if (!this.currentUser?.id) return;
+  if (!this.currentUser?.id) return;
 
-    try {
-      const type = this.currentUser?.type;
+  try {
+    const type = this.normalizeUserType(this.currentUser?.type);
 
-      const coll =
-        type === 'partner'
-          ? 'usuariosPartner'
-          : 'usuariosClient';
+    if (type === 'admin') {
+      this.profile = {
+        id: this.currentUser.id,
+        userId: this.currentUser.id,
+        type: 'admin',
+        name: this.currentUser?.name || this.currentUser?.email || 'Administrador',
+        email: this.currentUser?.email || ''
+      };
 
-      const profile = await this.pb
-        .collection(coll)
-        .getFirstListItem(`userId="${this.currentUser.id}"`);
-
-      this.profile = profile;
-
-      if (type === 'partner') {
-        localStorage.setItem('profilePartner', JSON.stringify(profile));
-      } else {
-        localStorage.setItem('profile', JSON.stringify(profile));
-      }
-
-    } catch (e) {
-      console.warn('No se pudo cargar el perfil:', e);
+      localStorage.setItem('profile', JSON.stringify(this.profile));
+      localStorage.removeItem('profilePartner');
+      return;
     }
+
+    const coll =
+      type === 'partner'
+        ? 'usuariosPartner'
+        : 'usuariosClient';
+
+    const profile = await this.pb
+      .collection(coll)
+      .getFirstListItem(`userId="${this.currentUser.id}"`);
+
+    this.profile = profile;
+
+    if (type === 'partner') {
+      localStorage.setItem('profilePartner', JSON.stringify(profile));
+    } else {
+      localStorage.setItem('profile', JSON.stringify(profile));
+    }
+
+  } catch (e) {
+    console.warn('No se pudo cargar el perfil:', e);
   }
+}
   async updateUserField(userId: string, updateData: any): Promise<void> {
     await this.pb.collection('users').update(userId, updateData);
   }
@@ -286,56 +300,23 @@ export class AuthPocketbaseService {
   isLogin() {
     return localStorage.getItem('isLoggedin');
   }
-  /* 
-    isAdmin() {
-      const userType = localStorage.getItem('type');
-  
-      if (!userType || userType === 'undefined') {
-        return false;
-      }
-  
-      try {
-        return JSON.parse(userType) === 'admin';
-      } catch {
-        return false;
-      }
-    } */
-  isAdmin() {
+ 
+  /* isAdmin() {
     const type = this.normalizeUserType(localStorage.getItem('type'));
     return type === 'admin';
-  }
-
-  /* isPartner() {
-    const userType = localStorage.getItem('type');
-
-    if (!userType || userType === 'undefined') {
-      return false;
-    }
-
-    try {
-      return JSON.parse(userType) === 'partner';
-    } catch {
-      return false;
-    }
   } */
+  isAdmin(): boolean {
+  const user: any = this.getCurrentUser?.() || this.currentUser;
+  const localType = localStorage.getItem('type');
+
+  return user?.type === 'admin' || localType === 'admin';
+}
+
   isPartner() {
     const type = this.normalizeUserType(localStorage.getItem('type'));
     return type === 'partner';
   }
 
-  /*  isClient() {
-     const userType = localStorage.getItem('type');
- 
-     if (!userType || userType === 'undefined') {
-       return false;
-     }
- 
-     try {
-       return JSON.parse(userType) === 'client';
-     } catch {
-       return false;
-     }
-   } */
   isClient() {
     const type = this.normalizeUserType(localStorage.getItem('type'));
     return type === 'client';
@@ -411,46 +392,66 @@ export class AuthPocketbaseService {
     await this.loadProfileByUserType(authUser);
   }
   async loadProfileByUserType(authUser: any): Promise<any> {
-    const userId = authUser?.id;
-    const type = this.normalizeUserType(authUser?.type || authUser?.userType);
-    if (!userId) {
-      throw new Error('No hay authUser.id');
-    }
+  const userId = authUser?.id;
+  const type = this.normalizeUserType(authUser?.type || authUser?.userType);
 
-    if (!type) {
-      throw new Error('El usuario no tiene type o userType');
-    }
-
-    let collectionName = '';
-
-    if (type === 'client') {
-      collectionName = 'usuariosClient';
-    }
-
-    if (type === 'partner') {
-      collectionName = 'usuariosPartner';
-    }
-
-    if (!collectionName) {
-      throw new Error(`Tipo de usuario no reconocido: ${type}`);
-    }
-
-    const profile = await this.pb
-      .collection(collectionName)
-      .getFirstListItem(`userId="${userId}"`);
-
-    if (type === 'client') {
-      localStorage.setItem('profile', JSON.stringify(profile));
-      localStorage.removeItem('profilePartner');
-    }
-
-    if (type === 'partner') {
-      localStorage.setItem('profilePartner', JSON.stringify(profile));
-      localStorage.removeItem('profile');
-    }
-
-    return profile;
+  if (!userId) {
+    throw new Error('No hay authUser.id');
   }
+
+  if (!type) {
+    throw new Error('El usuario no tiene type o userType');
+  }
+
+  if (type === 'admin') {
+    const adminProfile = {
+      id: userId,
+      userId,
+      type: 'admin',
+      name: authUser?.name || authUser?.username || authUser?.email || 'Administrador',
+      email: authUser?.email || '',
+      status: authUser?.status || 'active'
+    };
+
+    this.profile = adminProfile;
+    this.currentUser = {
+      ...authUser,
+      type: 'admin'
+    };
+
+    localStorage.setItem('type', 'admin');
+    localStorage.setItem('profile', JSON.stringify(adminProfile));
+    localStorage.removeItem('profilePartner');
+
+    return adminProfile;
+  }
+
+  let collectionName = '';
+
+  if (type === 'client') {
+    collectionName = 'usuariosClient';
+  }
+
+  if (type === 'partner') {
+    collectionName = 'usuariosPartner';
+  }
+
+  const profile = await this.pb
+    .collection(collectionName)
+    .getFirstListItem(`userId="${userId}"`);
+
+  if (type === 'client') {
+    localStorage.setItem('profile', JSON.stringify(profile));
+    localStorage.removeItem('profilePartner');
+  }
+
+  if (type === 'partner') {
+    localStorage.setItem('profilePartner', JSON.stringify(profile));
+    localStorage.removeItem('profile');
+  }
+
+  return profile;
+}
   profileStatus() {
     return this.complete;
   }
