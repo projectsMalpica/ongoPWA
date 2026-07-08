@@ -581,8 +581,39 @@ export class RegisterComponent {
           photos: []
         };
 
-        await this.auth.completeGoogleRegister('client', clientData);
+        this.auth.pb.authStore.save(pendingGoogleToken, pendingGoogleUser);
 
+        const safeUsername = this.makeSafeUsername(
+          formData.name ||
+          pendingGoogleUser.username ||
+          pendingGoogleUser.name ||
+          pendingGoogleUser.email?.split('@')[0] ||
+          'usuario'
+        );
+
+        await this.auth.pb.collection('users').update(pendingGoogleUser.id, {
+          type: 'client',
+          name: formData.name || pendingGoogleUser.name || pendingGoogleUser.username || '',
+          username: safeUsername
+        });
+
+        const existing = await this.auth.pb
+          .collection('usuariosClient')
+          .getFirstListItem(`userId="${pendingGoogleUser.id}"`)
+          .catch(() => null);
+
+        if (existing) {
+          await this.auth.pb.collection('usuariosClient').update(existing.id, clientData, {
+            requestKey: null
+          });
+        } else {
+          await this.auth.pb.collection('usuariosClient').create({
+            ...clientData,
+            userId: pendingGoogleUser.id
+          }, {
+            requestKey: null
+          });
+        }
         await this.global.loadProfile();
         await this.global.initClientesRealtime();
         await this.global.initPartnersRealtime();
@@ -1168,8 +1199,8 @@ export class RegisterComponent {
       console.error('Error en registro con Google:', error);
       console.error('Detalle:', error?.data);
       console.log('Error completo:', error);
-console.log('Error data:', error?.data);
-console.log('Campos:', error?.data?.data);
+      console.log('Error data:', error?.data);
+      console.log('Campos:', error?.data?.data);
       Swal.fire({
         title: 'Error',
         text: error?.data?.message || error?.message || 'No fue posible continuar con Google.',
