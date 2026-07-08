@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { GlobalService } from '../../services/global.service';
 import { CommonModule } from '@angular/common';
 import { AuthPocketbaseService } from '../../services/authPocketbase.service';
@@ -116,28 +116,10 @@ export class Profile implements OnInit, AfterViewInit, OnDestroy {
     public auth: AuthPocketbaseService,
     public realtimeClientes: RealtimeClientesService,
     public wompi: WompiService,
-    private http: HttpClient
+    private http: HttpClient,
+    private cdr: ChangeDetectorRef
   ) { }
 
-
-  /* async ngOnInit() {
-    this.fetchClientData();
-
-    await this.auth.restoreSession();
-
-    // ✔️ Siempre carga el perfil actualizado del backend
-    await this.loadProfile();
-
-    // ✔️ Guarda el perfil actualizado en auth y global
-    this.auth.profile = { ...this.profileData };
-    localStorage.setItem('profile', JSON.stringify(this.profileData));
-    this.global.profileData = { ...this.profileData };
-
-
-    // ✔️ Inicializa realtime solo si estás logueado
-    await this.global.initClientesRealtime();
-    await this.global.initPlanningClientsRealtime();
-  } */
   async ngOnInit() {
     this.loadProfileFromCache();
 
@@ -292,90 +274,90 @@ export class Profile implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async submitClientManualPaymentProof(): Promise<void> {
-  if (!this.selectedPlan || !this.paymentProofFile) return;
+    if (!this.selectedPlan || !this.paymentProofFile) return;
 
-  try {
-    await this.auth.restoreSession();
+    try {
+      await this.auth.restoreSession();
 
-    const user = this.auth.getCurrentUser();
+      const user = this.auth.getCurrentUser();
 
-    if (!user?.id) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Inicia sesión',
-        text: 'Debes iniciar sesión para enviar el comprobante.'
+      if (!user?.id) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Inicia sesión',
+          text: 'Debes iniciar sesión para enviar el comprobante.'
+        });
+        return;
+      }
+
+      const clientRecord = await this.pb
+        .collection('usuariosClient')
+        .getFirstListItem(`userId="${user.id}"`, { requestKey: null });
+
+      const formData = new FormData();
+
+      formData.append('clientId', clientRecord.id);
+      formData.append('userId', user.id);
+      formData.append('planId', this.selectedPlan.id);
+      formData.append('planName', this.selectedPlan.name || '');
+      formData.append('field', 'comprobante_pago_venezuela');
+      formData.append('amountUSD', String(Number(this.selectedPlan.PriceUSD || 0)));
+      formData.append('amountBs', '0');
+      formData.append('bcvRate', '0');
+      formData.append('country', 'VE');
+      formData.append('paymentMethod', 'Pago móvil / transferencia');
+      formData.append('status', 'pending');
+      formData.append('adminNotes', '');
+      formData.append('proofFile', this.paymentProofFile);
+
+      await this.pb.collection('client_payment_proofs').create(formData, {
+        requestKey: null
       });
-      return;
+
+      await this.pb.collection('usuariosClient').update(clientRecord.id, {
+        pendingSubscriptionStatus: 'pending',
+        pendingSubscriptionPlanId: this.selectedPlan.id,
+        pendingSubscriptionPlanName: this.selectedPlan.name || '',
+        pendingSubscriptionRequestedAt: new Date().toISOString()
+      }, {
+        requestKey: null
+      });
+
+      this.profileData.pendingSubscriptionStatus = 'pending';
+      this.profileData.pendingSubscriptionPlanId = this.selectedPlan.id;
+      this.profileData.pendingSubscriptionPlanName = this.selectedPlan.name || '';
+      this.profileData.pendingSubscriptionRequestedAt = new Date().toISOString();
+
+      this.global.profileData = { ...this.profileData };
+      localStorage.setItem('profile', JSON.stringify(this.profileData));
+
+      await this.loadProfile();
+
+      const modalEl = document.getElementById('clientManualPaymentModal');
+      if (modalEl) {
+        bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+      }
+
+      this.paymentProofFile = null;
+      this.selectedPlan = null;
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Comprobante enviado',
+        text: 'Validaremos tu pago y activaremos tu plan en menos de 12 horas.'
+      });
+
+    } catch (error: any) {
+      console.error('Error enviando comprobante cliente:', error);
+      console.error('Detalle PocketBase:', error?.data?.data);
+
+      Swal.fire({
+        icon: 'error',
+        title: 'No se pudo enviar',
+        text: error?.data?.message || error?.message || 'Error al enviar comprobante.'
+      });
     }
-
-    const clientRecord = await this.pb
-      .collection('usuariosClient')
-      .getFirstListItem(`userId="${user.id}"`, { requestKey: null });
-
-    const formData = new FormData();
-
-    formData.append('clientId', clientRecord.id);
-    formData.append('userId', user.id);
-    formData.append('planId', this.selectedPlan.id);
-    formData.append('planName', this.selectedPlan.name || '');
-    formData.append('field', 'comprobante_pago_venezuela');
-    formData.append('amountUSD', String(Number(this.selectedPlan.PriceUSD || 0)));
-    formData.append('amountBs', '0');
-    formData.append('bcvRate', '0');
-    formData.append('country', 'VE');
-    formData.append('paymentMethod', 'Pago móvil / transferencia');
-    formData.append('status', 'pending');
-    formData.append('adminNotes', '');
-    formData.append('proofFile', this.paymentProofFile);
-
-    await this.pb.collection('client_payment_proofs').create(formData, {
-      requestKey: null
-    });
-
-    await this.pb.collection('usuariosClient').update(clientRecord.id, {
-      pendingSubscriptionStatus: 'pending',
-      pendingSubscriptionPlanId: this.selectedPlan.id,
-      pendingSubscriptionPlanName: this.selectedPlan.name || '',
-      pendingSubscriptionRequestedAt: new Date().toISOString()
-    }, {
-      requestKey: null
-    });
-
-    this.profileData.pendingSubscriptionStatus = 'pending';
-    this.profileData.pendingSubscriptionPlanId = this.selectedPlan.id;
-    this.profileData.pendingSubscriptionPlanName = this.selectedPlan.name || '';
-    this.profileData.pendingSubscriptionRequestedAt = new Date().toISOString();
-
-    this.global.profileData = { ...this.profileData };
-    localStorage.setItem('profile', JSON.stringify(this.profileData));
-
-    await this.loadProfile();
-
-    const modalEl = document.getElementById('clientManualPaymentModal');
-    if (modalEl) {
-      bootstrap.Modal.getOrCreateInstance(modalEl).hide();
-    }
-
-    this.paymentProofFile = null;
-    this.selectedPlan = null;
-
-    Swal.fire({
-      icon: 'success',
-      title: 'Comprobante enviado',
-      text: 'Validaremos tu pago y activaremos tu plan en menos de 12 horas.'
-    });
-
-  } catch (error: any) {
-    console.error('Error enviando comprobante cliente:', error);
-    console.error('Detalle PocketBase:', error?.data?.data);
-
-    Swal.fire({
-      icon: 'error',
-      title: 'No se pudo enviar',
-      text: error?.data?.message || error?.message || 'Error al enviar comprobante.'
-    });
   }
-}
   countries = [
     { code: '+57', name: 'Colombia', flag: '🇦🇷' },
     { code: '+56', name: 'Chile', flag: '🇨🇱' },
@@ -458,7 +440,7 @@ export class Profile implements OnInit, AfterViewInit, OnDestroy {
           .filter(Boolean);
       }
 
-      
+
       this.profileData = {
         name: userData['name'] || '',
         interestedIn: userData['interestedIn'] || '',
@@ -602,7 +584,7 @@ export class Profile implements OnInit, AfterViewInit, OnDestroy {
       day: 'numeric'
     });
   }
-  
+
   ngAfterViewInit(): void {
     this.bindClientPlansSwiper();
   }
@@ -879,16 +861,17 @@ export class Profile implements OnInit, AfterViewInit, OnDestroy {
 
       this.closeAllOffcanvas();
 
-      setTimeout(() => {
-        this.isSaving = false;
-        this.isEditProfile = false;
-      }, 200);
+      this.avatarPreview = null;
+      this.avatar = null;
+
       this.isSaving = false;
       this.isEditProfile = false;
 
+      this.cdr.detectChanges();
+
       Swal.close();
 
-      Swal.fire({
+      await Swal.fire({
         icon: 'success',
         title: 'Perfil actualizado',
         text: 'Tus cambios se guardaron correctamente',
@@ -900,6 +883,8 @@ export class Profile implements OnInit, AfterViewInit, OnDestroy {
       console.error('Error guardando perfil:', error);
 
       this.isSaving = false;
+      this.cdr.detectChanges();
+
       Swal.close();
 
       Swal.fire({
@@ -1013,68 +998,68 @@ export class Profile implements OnInit, AfterViewInit, OnDestroy {
     }
   }
   isCurrentActivePlan(plan: any): boolean {
-  return (
-    this.profileData.subscriptionStatus === 'active' &&
-    !this.isSubscriptionExpired() &&
-    (
-      this.profileData.subscriptionPlanId === plan.id ||
-      this.profileData.subscriptionPlanName === plan.name
-    )
-  );
-}
-
-getPlanButtonLabel(plan: any): string {
-  if (
-    this.profileData.pendingSubscriptionStatus === 'pending' &&
-    (
-      this.profileData.pendingSubscriptionPlanId === plan.id ||
-      this.profileData.pendingSubscriptionPlanName === plan.name
-    )
-  ) {
-    return 'Pendiente de aprobación';
+    return (
+      this.profileData.subscriptionStatus === 'active' &&
+      !this.isSubscriptionExpired() &&
+      (
+        this.profileData.subscriptionPlanId === plan.id ||
+        this.profileData.subscriptionPlanName === plan.name
+      )
+    );
   }
 
-  if (this.isCurrentActivePlan(plan)) {
-    return 'Plan activo';
-  }
-
-  return 'Suscribirme';
-}
-
-isPlanButtonDisabled(plan: any): boolean {
-  return (
-    this.subscribingPlanId === plan.id ||
-    this.isCurrentActivePlan(plan) ||
-    (
+  getPlanButtonLabel(plan: any): string {
+    if (
       this.profileData.pendingSubscriptionStatus === 'pending' &&
       (
         this.profileData.pendingSubscriptionPlanId === plan.id ||
         this.profileData.pendingSubscriptionPlanName === plan.name
       )
-    )
-  );
-}
-galleryOpen = false;
-galleryIndex = 0;
+    ) {
+      return 'Pendiente de aprobación';
+    }
 
-openGallery(index: number) {
-  this.galleryIndex = index;
-  this.galleryOpen = true;
-}
+    if (this.isCurrentActivePlan(plan)) {
+      return 'Plan activo';
+    }
 
-closeGallery() {
-  this.galleryOpen = false;
-}
-
-nextPhoto() {
-  if (this.galleryIndex < this.photos.length - 1) {
-    this.galleryIndex++;
+    return 'Suscribirme';
   }
-}
 
-prevPhoto() {
-  if (this.galleryIndex > 0) {
-    this.galleryIndex--;
+  isPlanButtonDisabled(plan: any): boolean {
+    return (
+      this.subscribingPlanId === plan.id ||
+      this.isCurrentActivePlan(plan) ||
+      (
+        this.profileData.pendingSubscriptionStatus === 'pending' &&
+        (
+          this.profileData.pendingSubscriptionPlanId === plan.id ||
+          this.profileData.pendingSubscriptionPlanName === plan.name
+        )
+      )
+    );
   }
-}
+  galleryOpen = false;
+  galleryIndex = 0;
+
+  openGallery(index: number) {
+    this.galleryIndex = index;
+    this.galleryOpen = true;
+  }
+
+  closeGallery() {
+    this.galleryOpen = false;
+  }
+
+  nextPhoto() {
+    if (this.galleryIndex < this.photos.length - 1) {
+      this.galleryIndex++;
+    }
+  }
+
+  prevPhoto() {
+    if (this.galleryIndex > 0) {
+      this.galleryIndex--;
+    }
+  }
 }
