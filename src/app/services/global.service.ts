@@ -146,7 +146,6 @@ export class GlobalService {
         : ''
     });
 
-    console.log('✅ usuariosClient cargados:', result);
 
     const parsed = result.map((c: any) => ({
       ...c,
