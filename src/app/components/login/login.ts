@@ -11,6 +11,7 @@ import { AuthPocketbaseService } from '../../services/authPocketbase.service';
 import { GlobalService } from '../../services/global.service';
 import { ChatPocketbaseService } from '../../services/chat.service';
 import { Router } from '@angular/router';
+import { PushService } from '../../services/notifications.service';
 type UserType = 'admin' | 'partner' | 'client';
 
 @Component({
@@ -33,7 +34,8 @@ export class LoginComponent {
     public global: GlobalService,
     public chatService: ChatPocketbaseService,
     private renderer: Renderer2,
-    public router: Router
+    public router: Router,
+    private pushService: PushService
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -75,7 +77,13 @@ export class LoginComponent {
       next: async (res: any) => {
         try {
           const authRecord = this.auth.pb?.authStore?.record;
+          const userId = res?.record?.id || authRecord?.id;
 
+          if (userId) {
+            this.pushService.initPush(userId).catch(error => {
+              console.error('Error iniciando push:', error);
+            });
+          }
           const userType = String(
             res?.record?.type ||
             authRecord?.['type'] ||
@@ -99,16 +107,16 @@ export class LoginComponent {
           }
 
           if (userType === 'client') {
-  await this.global.loadProfile();
+            await this.global.loadProfile();
 
-  this.router.navigateByUrl('/maps');
+            this.router.navigateByUrl('/maps');
 
-  this.global.initClientesRealtime().catch(error => {
-    console.error('Error iniciando clientes realtime:', error);
-  });
+            this.global.initClientesRealtime().catch(error => {
+              console.error('Error iniciando clientes realtime:', error);
+            });
 
-  return;
-}
+            return;
+          }
 
           Swal.fire({
             icon: 'warning',
@@ -173,7 +181,13 @@ export class LoginComponent {
 
         return;
       }
+      const userId = result?.user?.id || this.auth.pb?.authStore?.record?.id;
 
+      if (userId) {
+        this.pushService.initPush(userId).catch(error => {
+          console.error('Error iniciando push:', error);
+        });
+      }
       if (result.type === 'admin') {
         await this.router.navigate(['/admin']);
         return;
@@ -181,20 +195,20 @@ export class LoginComponent {
 
       await this.global.loadProfile();
 
-if (result.type === 'partner') {
-  await this.router.navigate(['/home-local']);
+      if (result.type === 'partner') {
+        await this.router.navigate(['/home-local']);
 
-  this.global.initPartnersRealtime().catch(error => {
-    console.error('Error iniciando partners realtime:', error);
-  });
+        this.global.initPartnersRealtime().catch(error => {
+          console.error('Error iniciando partners realtime:', error);
+        });
 
-} else {
-  await this.router.navigate(['/maps']);
+      } else {
+        await this.router.navigate(['/maps']);
 
-  this.global.initClientesRealtime().catch(error => {
-    console.error('Error iniciando clientes realtime:', error);
-  });
-}
+        this.global.initClientesRealtime().catch(error => {
+          console.error('Error iniciando clientes realtime:', error);
+        });
+      }
 
     } catch (error: any) {
 
