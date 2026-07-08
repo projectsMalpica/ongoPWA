@@ -1255,4 +1255,31 @@ isManualCurrentPurchase(): boolean {
 
   return this.isManualPaymentProduct(this.selectedGiftProduct);
 }
+galleryOpen = false;
+galleryIndex = 0;
+
+openGallery(index: number): void {
+  if (!this.partner?.files?.length) return;
+
+  this.galleryIndex = index;
+  this.galleryOpen = true;
+}
+
+closeGallery(): void {
+  this.galleryOpen = false;
+}
+
+nextPhoto(): void {
+  if (!this.partner?.files?.length) return;
+
+  if (this.galleryIndex < this.partner.files.length - 1) {
+    this.galleryIndex++;
+  }
+}
+
+prevPhoto(): void {
+  if (this.galleryIndex > 0) {
+    this.galleryIndex--;
+  }
+}
 }

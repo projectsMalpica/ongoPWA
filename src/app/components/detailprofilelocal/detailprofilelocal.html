@@ -185,15 +185,53 @@
     </div>
 
     <!-- GALERIA -->
-    <div class="detail-section" *ngIf="partner.files?.length">
-      <h6>Galería</h6>
+   <!-- GALERIA -->
+<div class="detail-section" *ngIf="partner.files?.length">
+  <h6>Galería</h6>
 
-      <div class="gallery-grid">
-        <a *ngFor="let url of partner.files" [href]="url" target="_blank">
-          <img [src]="url" alt="Imagen del local">
-        </a>
-      </div>
-    </div>
+  <div class="gallery-grid">
+    <button
+      type="button"
+      class="gallery-item"
+      *ngFor="let url of partner.files; let i = index"
+      (click)="openGallery(i)">
+      <img [src]="url" alt="Imagen del local">
+    </button>
+  </div>
+</div>
+
+<!-- MODAL GALERÍA -->
+<div class="gallery-overlay" *ngIf="galleryOpen" (click)="closeGallery()">
+  <button type="button" class="gallery-close" (click)="closeGallery(); $event.stopPropagation()">
+    ✕
+  </button>
+
+  <button
+    type="button"
+    class="gallery-arrow left"
+    *ngIf="galleryIndex > 0"
+    (click)="prevPhoto(); $event.stopPropagation()">
+    ❮
+  </button>
+
+  <img
+    class="gallery-image"
+    [src]="partner.files[galleryIndex]"
+    alt="Imagen ampliada"
+    (click)="$event.stopPropagation()">
+
+  <button
+    type="button"
+    class="gallery-arrow right"
+    *ngIf="galleryIndex < partner.files.length - 1"
+    (click)="nextPhoto(); $event.stopPropagation()">
+    ❯
+  </button>
+
+  <div class="gallery-counter">
+    {{ galleryIndex + 1 }} / {{ partner.files.length }}
+  </div>
+</div>
 
   </div>
 </div>

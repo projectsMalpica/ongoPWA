@@ -140,7 +140,7 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
   ticketRedeemLoading = false;
   ticketRedeemMessage = '';
   ticketRedeemError = '';
-
+  isSavingProfile = false;
   constructor(
     public global: GlobalService,
     public auth: AuthPocketbaseService,
@@ -1135,6 +1135,8 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async saveProfile() {
+    if (this.isSavingProfile) return;
+    this.isSavingProfile = true;
     try {
       const userId = this.auth.currentUser?.id;
 
@@ -1292,60 +1294,71 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
       }
 
       this.global.profileDataPartner = {
-  ...this.global.profileDataPartner,
-  id: savedRecord.id,
-  userId: savedRecord.userId,
-  venueName: savedRecord.venueName || '',
-  description: savedRecord.description || '',
-  email: savedRecord.email || '',
-  phone: savedRecord.phone || '',
-  address: savedRecord.address || '',
-  capacity: savedRecord.capacity || '',
-  openingHours: savedRecord.openingHours || '',
-  lat: savedRecord.lat || '',
-  lng: savedRecord.lng || '',
-  services: savedRecord.services || '',
-  purchaseLink: savedRecord.purchaseLink || '',
-  files: normalizedFiles,
-  avatar: avatarUrl,
+        ...this.global.profileDataPartner,
+        id: savedRecord.id,
+        userId: savedRecord.userId,
+        venueName: savedRecord.venueName || '',
+        description: savedRecord.description || '',
+        email: savedRecord.email || '',
+        phone: savedRecord.phone || '',
+        address: savedRecord.address || '',
+        capacity: savedRecord.capacity || '',
+        openingHours: savedRecord.openingHours || '',
+        lat: savedRecord.lat || '',
+        lng: savedRecord.lng || '',
+        services: savedRecord.services || '',
+        purchaseLink: savedRecord.purchaseLink || '',
+        files: normalizedFiles,
+        avatar: avatarUrl,
 
-  ticketsEnabled: savedRecord.ticketsEnabled || false,
-  ticketPrice: savedRecord.ticketPrice || 0,
-  ticketDescription: savedRecord.ticketDescription || '',
-  ticketDate: savedRecord.ticketDate || '',
-  ticketCapacity: savedRecord.ticketCapacity || 0,
-  ticketCurrency: savedRecord.ticketCurrency || 'COP',
-  ticketCountry: savedRecord.ticketCountry || savedRecord.country || 'CO',
+        ticketsEnabled: savedRecord.ticketsEnabled || false,
+        ticketPrice: savedRecord.ticketPrice || 0,
+        ticketDescription: savedRecord.ticketDescription || '',
+        ticketDate: savedRecord.ticketDate || '',
+        ticketCapacity: savedRecord.ticketCapacity || 0,
+        ticketCurrency: savedRecord.ticketCurrency || 'COP',
+        ticketCountry: savedRecord.ticketCountry || savedRecord.country || 'CO',
 
-  reservationEnabled: savedRecord.reservationEnabled || false,
-  reservationLink: savedRecord.reservationLink || '',
-  reservationPrice: savedRecord.reservationPrice || 0,
-  reservationDate: savedRecord.reservationDate || '',
-  reservationCapacity: savedRecord.reservationCapacity || 0,
+        reservationEnabled: savedRecord.reservationEnabled || false,
+        reservationLink: savedRecord.reservationLink || '',
+        reservationPrice: savedRecord.reservationPrice || 0,
+        reservationDate: savedRecord.reservationDate || '',
+        reservationCapacity: savedRecord.reservationCapacity || 0,
 
-  whatsappReservations: savedRecord.whatsappReservations || '',
-  country: savedRecord.country || 'CO',
-  paymentMethods: savedRecord.paymentMethods || [],
-  paymentBank: savedRecord.paymentBank || '',
-  paymentHolder: savedRecord.paymentHolder || '',
-  paymentDocument: savedRecord.paymentDocument || '',
-  paymentPhone: savedRecord.paymentPhone || '',
-  paymentType: savedRecord.paymentType || 'pago_movil',
-  paymentEnabled: savedRecord.paymentEnabled || false,
-};
+        whatsappReservations: savedRecord.whatsappReservations || '',
+        country: savedRecord.country || 'CO',
+        paymentMethods: savedRecord.paymentMethods || [],
+        paymentBank: savedRecord.paymentBank || '',
+        paymentHolder: savedRecord.paymentHolder || '',
+        paymentDocument: savedRecord.paymentDocument || '',
+        paymentPhone: savedRecord.paymentPhone || '',
+        paymentType: savedRecord.paymentType || 'pago_movil',
+        paymentEnabled: savedRecord.paymentEnabled || false,
+      };
 
       this.avatarPreview = null;
       this.newAvatar = null;
-      this.isEditProfile = false;
+      /* this.isEditProfile = false; */
 
-      /* setTimeout(() => {
-        this.showAppToast('Perfil actualizado correctamente', 'success');
-      }, 120); */
+      this.photosPartner = normalizedFiles.map((url: string) => ({
+        url,
+        file: null
+      }));
+
+      while (this.photosPartner.length < 6) {
+        this.photosPartner.push({ url: '', file: null });
+      }
+
+      this.isEditProfile = false;
+      this.isSavingProfile = false;
+
+      this.cdr.detectChanges();
+
       Swal.fire({
         icon: 'success',
         title: 'Perfil actualizado',
         text: 'Los cambios se guardaron correctamente',
-        timer: 1800,
+        timer: 1600,
         showConfirmButton: false,
         background: '#101935',
         color: '#fff'
@@ -1354,11 +1367,11 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
       console.log('Perfil actualizado correctamente');
     } catch (error: any) {
       console.error('Error guardando perfil:', error);
+      this.isSavingProfile = false;
 
       if (error?.response) {
         console.error('Detalle PocketBase:', error.response);
       }
-
       this.showAppToast('No se pudo guardar el perfil', 'error');
     }
   }

@@ -429,7 +429,9 @@ export class RegisterComponent {
         await this.auth.pb.collection('users').update(userId, {
           type: 'partner',
           name: formData.venueName || authRecord['name'],
-          username: formData.venueName || authRecord['username']
+          username: this.makeSafeUsername(
+            formData.venueName || authRecord['username'] || authRecord['email'] || 'local'
+          )
         });
 
       } else {
@@ -618,7 +620,9 @@ export class RegisterComponent {
         await this.auth.pb.collection('users').update(userId, {
           type: 'client',
           name: formData.name || authRecord['name'],
-          username: formData.name || authRecord['username']
+          username: this.makeSafeUsername(
+            formData.name || authRecord['username'] || authRecord['email'] || 'usuario'
+          )
         });
 
       } else {
@@ -1116,10 +1120,17 @@ export class RegisterComponent {
 
       this.auth.pb.authStore.save(token, authUser);
 
+      const safeUsername = this.makeSafeUsername(
+        authUser.username ||
+        authUser.name ||
+        authUser.email?.split('@')[0] ||
+        'usuario'
+      );
+
       await this.auth.pb.collection('users').update(authUser.id, {
         type,
         name: authUser.name || authUser.username || '',
-        username: authUser.username || authUser.name || authUser.email?.split('@')[0] || ''
+        username: safeUsername
       });
 
       if (type === 'client') {
@@ -1156,7 +1167,9 @@ export class RegisterComponent {
     } catch (error: any) {
       console.error('Error en registro con Google:', error);
       console.error('Detalle:', error?.data);
-
+      console.log('Error completo:', error);
+console.log('Error data:', error?.data);
+console.log('Campos:', error?.data?.data);
       Swal.fire({
         title: 'Error',
         text: error?.data?.message || error?.message || 'No fue posible continuar con Google.',

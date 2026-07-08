@@ -891,9 +891,16 @@
           <button type="button" class="btn btn-light flex-grow-1" (click)="cancelEdit()">
             Cancelar
           </button>
-          <button type="button" class="btn btn-primary flex-grow-1" (click)="saveProfile()">
+          <!-- <button type="button" class="btn btn-primary flex-grow-1" (click)="saveProfile()">
             Guardar
-          </button>
+          </button> -->
+          <button
+  type="button"
+  class="btn btn-primary flex-grow-1"
+  [disabled]="isSavingProfile"
+  (click)="saveProfile()">
+  {{ isSavingProfile ? 'Guardando...' : 'Guardar' }}
+</button>
         </div>
       </div>
     </div>
@@ -1204,9 +1211,11 @@
 
           <p><strong>Banco:</strong> Banco de Venezuela</p>
           <p><strong>Titular:</strong> OnGo</p>
-          <p><strong>RIF / Cédula:</strong> J-00000000-0</p>
-          <p><strong>Teléfono pago móvil:</strong> 04XX-XXXXXXX</p>
+          <p><strong>RIF / Cédula:</strong> 22984705</p>
+          <p><strong>Teléfono pago móvil:</strong>  +58 424-6756551</p>
           <p><strong>Concepto:</strong> {{ selectedPlan?.name }} - OnGo Local</p>
+          <p><strong>Binance ID:</strong> 51335354</p>
+
         </div>
 
         <p class="small">
