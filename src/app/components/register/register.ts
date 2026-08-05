@@ -10,6 +10,9 @@ import { Privacy } from '../privacy/privacy';
 import { EmailService } from '../../services/email.service';
 import { Router, RouterLink } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+
+
 @Component({
   selector: 'app-register',
   standalone: true,
@@ -383,150 +386,227 @@ export class RegisterComponent {
     this.isSubmitting = false;
   }
 
-  async registerPartner() {
-    this.isSubmitting = true;
+  async registerPartner(): Promise<void> {
+  this.isSubmitting = true;
 
-    if (this.partnerForm.invalid) {
-      this.markPartnerFieldsAsTouched(this.currentStep);
-      this.isSubmitting = false;
-      return;
-    }
+  if (this.partnerForm.invalid) {
+    this.markPartnerFieldsAsTouched(this.currentStep);
+    this.isSubmitting = false;
+    return;
+  }
+
+  try {
+    const formData = this.partnerForm.getRawValue();
+
+    const pendingGoogleUserRaw =
+      sessionStorage.getItem('pendingGoogleUser') ||
+      localStorage.getItem('pendingGoogleUser');
+
+    const pendingGoogleToken =
+      sessionStorage.getItem('pendingGoogleToken') ||
+      localStorage.getItem('pendingGoogleToken');
+
+    let pendingGoogleUser: any = null;
 
     try {
-      const formData = this.partnerForm.getRawValue();
+      pendingGoogleUser = pendingGoogleUserRaw
+        ? JSON.parse(pendingGoogleUserRaw)
+        : null;
+    } catch {
+      this.clearPendingGoogleSession();
+    }
 
-      const authRecord = this.auth.pb.authStore.record;
-      const pendingGoogleUserRaw =
-        sessionStorage.getItem('pendingGoogleUser') ||
-        localStorage.getItem('pendingGoogleUser');
+    let userId: string;
+    let sessionToken: string;
+    let sessionRecord: any;
+    let isGoogleFlow = false;
 
-      const pendingGoogleToken =
-        sessionStorage.getItem('pendingGoogleToken') ||
-        localStorage.getItem('pendingGoogleToken');
-      const pendingGoogleUser = pendingGoogleUserRaw ? JSON.parse(pendingGoogleUserRaw) : null;
+    const email = String(
+      formData.email ||
+      pendingGoogleUser?.email ||
+      ''
+    ).trim();
 
-      let userId: string;
-      let isGoogleFlow = false;
+    /*
+     * Registro proveniente de Google.
+     */
+    if (pendingGoogleUser?.id && pendingGoogleToken) {
+      isGoogleFlow = true;
 
-      if (pendingGoogleUser?.id && pendingGoogleToken) {
-        userId = pendingGoogleUser.id;
-        isGoogleFlow = true;
+      this.auth.pb.authStore.save(
+        pendingGoogleToken,
+        pendingGoogleUser
+      );
 
-        this.auth.pb.authStore.save(pendingGoogleToken, pendingGoogleUser);
-
-        const safeUsername = this.makeSafeUsername(formData.venueName || authRecord?.['name'] || 'local');
-
-        await this.auth.pb.collection('users').update(userId, {
+      const updatedUser = await this.auth.pb
+        .collection('users')
+        .update(pendingGoogleUser.id, {
           type: 'partner',
-          name: formData.venueName || authRecord?.['name'] || 'Local',
-          username: safeUsername
+          name:
+            formData.venueName ||
+            pendingGoogleUser.name ||
+            'Local'
         });
 
-      } else if (authRecord?.id) {
-        userId = authRecord.id;
-        isGoogleFlow = true;
+      userId = updatedUser.id;
+      sessionToken = pendingGoogleToken;
+      sessionRecord = updatedUser;
 
-        await this.auth.pb.collection('users').update(userId, {
-          type: 'partner',
-          name: formData.venueName || authRecord['name'],
-          username: this.makeSafeUsername(
-            formData.venueName || authRecord['username'] || authRecord['email'] || 'local'
-          )
-        });
+      this.auth.pb.authStore.save(
+        sessionToken,
+        sessionRecord
+      );
+    } else {
+      /*
+       * Registro normal.
+       *
+       * No se reutiliza authStore.record, porque puede contener
+       * una sesión vieja o un usuario eliminado.
+       */
+      this.clearNormalRegistrationSession();
 
-      } else {
-        const userResponse = await this.auth.onlyRegisterUser(
-          formData.email,
+      const createdUser = await firstValueFrom(
+        this.auth.onlyRegisterUser(
+          email,
           formData.password,
           'partner',
           formData.venueName
-        ).toPromise();
+        )
+      );
 
-        userId = userResponse.id;
-
-        await this.auth.loginUser(formData.email, formData.password).toPromise();
+      if (!createdUser?.id) {
+        throw new Error(
+          'PocketBase no devolvió el usuario creado.'
+        );
       }
 
-      const partnerData: any = {
-        userId,
-        venueName: formData.venueName,
-        address: formData.address,
-        phone: formData.phone,
-        description: formData.description || '',
-        capacity: formData.capacity || null,
-        openingHours: formData.openingHours || '',
-        email: formData.email || pendingGoogleUser?.email || authRecord?.['email'] || '',
-        status: 'pending',
-        approved: false,
-        profileComplete: true
-      };
+      const authData = await this.auth.pb
+        .collection('users')
+        .authWithPassword(
+          email,
+          formData.password
+        );
 
-      try {
-        const existing = await this.auth.pb
+      if (!authData?.record?.id || !authData?.token) {
+        throw new Error(
+          'La cuenta fue creada, pero no se pudo iniciar la sesión.'
+        );
+      }
+
+      userId = authData.record.id;
+      sessionToken = authData.token;
+      sessionRecord = authData.record;
+    }
+
+    this.auth.pb.authStore.save(
+      sessionToken,
+      sessionRecord
+    );
+
+    this.global.pb.authStore.save(
+      sessionToken,
+      sessionRecord
+    );
+
+    const partnerData: any = {
+      userId,
+      venueName: formData.venueName,
+      address: formData.address,
+      phone: formData.phone,
+      description: formData.description || '',
+      capacity: formData.capacity || null,
+      openingHours: formData.openingHours || '',
+      email,
+      status: 'pending',
+      approved: false,
+      profileComplete: true
+    };
+
+    let partnerProfile: any;
+
+    try {
+      const existing = await this.auth.pb
+        .collection('usuariosPartner')
+        .getFirstListItem(`userId="${userId}"`);
+
+      partnerProfile = await this.auth.pb
+        .collection('usuariosPartner')
+        .update(existing.id, partnerData);
+    } catch (error: any) {
+      if (error?.status === 404) {
+        partnerProfile = await this.auth.pb
           .collection('usuariosPartner')
-          .getFirstListItem(`userId="${userId}"`);
-
-        await this.auth.pb.collection('usuariosPartner').update(existing.id, partnerData);
-
-      } catch (error: any) {
-        if (error?.status === 404) {
-          await this.auth.pb.collection('usuariosPartner').create(partnerData);
-        } else {
-          throw error;
-        }
+          .create(partnerData);
+      } else {
+        throw error;
       }
+    }
 
-      const finalUser = {
-        ...(pendingGoogleUser || authRecord || {}),
-        id: userId,
-        type: 'partner',
-        email: partnerData.email,
-        name: formData.venueName
-      };
+    const finalUser = {
+      ...sessionRecord,
+      id: userId,
+      type: 'partner',
+      email,
+      name: formData.venueName
+    };
 
-      localStorage.setItem('accessToken', pendingGoogleToken || this.auth.pb.authStore.token);
-      localStorage.setItem('userId', userId);
-      localStorage.setItem('user', JSON.stringify(finalUser));
-      localStorage.setItem('record', JSON.stringify(finalUser));
-      localStorage.setItem('type', JSON.stringify('partner'));
-      localStorage.setItem('isLoggedin', 'true');
-      localStorage.setItem('profilePartner', JSON.stringify(partnerData));
+    this.persistRegistrationSession(
+      sessionToken,
+      sessionRecord,
+      finalUser,
+      'partner',
+      partnerProfile
+    );
 
-      sessionStorage.removeItem('pendingGoogleUser');
-      sessionStorage.removeItem('pendingGoogleToken');
-      localStorage.removeItem('pendingGoogleUser');
-      localStorage.removeItem('pendingGoogleToken');
+    this.clearPendingGoogleSession();
 
-      if (!isGoogleFlow) {
-        this.emailService.sendWelcome({
-          toEmail: partnerData.email,
+    if (!isGoogleFlow) {
+      void this.emailService
+        .sendWelcome({
+          toEmail: email,
           toName: formData.venueName,
           userType: 'partner',
-          params: { venueName: formData.venueName }
-        }).catch(err => console.warn('Fallo en email:', err));
-      }
-
-      await this.global.loadProfile();
-      await this.global.initClientesRealtime();
-      await this.global.initPartnersRealtime();
-
-      await this.router.navigate(['/profile-local']);
-
-      Swal.fire({
-        title: 'Registro exitoso',
-        text: 'Tu local ha sido registrado. Estará activo después de la aprobación.',
-        icon: 'success',
-        confirmButtonText: 'Entendido'
-      });
-
-    } catch (error: any) {
-      console.error('Error registrando partner:', error);
-      console.error('Datos de error:', error?.data);
-      throw error;
-    } finally {
-      this.isSubmitting = false;
+          params: {
+            venueName: formData.venueName
+          }
+        })
+        .catch(error => {
+          console.warn(
+            'La cuenta fue creada, pero falló el correo:',
+            error
+          );
+        });
     }
+
+    await this.global.loadProfile();
+    await this.global.initClientesRealtime();
+    await this.global.initPartnersRealtime();
+
+    await this.router.navigate(['/profile-local']);
+
+    await Swal.fire({
+      title: 'Registro exitoso',
+      text:
+        'Tu local ha sido registrado. Estará activo después de la aprobación.',
+      icon: 'success',
+      confirmButtonText: 'Entendido'
+    });
+  } catch (error: any) {
+    console.error(
+      'Error registrando partner:',
+      error
+    );
+
+    console.error(
+      'Datos del error:',
+      error?.data
+    );
+
+    throw error;
+  } finally {
+    this.isSubmitting = false;
   }
+}
   makeSafeUsername(value: string): string {
     const base = (value || 'usuario')
       .toLowerCase()
@@ -539,236 +619,282 @@ export class RegisterComponent {
 
     return `${base || 'usuario'}_${Date.now().toString().slice(-6)}`;
   }
-  async registerClient() {
-    this.isSubmitting = true;
+  async registerClient(): Promise<void> {
+  this.isSubmitting = true;
 
-    if (this.clientForm.invalid) {
-      this.markClientFieldsAsTouched(this.currentStep);
-      this.isSubmitting = false;
-      return;
-    }
+  if (this.clientForm.invalid) {
+    this.markClientFieldsAsTouched(this.currentStep);
+    this.isSubmitting = false;
+    return;
+  }
+
+  try {
+    const formData = this.clientForm.getRawValue();
+
+    const pendingGoogleUserRaw =
+      sessionStorage.getItem('pendingGoogleUser') ||
+      localStorage.getItem('pendingGoogleUser');
+
+    const pendingGoogleToken =
+      sessionStorage.getItem('pendingGoogleToken') ||
+      localStorage.getItem('pendingGoogleToken');
+
+    let pendingGoogleUser: any = null;
 
     try {
-      const formData = this.clientForm.getRawValue();
+      pendingGoogleUser = pendingGoogleUserRaw
+        ? JSON.parse(pendingGoogleUserRaw)
+        : null;
+    } catch {
+      this.clearPendingGoogleSession();
+    }
 
-      const authRecord = this.auth.pb.authStore.record;
-      const pendingGoogleUserRaw =
-        sessionStorage.getItem('pendingGoogleUser') ||
-        localStorage.getItem('pendingGoogleUser');
+    let userId: string;
+    let sessionToken: string;
+    let sessionRecord: any;
+    let isGoogleFlow = false;
 
-      const pendingGoogleToken =
-        sessionStorage.getItem('pendingGoogleToken') ||
-        localStorage.getItem('pendingGoogleToken');
-      const pendingGoogleUser = pendingGoogleUserRaw ? JSON.parse(pendingGoogleUserRaw) : null;
-      if (pendingGoogleUser?.id && pendingGoogleToken) {
-        const orientationGroup = formData.orientation || {};
-        const selectedOrientation = Object.keys(orientationGroup).filter(
-          key => orientationGroup[key]
-        );
+    const email = String(
+      formData.email ||
+      pendingGoogleUser?.email ||
+      ''
+    ).trim();
 
-        const clientData = {
-          name: formData.name,
-          address: formData.address,
-          birthday: new Date(formData.birthday).toISOString(),
-          gender: formData.gender,
-          orientation: selectedOrientation,
-          interestedIn: formData.interestedIn,
-          lookingFor: formData.lookingFor,
-          email: pendingGoogleUser.email || formData.email || '',
-          status: 'pending',
-          profileComplete: true,
-          plan: 'free',
-          photos: []
-        };
+    /*
+     * Registro proveniente de Google.
+     */
+    if (pendingGoogleUser?.id && pendingGoogleToken) {
+      isGoogleFlow = true;
 
-        this.auth.pb.authStore.save(pendingGoogleToken, pendingGoogleUser);
+      this.auth.pb.authStore.save(
+        pendingGoogleToken,
+        pendingGoogleUser
+      );
 
-        const safeUsername = this.makeSafeUsername(
-          formData.name ||
-          pendingGoogleUser.username ||
-          pendingGoogleUser.name ||
-          pendingGoogleUser.email?.split('@')[0] ||
-          'usuario'
-        );
-
-        await this.auth.pb.collection('users').update(pendingGoogleUser.id, {
+      const updatedUser = await this.auth.pb
+        .collection('users')
+        .update(pendingGoogleUser.id, {
           type: 'client',
-          name: formData.name || pendingGoogleUser.name || pendingGoogleUser.username || '',
-          username: safeUsername
+          name:
+            formData.name ||
+            pendingGoogleUser.name ||
+            pendingGoogleUser.username ||
+            'Usuario'
         });
 
-        const existing = await this.auth.pb
-          .collection('usuariosClient')
-          .getFirstListItem(`userId="${pendingGoogleUser.id}"`)
-          .catch(() => null);
+      userId = updatedUser.id;
+      sessionToken = pendingGoogleToken;
+      sessionRecord = updatedUser;
 
-        if (existing) {
-          await this.auth.pb.collection('usuariosClient').update(existing.id, clientData, {
-            requestKey: null
-          });
-        } else {
-          await this.auth.pb.collection('usuariosClient').create({
-            ...clientData,
-            userId: pendingGoogleUser.id
-          }, {
-            requestKey: null
-          });
-        }
-        await this.global.loadProfile();
-        await this.global.initClientesRealtime();
-        await this.global.initPartnersRealtime();
+      this.auth.pb.authStore.save(
+        sessionToken,
+        sessionRecord
+      );
+    } else {
+      /*
+       * Registro normal.
+       *
+       * Se descarta cualquier authRecord viejo para evitar
+       * el PATCH contra un usuario eliminado.
+       */
+      this.clearNormalRegistrationSession();
 
-        await this.router.navigate(['/profile']);
-
-        Swal.fire({
-          title: 'Registro exitoso',
-          text: `¡Bienvenido/a, ${formData.name}! Tu perfil ha sido creado exitosamente.`,
-          icon: 'success',
-          confirmButtonText: 'Continuar'
-        });
-
-        return;
-      }
-      let userId: string;
-      let isGoogleFlow = false;
-
-      if (pendingGoogleUser?.id && pendingGoogleToken) {
-        userId = pendingGoogleUser.id;
-        isGoogleFlow = true;
-
-        this.auth.pb.authStore.save(pendingGoogleToken, pendingGoogleUser);
-
-        await this.auth.pb.collection('users').update(userId, {
-          type: 'client',
-          name: formData.name || pendingGoogleUser.name,
-          username: formData.name || pendingGoogleUser.name
-        });
-
-      } else if (authRecord?.id) {
-        userId = authRecord.id;
-        isGoogleFlow = true;
-
-        await this.auth.pb.collection('users').update(userId, {
-          type: 'client',
-          name: formData.name || authRecord['name'],
-          username: this.makeSafeUsername(
-            formData.name || authRecord['username'] || authRecord['email'] || 'usuario'
-          )
-        });
-
-      } else {
-        const userResponse = await this.auth.onlyRegisterUser(
-          formData.email,
+      const createdUser = await firstValueFrom(
+        this.auth.onlyRegisterUser(
+          email,
           formData.password,
           'client',
           formData.name
-        ).toPromise();
+        )
+      );
 
-        userId = userResponse.id;
-
-        await this.auth.loginUser(formData.email, formData.password).toPromise();
+      if (!createdUser?.id) {
+        throw new Error(
+          'PocketBase no devolvió el usuario creado.'
+        );
       }
 
-      let uploadedPhotos: string[] = [];
+      const authData = await this.auth.pb
+        .collection('users')
+        .authWithPassword(
+          email,
+          formData.password
+        );
 
-      if (this.selectedFile) {
-        const imageFormData = new FormData();
-        imageFormData.append('file', this.selectedFile, this.selectedFile.name);
-        imageFormData.append('userId', userId);
-        imageFormData.append('type', 'profile');
+      if (!authData?.record?.id || !authData?.token) {
+        throw new Error(
+          'La cuenta fue creada, pero no se pudo iniciar la sesión.'
+        );
+      }
 
-        const fileRecord = await this.auth.pb.collection('files').create(imageFormData);
-        const fileUrl = `${this.baseUrl}/api/files/${fileRecord.collectionId}/${fileRecord.id}/${fileRecord['file']}`;
+      userId = authData.record.id;
+      sessionToken = authData.token;
+      sessionRecord = authData.record;
+    }
+
+    this.auth.pb.authStore.save(
+      sessionToken,
+      sessionRecord
+    );
+
+    this.global.pb.authStore.save(
+      sessionToken,
+      sessionRecord
+    );
+
+    let uploadedPhotos: string[] = [];
+
+    if (this.selectedFile) {
+      const imageFormData = new FormData();
+
+      imageFormData.append(
+        'file',
+        this.selectedFile,
+        this.selectedFile.name
+      );
+
+      imageFormData.append(
+        'userId',
+        userId
+      );
+
+      imageFormData.append(
+        'type',
+        'profile'
+      );
+
+      const fileRecord = await this.auth.pb
+        .collection('files')
+        .create(imageFormData);
+
+      const uploadedFileName =
+        fileRecord['file'];
+
+      if (uploadedFileName) {
+        const fileUrl =
+          `${this.baseUrl}/api/files/` +
+          `${fileRecord.collectionId}/` +
+          `${fileRecord.id}/` +
+          `${uploadedFileName}`;
 
         uploadedPhotos = [fileUrl];
         this.imageUrl = fileUrl;
       }
+    }
 
-      const orientationGroup = formData.orientation || {};
-      const selectedOrientation = Object.keys(orientationGroup).filter(
-        key => orientationGroup[key]
+    const orientationGroup =
+      formData.orientation || {};
+
+    const selectedOrientation =
+      Object.keys(orientationGroup).filter(
+        key => Boolean(orientationGroup[key])
       );
 
-      const clientData = {
-        userId,
-        name: formData.name,
-        address: formData.address,
-        birthday: new Date(formData.birthday).toISOString(),
-        gender: formData.gender,
-        orientation: selectedOrientation,
-        interestedIn: formData.interestedIn,
-        lookingFor: formData.lookingFor,
-        email: formData.email || pendingGoogleUser?.email || authRecord?.['email'] || '',
-        status: 'pending',
-        profileComplete: true,
-        photos: uploadedPhotos
-      };
+    const clientData: any = {
+      userId,
+      name: formData.name,
+      address: formData.address,
+      birthday: new Date(
+        formData.birthday
+      ).toISOString(),
+      gender: formData.gender,
+      orientation: selectedOrientation,
+      interestedIn: formData.interestedIn,
+      lookingFor: formData.lookingFor,
+      email,
+      status: 'pending',
+      profileComplete: true,
+      plan: 'free',
+      photos: uploadedPhotos
+    };
 
-      try {
-        const existing = await this.auth.pb
+    let clientProfile: any;
+
+    try {
+      const existing = await this.auth.pb
+        .collection('usuariosClient')
+        .getFirstListItem(`userId="${userId}"`);
+
+      clientProfile = await this.auth.pb
+        .collection('usuariosClient')
+        .update(existing.id, clientData);
+    } catch (error: any) {
+      if (error?.status === 404) {
+        clientProfile = await this.auth.pb
           .collection('usuariosClient')
-          .getFirstListItem(`userId="${userId}"`);
-
-        await this.auth.pb.collection('usuariosClient').update(existing.id, clientData);
-
-      } catch (error: any) {
-        if (error?.status === 404) {
-          await this.auth.pb.collection('usuariosClient').create(clientData);
-        } else {
-          throw error;
-        }
+          .create(clientData);
+      } else {
+        throw error;
       }
+    }
 
-      const finalUser = {
-        ...(pendingGoogleUser || authRecord || {}),
-        id: userId,
-        type: 'client',
-        email: clientData.email,
-        name: formData.name
-      };
+    const finalUser = {
+      ...sessionRecord,
+      id: userId,
+      type: 'client',
+      email,
+      name: formData.name
+    };
 
-      localStorage.setItem('accessToken', pendingGoogleToken || this.auth.pb.authStore.token);
-      localStorage.setItem('userId', userId);
-      localStorage.setItem('user', JSON.stringify(finalUser));
-      localStorage.setItem('record', JSON.stringify(finalUser));
-      localStorage.setItem('type', JSON.stringify('client'));
-      localStorage.setItem('isLoggedin', 'true');
-      localStorage.setItem('profile', JSON.stringify(clientData));
+    this.persistRegistrationSession(
+      sessionToken,
+      sessionRecord,
+      finalUser,
+      'client',
+      clientProfile
+    );
 
-      sessionStorage.removeItem('pendingGoogleUser');
-      sessionStorage.removeItem('pendingGoogleToken');
-      localStorage.removeItem('pendingGoogleUser');
-      localStorage.removeItem('pendingGoogleToken');
+    this.clearPendingGoogleSession();
 
-      if (!isGoogleFlow) {
-        this.emailService.sendWelcome({
-          toEmail: formData.email,
+    if (!isGoogleFlow) {
+      void this.emailService
+        .sendWelcome({
+          toEmail: email,
           toName: formData.name,
           userType: 'client',
-          params: { plan: 'free' }
-        }).catch(err => console.warn('Fallo en email:', err));
-      }
-
-      await this.global.loadProfile();
-      await this.global.initClientesRealtime();
-      await this.global.initPartnersRealtime();
-
-      await this.router.navigate(['/profile']);
-
-      Swal.fire({
-        title: 'Registro exitoso',
-        text: `¡Bienvenido/a, ${formData.name}! Tu perfil ha sido creado exitosamente.`,
-        icon: 'success',
-        confirmButtonText: 'Continuar'
-      });
-
-    } catch (error: any) {
-      console.error('Error registrando cliente:', error);
-      throw error;
-    } finally {
-      this.isSubmitting = false;
+          params: {
+            plan: 'free'
+          }
+        })
+        .catch(error => {
+          console.warn(
+            'La cuenta fue creada, pero falló el correo:',
+            error
+          );
+        });
     }
+
+    await this.global.loadProfile();
+    await this.global.initClientesRealtime();
+    await this.global.initPartnersRealtime();
+
+    await this.router.navigate(['/profile']);
+
+    await Swal.fire({
+      title: 'Registro exitoso',
+      text:
+        `¡Bienvenido/a, ${formData.name}! ` +
+        'Tu perfil ha sido creado exitosamente.',
+      icon: 'success',
+      confirmButtonText: 'Continuar'
+    });
+  } catch (error: any) {
+    console.error(
+      'Error registrando cliente:',
+      error
+    );
+
+    console.error(
+      'Datos del error:',
+      error?.data
+    );
+
+    throw error;
+  } finally {
+    this.isSubmitting = false;
   }
+}
+
   getFormErrors(form: FormGroup): { [key: string]: string } {
     const errors: { [key: string]: string } = {};
     Object.keys(form.controls).forEach(key => {
@@ -1128,90 +1254,207 @@ export class RegisterComponent {
 
 /*     this.auth.pb.authStore.clear();
  */  }
-  async registerWithGoogle(type: 'client' | 'partner') {
-    try {
-      this.loadingGoogle = true;
-      this.userType = type;
+ async registerWithGoogle(
+  selectedType: 'client' | 'partner'
+): Promise<void> {
+  if (this.loadingGoogle) {
+    return;
+  }
 
-      let result = await this.auth.loginWithGoogle();
+  this.loadingGoogle = true;
 
-      const token =
-        sessionStorage.getItem('pendingGoogleToken') ||
-        localStorage.getItem('pendingGoogleToken');
+  try {
+    const result = await this.auth.loginWithGoogle();
 
-      const rawUser =
-        sessionStorage.getItem('pendingGoogleUser') ||
-        localStorage.getItem('pendingGoogleUser');
+    console.log('Resultado Google:', result);
 
-      if (!token || !rawUser) {
-        throw new Error('No se pudo recuperar la sesión de Google.');
-      }
+    /*
+     * La cuenta ya tiene tipo y perfil completos.
+     * No debe volver a entrar al formulario de registro.
+     */
+    if (!result?.needsRegister) {
+      await this.global.loadProfile();
 
-      const authUser = JSON.parse(rawUser);
-
-      this.auth.pb.authStore.save(token, authUser);
-
-      const safeUsername = this.makeSafeUsername(
-        authUser.username ||
-        authUser.name ||
-        authUser.email?.split('@')[0] ||
-        'usuario'
-      );
-
-      await this.auth.pb.collection('users').update(authUser.id, {
-        type,
-        name: authUser.name || authUser.username || '',
-        username: safeUsername
-      });
-
-      if (type === 'client') {
-        this.clientForm.patchValue({
-          email: authUser.email || '',
-          name: authUser.name || authUser.username || '',
-          password: 'GoogleAuth123!',
-          confirmPassword: 'GoogleAuth123!'
-        });
-
-        this.clientForm.get('email')?.disable();
-
-        await this.ensureClientProfile(authUser);
-
-        this.currentStep = 2;
-        this.setClientStepValidators(2);
+      if (result.type === 'admin') {
+        await this.router.navigate(['/admin']);
         return;
       }
 
-      this.partnerForm.patchValue({
-        email: authUser.email || '',
-        venueName: authUser.name || authUser.username || '',
-        password: 'GoogleAuth123!',
-        confirmPassword: 'GoogleAuth123!'
-      });
+      if (result.type === 'partner') {
+        await this.global.initPartnersRealtime();
+        await this.router.navigate(['/home-local']);
+        return;
+      }
 
-      this.partnerForm.get('email')?.disable();
-
-      await this.ensurePartnerProfile(authUser);
-
-      this.currentStep = 2;
-      this.setPartnerStepValidators(2);
-
-    } catch (error: any) {
-      console.error('Error en registro con Google:', error);
-      console.error('Detalle:', error?.data);
-      console.log('Error completo:', error);
-      console.log('Error data:', error?.data);
-      console.log('Campos:', error?.data?.data);
-      Swal.fire({
-        title: 'Error',
-        text: error?.data?.message || error?.message || 'No fue posible continuar con Google.',
-        icon: 'error',
-        confirmButtonText: 'Entendido'
-      });
-
-    } finally {
-      this.loadingGoogle = false;
+      await this.global.initClientesRealtime();
+      await this.router.navigate(['/maps']);
+      return;
     }
+
+    const googleUser = result?.user;
+
+    if (!googleUser?.id || !googleUser?.email) {
+      throw new Error(
+        'Google no devolvió los datos necesarios para continuar.'
+      );
+    }
+
+    /*
+     * Si el usuario ya tenía un tipo asignado, no permitir
+     * cambiarlo accidentalmente desde otro botón.
+     */
+    const existingType =
+      googleUser.type === 'client' ||
+      googleUser.type === 'partner'
+        ? googleUser.type
+        : null;
+
+    if (
+      existingType &&
+      existingType !== selectedType
+    ) {
+      throw new Error(
+        existingType === 'client'
+          ? 'Esta cuenta ya está registrada como cliente.'
+          : 'Esta cuenta ya está registrada como partner.'
+      );
+    }
+
+    const registrationType =
+      existingType || selectedType;
+
+    this.googleAuthUser = googleUser;
+    this.userType = registrationType;
+    this.currentStep = 2;
+
+    if (registrationType === 'client') {
+      this.clientForm.patchValue({
+        email: googleUser.email,
+        name:
+          googleUser.name ||
+          googleUser.username ||
+          ''
+      });
+
+      this.clientForm
+        .get('email')
+        ?.disable({ emitEvent: false });
+
+      /*
+       * Una cuenta OAuth no necesita contraseña local
+       * durante este registro.
+       */
+      this.clientForm
+        .get('password')
+        ?.clearValidators();
+
+      this.clientForm
+        .get('confirmPassword')
+        ?.clearValidators();
+
+      this.clientForm
+        .get('password')
+        ?.setValue('');
+
+      this.clientForm
+        .get('confirmPassword')
+        ?.setValue('');
+
+      this.clientForm
+        .get('password')
+        ?.updateValueAndValidity({
+          emitEvent: false
+        });
+
+      this.clientForm
+        .get('confirmPassword')
+        ?.updateValueAndValidity({
+          emitEvent: false
+        });
+
+      this.setClientStepValidators(2);
+      return;
+    }
+
+    this.partnerForm.patchValue({
+      email: googleUser.email,
+      venueName:
+        googleUser.name ||
+        googleUser.username ||
+        ''
+    });
+
+    this.partnerForm
+      .get('email')
+      ?.disable({ emitEvent: false });
+
+    this.partnerForm
+      .get('password')
+      ?.clearValidators();
+
+    this.partnerForm
+      .get('confirmPassword')
+      ?.clearValidators();
+
+    this.partnerForm
+      .get('password')
+      ?.setValue('');
+
+    this.partnerForm
+      .get('confirmPassword')
+      ?.setValue('');
+
+    this.partnerForm
+      .get('password')
+      ?.updateValueAndValidity({
+        emitEvent: false
+      });
+
+    this.partnerForm
+      .get('confirmPassword')
+      ?.updateValueAndValidity({
+        emitEvent: false
+      });
+
+    this.setPartnerStepValidators(2);
+  } catch (error: any) {
+    console.error(
+      'Error en registro con Google:',
+      error
+    );
+
+    console.error(
+      'Detalle Google:',
+      error?.data
+    );
+
+    let message =
+      error?.data?.message ||
+      error?.message ||
+      'No fue posible continuar con Google.';
+
+    if (
+      error?.message?.includes(
+        'realtime connection interrupted'
+      ) ||
+      error?.originalError?.message?.includes(
+        'realtime connection interrupted'
+      )
+    ) {
+      message =
+        'Se interrumpió la conexión con el servidor durante la autenticación de Google. Intenta nuevamente.';
+    }
+
+    await Swal.fire({
+      title: 'Error con Google',
+      text: message,
+      icon: 'error',
+      confirmButtonText: 'Entendido'
+    });
+  } finally {
+    this.loadingGoogle = false;
   }
+}
   async ensureClientProfile(authUser: any) {
     try {
       const existing = await this.auth.pb
@@ -1319,5 +1562,65 @@ export class RegisterComponent {
       throw error;
     }
   }
+  private clearPendingGoogleSession(): void {
+  sessionStorage.removeItem('pendingGoogleUser');
+  sessionStorage.removeItem('pendingGoogleToken');
+
+  localStorage.removeItem('pendingGoogleUser');
+  localStorage.removeItem('pendingGoogleToken');
+}
+
+private clearNormalRegistrationSession(): void {
+  this.auth.pb.authStore.clear();
+  this.global.pb.authStore.clear();
+
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('userId');
+  localStorage.removeItem('user');
+  localStorage.removeItem('record');
+  localStorage.removeItem('type');
+  localStorage.removeItem('isLoggedin');
+  localStorage.removeItem('profile');
+  localStorage.removeItem('profilePartner');
+
+  this.clearPendingGoogleSession();
+}
+
+private persistRegistrationSession(
+  token: string,
+  record: any,
+  finalUser: any,
+  type: 'client' | 'partner',
+  profile: any
+): void {
+  this.auth.pb.authStore.save(token, record);
+  this.global.pb.authStore.save(token, record);
+
+  this.auth.currentUser = finalUser;
+  this.auth.profile = profile;
+
+  localStorage.setItem('accessToken', token);
+  localStorage.setItem('userId', finalUser.id);
+  localStorage.setItem('user', JSON.stringify(finalUser));
+  localStorage.setItem('record', JSON.stringify(record));
+  localStorage.setItem('type', type);
+  localStorage.setItem('isLoggedin', 'true');
+
+  if (type === 'partner') {
+    localStorage.setItem(
+      'profilePartner',
+      JSON.stringify(profile)
+    );
+
+    localStorage.removeItem('profile');
+  } else {
+    localStorage.setItem(
+      'profile',
+      JSON.stringify(profile)
+    );
+
+    localStorage.removeItem('profilePartner');
+  }
+}
 
 }

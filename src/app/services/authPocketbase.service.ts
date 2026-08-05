@@ -102,6 +102,7 @@ export class AuthPocketbaseService {
 
     return data;
   }
+  private googleOAuthInProgress = false;
   async completeGoogleRegister(type: 'client' | 'partner', data: any) {
     const token =
       sessionStorage.getItem('pendingGoogleToken') ||
@@ -767,7 +768,7 @@ export class AuthPocketbaseService {
       throw error;
     }
   }
-  async loginWithGoogle(): Promise<any> {
+ /*  async loginWithGoogle(): Promise<any> {
     const authData = await this.pb.collection('users').authWithOAuth2({
       provider: 'google',
     });
@@ -871,7 +872,217 @@ export class AuthPocketbaseService {
       profile: profileStatus.profile,
       type
     };
+  } */
+  async loginWithGoogle(): Promise<any> {
+  if (this.googleOAuthInProgress) {
+    throw new Error(
+      'Ya hay una autenticación con Google en curso.'
+    );
   }
+
+  this.googleOAuthInProgress = true;
+
+  try {
+    /*
+     * Cliente independiente para evitar que las suscripciones
+     * realtime de chats, notificaciones o perfiles interfieran
+     * con la conexión temporal utilizada por OAuth.
+     */
+    const oauthPb = new PocketBase(this.PB_URL);
+
+    oauthPb.autoCancellation(false);
+
+    const authData = await oauthPb
+      .collection('users')
+      .authWithOAuth2({
+        provider: 'google'
+      });
+
+    const record = authData.record;
+    const token = authData.token;
+    const meta: any = authData.meta || {};
+
+    if (!record?.id || !token) {
+      throw new Error(
+        'Google autenticó, pero PocketBase no devolvió una sesión válida.'
+      );
+    }
+
+    const type =
+      this.normalizeUserType(record['type']);
+
+    const googleEmail =
+      meta?.email ||
+      meta?.rawUser?.email ||
+      record['email'] ||
+      '';
+
+    const googleName =
+      meta?.name ||
+      meta?.rawUser?.name ||
+      record['name'] ||
+      record['username'] ||
+      googleEmail.split('@')[0] ||
+      'Usuario';
+
+    const cleanUser = {
+      ...record,
+      id: record.id,
+      email: googleEmail,
+      name: googleName,
+      username: record['username'] || '',
+      avatarUrl:
+        meta?.avatarUrl ||
+        record['avatarUrl'] ||
+        '',
+      type
+    };
+
+    /*
+     * Copiar la sesión obtenida por el cliente temporal
+     * hacia los clientes principales de la aplicación.
+     */
+    this.pb.authStore.save(token, record);
+    this.global.pb.authStore.save(token, record);
+
+    localStorage.setItem(
+      'pendingGoogleToken',
+      token
+    );
+
+    localStorage.setItem(
+      'pendingGoogleUser',
+      JSON.stringify(cleanUser)
+    );
+
+    /*
+     * Usuario nuevo: todavía no tiene tipo.
+     */
+    if (!type) {
+      return {
+        needsRegister: true,
+        reason: 'missing_type',
+        user: cleanUser,
+        type: null
+      };
+    }
+
+    const registrationStatus =
+      await this.getRegistrationStatus({
+        ...record,
+        type
+      });
+
+    /*
+     * Tiene tipo, pero no terminó su perfil.
+     */
+    if (
+      !registrationStatus.profile ||
+      !registrationStatus.completed
+    ) {
+      return {
+        needsRegister: true,
+        reason: 'incomplete_profile',
+        user: cleanUser,
+        profile: registrationStatus.profile,
+        type
+      };
+    }
+
+    /*
+     * Cuenta completamente registrada.
+     */
+    const finalUser = {
+      ...record,
+      email: googleEmail,
+      name: googleName,
+      type
+    };
+
+    this.currentUser = finalUser;
+
+    localStorage.setItem(
+      'accessToken',
+      token
+    );
+
+    localStorage.setItem(
+      'userId',
+      record.id
+    );
+
+    localStorage.setItem(
+      'user',
+      JSON.stringify(finalUser)
+    );
+
+    localStorage.setItem(
+      'record',
+      JSON.stringify(record)
+    );
+
+    localStorage.setItem(
+      'type',
+      type
+    );
+
+    localStorage.setItem(
+      'isLoggedin',
+      'true'
+    );
+
+    if (type === 'partner') {
+      localStorage.setItem(
+        'profilePartner',
+        JSON.stringify(
+          registrationStatus.profile
+        )
+      );
+
+      localStorage.removeItem('profile');
+    }
+
+    if (type === 'client') {
+      localStorage.setItem(
+        'profile',
+        JSON.stringify(
+          registrationStatus.profile
+        )
+      );
+
+      localStorage.removeItem(
+        'profilePartner'
+      );
+    }
+
+    localStorage.removeItem(
+      'pendingGoogleToken'
+    );
+
+    localStorage.removeItem(
+      'pendingGoogleUser'
+    );
+
+    sessionStorage.removeItem(
+      'pendingGoogleToken'
+    );
+
+    sessionStorage.removeItem(
+      'pendingGoogleUser'
+    );
+
+    this.currentUserSubject.next(finalUser);
+
+    return {
+      needsRegister: false,
+      user: finalUser,
+      profile: registrationStatus.profile,
+      type
+    };
+  } finally {
+    this.googleOAuthInProgress = false;
+  }
+}
   async getRegistrationStatus(user: any): Promise<{
     completed: boolean;
     type: 'client' | 'partner' | 'admin' | null;
