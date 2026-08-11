@@ -1,12 +1,13 @@
 import { Injectable } from "@angular/core";
-import PocketBase, { RecordModel } from "pocketbase";
+import { RecordModel } from "pocketbase";
 import { BehaviorSubject } from "rxjs";
+import { pocketBase } from './pocketbase-client';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ChatPocketbaseService {
-  public pb = new PocketBase('https://db.ongomatch.com:8090');
+  public pb = pocketBase;
 
   public messagesSubject = new BehaviorSubject<RecordModel[]>([]);
   public messages$ = this.messagesSubject.asObservable();

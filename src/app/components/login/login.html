@@ -72,7 +72,7 @@
         </div>
 
         <div class="pt-3 flex-center gap-4 third-party-authentication">
-          <button type="button" class="item" (click)="handleGoogleLogin()">
+          <button type="button" class="item" (click)="handleGoogleLogin()" [disabled]="loading">
             <img src="assets/images/google.svg" alt="Google" />
           </button>
         </div>

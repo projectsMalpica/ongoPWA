@@ -21,7 +21,15 @@ constructor(
     this.isPartner = this.auth.isPartner();
 
     this.auth.currentUser$.subscribe(user => {
-      const type = user?.type || JSON.parse(localStorage.getItem('type') || 'null');
+      const storedType = localStorage.getItem('type');
+      let type = user?.type || null;
+      if (!type && storedType && storedType !== 'undefined') {
+        try {
+          type = JSON.parse(storedType);
+        } catch {
+          type = storedType;
+        }
+      }
       this.isPartner = type === 'partner';
     });
   }

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import PocketBase from 'pocketbase';
+import { pocketBase } from './pocketbase-client';
 
 
 @Injectable({
@@ -8,9 +8,7 @@ providedIn:'root'
 export class PartnerStatsService{
 
 
-pb = new PocketBase(
- 'https://db.ongomatch.com:8090'
-);
+pb = pocketBase;
 
 
 

@@ -157,72 +157,21 @@ export class LoginComponent {
 
 
   async handleGoogleLogin() {
+    if (this.loading) return;
     this.loading = true;
 
     try {
-
-      const result = await this.auth.loginWithGoogle();
-
-      console.log('Google result:', result);
-
-      if (result?.needsRegister) {
-
-        this.loading = false;
-
-        await this.router.navigate(['/register'], {
-          queryParams: {
-            google: 'true',
-            userId: result.user.id,
-            email: result.user.email,
-            name: result.user.name,
-            type: result.user.type || ''
-          }
-        });
-
-        return;
-      }
-      const userId = result?.user?.id || this.auth.pb?.authStore?.record?.id;
-
-      if (userId) {
-        this.pushService.initPush(userId).catch(error => {
-          console.error('Error iniciando push:', error);
-        });
-      }
-      if (result.type === 'admin') {
-        await this.router.navigate(['/admin']);
-        return;
-      }
-
-      await this.global.loadProfile();
-
-      if (result.type === 'partner') {
-        await this.router.navigate(['/home-local']);
-
-        this.global.initPartnersRealtime().catch(error => {
-          console.error('Error iniciando partners realtime:', error);
-        });
-
-      } else {
-        await this.router.navigate(['/maps']);
-
-        this.global.initClientesRealtime().catch(error => {
-          console.error('Error iniciando clientes realtime:', error);
-        });
-      }
-
+      await this.auth.startGoogleOAuth('login');
     } catch (error: any) {
-
       console.error('Error Google Login:', error);
-
-      Swal.fire({
+      await Swal.fire({
         icon: 'error',
         title: 'Error con Google',
         text: error?.message || 'No se pudo iniciar sesión con Google'
       });
-
     } finally {
-
       this.loading = false;
+      console.log('[OAuth] Spinner de login desactivado');
     }
   }
 }

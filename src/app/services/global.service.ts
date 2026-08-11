@@ -1,14 +1,14 @@
 import { Injectable } from '@angular/core';
-import PocketBase from 'pocketbase';
 import { BehaviorSubject } from 'rxjs';
 import { UserInterface } from '../interface/user-interface ';
+import { pocketBase } from './pocketbase-client';
 
 @Injectable({
   providedIn: 'root',
 })
 export class GlobalService {
   activeRoute: string = '';
-  pb = new PocketBase('https://db.ongomatch.com:8090');
+  pb = pocketBase;
   selectedPromo: any = null;
   private clientesSubject = new BehaviorSubject<any[]>([]);
   clientes$ = this.clientesSubject.asObservable();

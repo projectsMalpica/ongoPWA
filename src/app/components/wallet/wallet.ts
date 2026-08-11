@@ -209,18 +209,15 @@ export class Wallet implements OnInit {
       const pkg = this.selectedRechargePackage;
       this.showRechargeModal = false;
 
-      const intentRes = await fetch('https://db.ongomatch.com:5055/wallet/recharge-intent', {
+      const intent = await this.auth.pb.send('/api/wallet/recharge-intent', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: {
           userId: this.auth.currentUser.id,
           customerEmail: this.auth.currentUser.email,
           packageId: pkg.id,
           price: pkg.priceCop
-        })
+        }
       });
-
-      const intent = await intentRes.json();
       console.log('Intent response:', intent);
       const result = await this.wompiService.openCheckout({
         amountInCents: intent.amountInCents,
@@ -237,16 +234,13 @@ export class Wallet implements OnInit {
       const transaction = result?.transaction;
 
       if (transaction?.reference && transaction?.status) {
-        const confirmRes = await fetch('https://db.ongomatch.com:5055/wallet/confirm-recharge', {
+        const confirmData = await this.auth.pb.send('/api/wallet/confirm-recharge', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+          body: {
             reference: transaction.reference,
             status: transaction.status
-          })
+          }
         });
-
-        const confirmData = await confirmRes.json();
 
         console.log('Confirmación backend:', confirmData);
 

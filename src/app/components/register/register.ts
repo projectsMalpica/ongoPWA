@@ -2,7 +2,7 @@ import { Component, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, AbstractControl, ValidationErrors } from '@angular/forms';
 import Swal from 'sweetalert2';
-import { AuthPocketbaseService } from '../../services/authPocketbase.service';
+import { AuthPocketbaseService, PENDING_GOOGLE_REGISTRATION_TYPE } from '../../services/authPocketbase.service';
 import { GlobalService } from '../../services/global.service';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { Terms } from '../terms/terms';
@@ -11,6 +11,7 @@ import { EmailService } from '../../services/email.service';
 import { Router, RouterLink } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 
 @Component({
@@ -46,8 +47,12 @@ export class RegisterComponent {
   selectedProfileFile: File | null = null;
   imageUrl: string = 'assets/images/avatar/1.jpg';
   selectedFile: File | null = null;
-  private baseUrl: string = 'https://db.ongomatch.com:8090';
+  private baseUrl: string = environment.pbUrl;
   googleAuthUser: any = null;
+  googleAuthenticated = false;
+  completingGoogleProfile = false;
+  authenticatedGoogleUser: any = null;
+  existingGoogleProfile: any = null;
   registering = false;
   registeringText = 'Registrando cuenta...';
   @ViewChild('profileFileInput') profileFileInput!: ElementRef;
@@ -116,70 +121,99 @@ export class RegisterComponent {
   get pf() {
     return this.partnerForm.controls;
   }
-  ngOnInit() {
-    this.route.queryParams.subscribe(async params => {
-      if (params['google'] === 'true') {
-        const email = params['email'] || '';
-        const name = params['name'] || '';
+  async ngOnInit() {
+    this.loadingGoogle = false;
+    this.registering = false;
+    await this.restoreGoogleProfileCompletion();
+    void this.loadHeroStats();
+  }
 
-        const rawType = params['type'] || '';
-        const type = Array.isArray(rawType) ? rawType[0] : rawType;
+  private async restoreGoogleProfileCompletion(): Promise<void> {
+    const pendingType = sessionStorage.getItem(PENDING_GOOGLE_REGISTRATION_TYPE);
+    if (pendingType !== 'client' && pendingType !== 'partner') return;
+    const type = pendingType;
+    const authUser = this.auth.pb.authStore.record;
 
-        await Swal.fire({
-          icon: 'info',
-          title: 'Cuenta no registrada',
-          text: 'Tu cuenta de Google fue validada, pero aún debes completar tu registro en OnGo.',
-          confirmButtonText: 'Continuar'
-        });
+    if (!this.auth.pb.authStore.isValid || !authUser?.id || (type !== 'client' && type !== 'partner')) return;
 
-        if (type === 'client' || type === 'partner') {
-          this.userType = type;
-          this.currentStep = 2;
-        } else {
-          this.userType = null;
-          this.currentStep = 1;
-        }
+    try {
+      const profile = await this.auth.findGoogleProfile(authUser.id, type);
+      if (this.auth.isProfileComplete(profile)) return;
+      this.activateGoogleProfileCompletion(authUser, type, profile);
+    } catch (error: any) {
+      console.error('[Google registro] Error al recuperar perfil:', {
+        status: error?.status || 0,
+        message: error?.message || 'Error desconocido'
+      });
+    }
+  }
 
-        this.clientForm.patchValue({
-          email,
-          name,
-          password: 'GoogleAuth123!',
-          confirmPassword: 'GoogleAuth123!'
-        });
+  private activateGoogleProfileCompletion(
+    authUser: any,
+    type: 'client' | 'partner',
+    profile: any | null
+  ): void {
+    this.googleAuthenticated = true;
+    this.completingGoogleProfile = true;
+    this.authenticatedGoogleUser = authUser;
+    this.googleAuthUser = authUser;
+    this.existingGoogleProfile = profile;
+    this.userType = type;
+    this.currentStep = 2;
+    sessionStorage.setItem(PENDING_GOOGLE_REGISTRATION_TYPE, type);
 
-        this.partnerForm.patchValue({
-          email,
-          venueName: name || '',
-          password: 'GoogleAuth123!',
-          confirmPassword: 'GoogleAuth123!'
-        });
+    const email = authUser.email || '';
+    const googleName = authUser.name || authUser.username || '';
+    if (type === 'client') {
+      const orientations = Array.isArray(profile?.orientation) ? profile.orientation : [];
+      const orientationPatch = Object.fromEntries(
+        Object.keys((this.clientForm.get('orientation') as FormGroup).controls)
+          .map(key => [key, orientations.includes(key)])
+      );
+      this.clientForm.patchValue({
+        email,
+        name: profile?.name || googleName,
+        address: profile?.address || '',
+        birthday: profile?.birthday ? String(profile.birthday).slice(0, 10) : '',
+        gender: profile?.gender || '',
+        orientation: orientationPatch,
+        interestedIn: profile?.interestedIn || '',
+        lookingFor: profile?.lookingFor || '',
+        terms: false
+      });
+      this.clientForm.get('email')?.disable({ emitEvent: false });
+      this.setClientStepValidators(2);
+      this.imageUrl = authUser.avatarUrl || 'assets/images/avatar-local.png';
+      this.selectedImage = this.imageUrl;
+    } else {
+      this.partnerForm.patchValue({
+        email,
+        venueName: profile?.venueName || googleName,
+        address: profile?.address || '',
+        phone: profile?.phone || '',
+        description: profile?.description || '',
+        capacity: profile?.capacity ?? '',
+        openingHours: profile?.openingHours || '',
+        terms: false
+      });
+      this.partnerForm.get('email')?.disable({ emitEvent: false });
+      this.setPartnerStepValidators(2);
+    }
 
-        this.clientForm.get('email')?.disable();
-        this.partnerForm.get('email')?.disable();
-
-        if (type === 'client') {
-          this.setClientStepValidators(2);
-        }
-
-        if (type === 'partner') {
-          this.setPartnerStepValidators(2);
-        }
-      }
-    });
-    this.loadHeroStats();
+    this.loadingGoogle = false;
+    this.registering = false;
   }
   async loadHeroStats() {
     const pb = this.global.pb;
 
     try {
-      const users = await pb.collection('usuariosClient').getFullList({
-        sort: '-locationUpdatedAt',
-        filter: 'lat != null && lng != null',
+      const users = await pb.collection('usuariosClient').getList(1, 1, {
+        fields: 'id,avatar',
+        sort: '-created'
       });
 
-      this.nearbyCount = users.length;
-
-      this.nearbyPerson = users.find((u: any) => u.avatar) || users[0] || null;
+      this.nearbyCount = users.totalItems;
+      this.nearbyPerson = users.items[0] || null;
 
       if (this.global.profileData?.id) {
         const myProfileId = this.global.profileData.id;
@@ -193,8 +227,12 @@ export class RegisterComponent {
         this.possibleMatches = 3;
       }
 
-    } catch (error) {
-      console.error('Error cargando hero stats:', error);
+    } catch (error: any) {
+      console.error('Error cargando hero stats:', {
+        status: error?.status || 0,
+        response: error?.response || {},
+        message: error?.message || 'Error desconocido'
+      });
 
       this.nearbyCount = 0;
       this.possibleMatches = 0;
@@ -321,6 +359,7 @@ export class RegisterComponent {
     }
   }
   async onSubmit() {
+    if (this.isSubmitting) return;
     try {
       if (this.userType === 'partner') {
         await this.registerPartner();
@@ -330,6 +369,31 @@ export class RegisterComponent {
     } catch (error: any) {
       console.error('Error completo en el registro:', error);
       console.error('Datos de error:', error?.data);
+
+      if (this.completingGoogleProfile) {
+        const responseData = error?.response?.data || error?.data?.data || {};
+        const fieldMessage = Object.values(responseData as Record<string, any>)
+          .map((value: any) => value?.message)
+          .find(Boolean);
+        const message = error?.status === 403
+          ? 'Tu sesión es válida, pero la regla de acceso no permite guardar este perfil.'
+          : fieldMessage || error?.response?.message || error?.message || 'Verifica los datos e inténtalo nuevamente.';
+        console.error('[Google registro] Error al guardar perfil:', {
+          status: error?.status || 0,
+          message: error?.response?.message || error?.message || 'Error desconocido',
+          data: responseData,
+          operation: this.existingGoogleProfile?.id ? 'actualizar' : 'crear'
+        });
+        await Swal.fire({
+          title: this.existingGoogleProfile?.id
+            ? 'No se pudo actualizar el perfil'
+            : 'No se pudo crear el perfil',
+          text: message,
+          icon: 'error',
+          confirmButtonText: 'Entendido'
+        });
+        return;
+      }
 
       const pbFields = error?.data?.data || {};
       const errorMessage =
@@ -379,11 +443,68 @@ export class RegisterComponent {
     }
   }
   resetForm() {
+    this.clientForm.get('email')?.enable({ emitEvent: false });
+    this.partnerForm.get('email')?.enable({ emitEvent: false });
     this.partnerForm.reset();
     this.clientForm.reset();
     this.currentStep = 1;
     this.userType = null;
     this.isSubmitting = false;
+  }
+
+  private buildPartnerProfilePayload(userId: string, email: string): any {
+    const formData = this.partnerForm.getRawValue();
+    return {
+      userId,
+      venueName: formData.venueName,
+      address: formData.address,
+      phone: formData.phone,
+      description: formData.description || '',
+      capacity: formData.capacity || null,
+      openingHours: formData.openingHours || '',
+      email,
+      status: 'pending',
+      approved: false,
+      profileComplete: true
+    };
+  }
+
+  private buildClientProfilePayload(userId: string, email: string, photos: string[]): any {
+    const formData = this.clientForm.getRawValue();
+    const orientation = formData.orientation || {};
+    return {
+      userId,
+      name: formData.name,
+      address: formData.address,
+      birthday: new Date(formData.birthday).toISOString(),
+      gender: formData.gender,
+      orientation: Object.keys(orientation).filter(key => Boolean(orientation[key])),
+      interestedIn: formData.interestedIn,
+      lookingFor: formData.lookingFor,
+      email,
+      status: 'pending',
+      profileComplete: true,
+      plan: 'free',
+      photos
+    };
+  }
+
+  async cancelGoogleProfileCompletion(): Promise<void> {
+    this.auth.pb.authStore.clear();
+    this.global.pb.authStore.clear();
+    this.auth.clearLocalSession();
+    this.auth.currentUser = null;
+    this.auth.profile = null;
+    this.global.currentUser = null;
+    this.global.profileData = {};
+    this.global.profileDataPartner = {};
+    this.auth.clearPendingGoogleRegistrationType();
+    this.googleAuthenticated = false;
+    this.completingGoogleProfile = false;
+    this.authenticatedGoogleUser = null;
+    this.googleAuthUser = null;
+    this.existingGoogleProfile = null;
+    this.resetForm();
   }
 
   async registerPartner(): Promise<void> {
@@ -398,64 +519,28 @@ export class RegisterComponent {
   try {
     const formData = this.partnerForm.getRawValue();
 
-    const pendingGoogleUserRaw =
-      sessionStorage.getItem('pendingGoogleUser') ||
-      localStorage.getItem('pendingGoogleUser');
-
-    const pendingGoogleToken =
-      sessionStorage.getItem('pendingGoogleToken') ||
-      localStorage.getItem('pendingGoogleToken');
-
-    let pendingGoogleUser: any = null;
-
-    try {
-      pendingGoogleUser = pendingGoogleUserRaw
-        ? JSON.parse(pendingGoogleUserRaw)
-        : null;
-    } catch {
-      this.clearPendingGoogleSession();
-    }
-
     let userId: string;
     let sessionToken: string;
     let sessionRecord: any;
-    let isGoogleFlow = false;
+    const isGoogleFlow = this.completingGoogleProfile;
 
     const email = String(
       formData.email ||
-      pendingGoogleUser?.email ||
+      this.auth.pb.authStore.record?.['email'] ||
       ''
     ).trim();
 
     /*
      * Registro proveniente de Google.
      */
-    if (pendingGoogleUser?.id && pendingGoogleToken) {
-      isGoogleFlow = true;
-
-      this.auth.pb.authStore.save(
-        pendingGoogleToken,
-        pendingGoogleUser
-      );
-
-      const updatedUser = await this.auth.pb
-        .collection('users')
-        .update(pendingGoogleUser.id, {
-          type: 'partner',
-          name:
-            formData.venueName ||
-            pendingGoogleUser.name ||
-            'Local'
-        });
-
-      userId = updatedUser.id;
-      sessionToken = pendingGoogleToken;
-      sessionRecord = updatedUser;
-
-      this.auth.pb.authStore.save(
-        sessionToken,
-        sessionRecord
-      );
+    if (isGoogleFlow) {
+      const authUser = this.auth.pb.authStore.record;
+      if (!this.auth.pb.authStore.isValid || !authUser?.id) {
+        throw new Error('La sesión de Google ya no es válida. Inicia sesión nuevamente.');
+      }
+      userId = authUser.id;
+      sessionToken = this.auth.pb.authStore.token;
+      sessionRecord = authUser;
     } else {
       /*
        * Registro normal.
@@ -508,23 +593,15 @@ export class RegisterComponent {
       sessionRecord
     );
 
-    const partnerData: any = {
-      userId,
-      venueName: formData.venueName,
-      address: formData.address,
-      phone: formData.phone,
-      description: formData.description || '',
-      capacity: formData.capacity || null,
-      openingHours: formData.openingHours || '',
-      email,
-      status: 'pending',
-      approved: false,
-      profileComplete: true
-    };
+    const partnerData = this.buildPartnerProfilePayload(userId, email);
 
     let partnerProfile: any;
 
-    try {
+    if (isGoogleFlow) {
+      const completed = await this.auth.completeGoogleRegister('partner', partnerData);
+      partnerProfile = completed.profile;
+      sessionRecord = completed.record;
+    } else try {
       const existing = await this.auth.pb
         .collection('usuariosPartner')
         .getFirstListItem(`userId="${userId}"`);
@@ -550,15 +627,15 @@ export class RegisterComponent {
       name: formData.venueName
     };
 
-    this.persistRegistrationSession(
-      sessionToken,
-      sessionRecord,
-      finalUser,
-      'partner',
-      partnerProfile
-    );
-
-    this.clearPendingGoogleSession();
+    if (!isGoogleFlow) {
+      this.persistRegistrationSession(
+        sessionToken,
+        sessionRecord,
+        finalUser,
+        'partner',
+        partnerProfile
+      );
+    }
 
     if (!isGoogleFlow) {
       void this.emailService
@@ -579,10 +656,14 @@ export class RegisterComponent {
     }
 
     await this.global.loadProfile();
-    await this.global.initClientesRealtime();
-    await this.global.initPartnersRealtime();
-
-    await this.router.navigate(['/profile-local']);
+    if (isGoogleFlow) {
+      await this.global.initPartnersRealtime();
+      await this.router.navigate(['/home-local']);
+    } else {
+      await this.global.initClientesRealtime();
+      await this.global.initPartnersRealtime();
+      await this.router.navigate(['/profile-local']);
+    }
 
     await Swal.fire({
       title: 'Registro exitoso',
@@ -631,65 +712,28 @@ export class RegisterComponent {
   try {
     const formData = this.clientForm.getRawValue();
 
-    const pendingGoogleUserRaw =
-      sessionStorage.getItem('pendingGoogleUser') ||
-      localStorage.getItem('pendingGoogleUser');
-
-    const pendingGoogleToken =
-      sessionStorage.getItem('pendingGoogleToken') ||
-      localStorage.getItem('pendingGoogleToken');
-
-    let pendingGoogleUser: any = null;
-
-    try {
-      pendingGoogleUser = pendingGoogleUserRaw
-        ? JSON.parse(pendingGoogleUserRaw)
-        : null;
-    } catch {
-      this.clearPendingGoogleSession();
-    }
-
     let userId: string;
     let sessionToken: string;
     let sessionRecord: any;
-    let isGoogleFlow = false;
+    const isGoogleFlow = this.completingGoogleProfile;
 
     const email = String(
       formData.email ||
-      pendingGoogleUser?.email ||
+      this.auth.pb.authStore.record?.['email'] ||
       ''
     ).trim();
 
     /*
      * Registro proveniente de Google.
      */
-    if (pendingGoogleUser?.id && pendingGoogleToken) {
-      isGoogleFlow = true;
-
-      this.auth.pb.authStore.save(
-        pendingGoogleToken,
-        pendingGoogleUser
-      );
-
-      const updatedUser = await this.auth.pb
-        .collection('users')
-        .update(pendingGoogleUser.id, {
-          type: 'client',
-          name:
-            formData.name ||
-            pendingGoogleUser.name ||
-            pendingGoogleUser.username ||
-            'Usuario'
-        });
-
-      userId = updatedUser.id;
-      sessionToken = pendingGoogleToken;
-      sessionRecord = updatedUser;
-
-      this.auth.pb.authStore.save(
-        sessionToken,
-        sessionRecord
-      );
+    if (isGoogleFlow) {
+      const authUser = this.auth.pb.authStore.record;
+      if (!this.auth.pb.authStore.isValid || !authUser?.id) {
+        throw new Error('La sesión de Google ya no es válida. Inicia sesión nuevamente.');
+      }
+      userId = authUser.id;
+      sessionToken = this.auth.pb.authStore.token;
+      sessionRecord = authUser;
     } else {
       /*
        * Registro normal.
@@ -742,7 +786,9 @@ export class RegisterComponent {
       sessionRecord
     );
 
-    let uploadedPhotos: string[] = [];
+    let uploadedPhotos: string[] = Array.isArray(this.existingGoogleProfile?.photos)
+      ? this.existingGoogleProfile.photos
+      : [];
 
     if (this.selectedFile) {
       const imageFormData = new FormData();
@@ -782,35 +828,15 @@ export class RegisterComponent {
       }
     }
 
-    const orientationGroup =
-      formData.orientation || {};
-
-    const selectedOrientation =
-      Object.keys(orientationGroup).filter(
-        key => Boolean(orientationGroup[key])
-      );
-
-    const clientData: any = {
-      userId,
-      name: formData.name,
-      address: formData.address,
-      birthday: new Date(
-        formData.birthday
-      ).toISOString(),
-      gender: formData.gender,
-      orientation: selectedOrientation,
-      interestedIn: formData.interestedIn,
-      lookingFor: formData.lookingFor,
-      email,
-      status: 'pending',
-      profileComplete: true,
-      plan: 'free',
-      photos: uploadedPhotos
-    };
+    const clientData = this.buildClientProfilePayload(userId, email, uploadedPhotos);
 
     let clientProfile: any;
 
-    try {
+    if (isGoogleFlow) {
+      const completed = await this.auth.completeGoogleRegister('client', clientData);
+      clientProfile = completed.profile;
+      sessionRecord = completed.record;
+    } else try {
       const existing = await this.auth.pb
         .collection('usuariosClient')
         .getFirstListItem(`userId="${userId}"`);
@@ -836,15 +862,15 @@ export class RegisterComponent {
       name: formData.name
     };
 
-    this.persistRegistrationSession(
-      sessionToken,
-      sessionRecord,
-      finalUser,
-      'client',
-      clientProfile
-    );
-
-    this.clearPendingGoogleSession();
+    if (!isGoogleFlow) {
+      this.persistRegistrationSession(
+        sessionToken,
+        sessionRecord,
+        finalUser,
+        'client',
+        clientProfile
+      );
+    }
 
     if (!isGoogleFlow) {
       void this.emailService
@@ -865,10 +891,14 @@ export class RegisterComponent {
     }
 
     await this.global.loadProfile();
-    await this.global.initClientesRealtime();
-    await this.global.initPartnersRealtime();
-
-    await this.router.navigate(['/profile']);
+    if (isGoogleFlow) {
+      await this.global.initClientesRealtime();
+      await this.router.navigate(['/maps']);
+    } else {
+      await this.global.initClientesRealtime();
+      await this.global.initPartnersRealtime();
+      await this.router.navigate(['/profile']);
+    }
 
     await Swal.fire({
       title: 'Registro exitoso',
@@ -1094,7 +1124,8 @@ export class RegisterComponent {
     }
   }
   prevStep() {
-    if (this.currentStep > 1) {
+    const firstStep = this.completingGoogleProfile ? 2 : 1;
+    if (this.currentStep > firstStep) {
       this.currentStep--;
 
       if (this.userType === 'partner') {
@@ -1262,312 +1293,31 @@ export class RegisterComponent {
   }
 
   this.loadingGoogle = true;
+  this.registering = true;
+  this.registeringText = 'Conectando con Google...';
 
   try {
-    const result = await this.auth.loginWithGoogle();
-
-    console.log('Resultado Google:', result);
-
-    /*
-     * La cuenta ya tiene tipo y perfil completos.
-     * No debe volver a entrar al formulario de registro.
-     */
-    if (!result?.needsRegister) {
-      await this.global.loadProfile();
-
-      if (result.type === 'admin') {
-        await this.router.navigate(['/admin']);
-        return;
-      }
-
-      if (result.type === 'partner') {
-        await this.global.initPartnersRealtime();
-        await this.router.navigate(['/home-local']);
-        return;
-      }
-
-      await this.global.initClientesRealtime();
-      await this.router.navigate(['/maps']);
-      return;
+    const result = await this.auth.startGoogleOAuth('register', selectedType);
+    if (result.needsRegister) {
+      this.activateGoogleProfileCompletion(result.user, selectedType, result.profile || null);
     }
-
-    const googleUser = result?.user;
-
-    if (!googleUser?.id || !googleUser?.email) {
-      throw new Error(
-        'Google no devolvió los datos necesarios para continuar.'
-      );
-    }
-
-    /*
-     * Si el usuario ya tenía un tipo asignado, no permitir
-     * cambiarlo accidentalmente desde otro botón.
-     */
-    const existingType =
-      googleUser.type === 'client' ||
-      googleUser.type === 'partner'
-        ? googleUser.type
-        : null;
-
-    if (
-      existingType &&
-      existingType !== selectedType
-    ) {
-      throw new Error(
-        existingType === 'client'
-          ? 'Esta cuenta ya está registrada como cliente.'
-          : 'Esta cuenta ya está registrada como partner.'
-      );
-    }
-
-    const registrationType =
-      existingType || selectedType;
-
-    this.googleAuthUser = googleUser;
-    this.userType = registrationType;
-    this.currentStep = 2;
-
-    if (registrationType === 'client') {
-      this.clientForm.patchValue({
-        email: googleUser.email,
-        name:
-          googleUser.name ||
-          googleUser.username ||
-          ''
-      });
-
-      this.clientForm
-        .get('email')
-        ?.disable({ emitEvent: false });
-
-      /*
-       * Una cuenta OAuth no necesita contraseña local
-       * durante este registro.
-       */
-      this.clientForm
-        .get('password')
-        ?.clearValidators();
-
-      this.clientForm
-        .get('confirmPassword')
-        ?.clearValidators();
-
-      this.clientForm
-        .get('password')
-        ?.setValue('');
-
-      this.clientForm
-        .get('confirmPassword')
-        ?.setValue('');
-
-      this.clientForm
-        .get('password')
-        ?.updateValueAndValidity({
-          emitEvent: false
-        });
-
-      this.clientForm
-        .get('confirmPassword')
-        ?.updateValueAndValidity({
-          emitEvent: false
-        });
-
-      this.setClientStepValidators(2);
-      return;
-    }
-
-    this.partnerForm.patchValue({
-      email: googleUser.email,
-      venueName:
-        googleUser.name ||
-        googleUser.username ||
-        ''
-    });
-
-    this.partnerForm
-      .get('email')
-      ?.disable({ emitEvent: false });
-
-    this.partnerForm
-      .get('password')
-      ?.clearValidators();
-
-    this.partnerForm
-      .get('confirmPassword')
-      ?.clearValidators();
-
-    this.partnerForm
-      .get('password')
-      ?.setValue('');
-
-    this.partnerForm
-      .get('confirmPassword')
-      ?.setValue('');
-
-    this.partnerForm
-      .get('password')
-      ?.updateValueAndValidity({
-        emitEvent: false
-      });
-
-    this.partnerForm
-      .get('confirmPassword')
-      ?.updateValueAndValidity({
-        emitEvent: false
-      });
-
-    this.setPartnerStepValidators(2);
   } catch (error: any) {
-    console.error(
-      'Error en registro con Google:',
-      error
-    );
-
-    console.error(
-      'Detalle Google:',
-      error?.data
-    );
-
-    let message =
-      error?.data?.message ||
-      error?.message ||
-      'No fue posible continuar con Google.';
-
-    if (
-      error?.message?.includes(
-        'realtime connection interrupted'
-      ) ||
-      error?.originalError?.message?.includes(
-        'realtime connection interrupted'
-      )
-    ) {
-      message =
-        'Se interrumpió la conexión con el servidor durante la autenticación de Google. Intenta nuevamente.';
-    }
-
+    console.error('Error en registro con Google:', error);
     await Swal.fire({
       title: 'Error con Google',
-      text: message,
+      text: error?.message || 'No fue posible continuar con Google.',
       icon: 'error',
       confirmButtonText: 'Entendido'
     });
   } finally {
     this.loadingGoogle = false;
+    this.registering = false;
+    this.registeringText = 'Registrando cuenta...';
+    console.log('[OAuth] Spinner de registro desactivado');
   }
 }
-  async ensureClientProfile(authUser: any) {
-    try {
-      const existing = await this.auth.pb
-        .collection('usuariosClient')
-        .getFirstListItem(`userId="${authUser.id}"`);
-
-      const isComplete =
-        !!existing['name'] &&
-        !!existing['birthday'] &&
-        !!existing['gender'] &&
-        !!existing['interestedIn'] &&
-        !!existing['lookingFor'];
-
-      this.clientForm.patchValue({
-        email: authUser.email || existing['email'] || '',
-        name: existing['name'] || authUser.name || authUser.username || '',
-        address: existing['address'] || '',
-        gender: existing['gender'] || '',
-        interestedIn: existing['interestedIn'] || '',
-        lookingFor: existing['lookingFor'] || '',
-        terms: !!existing['terms']
-      });
-
-      if (isComplete) {
-        await this.global.loadProfile();
-        await this.global.initClientesRealtime();
-        await this.global.initPartnersRealtime();
-        await this.router.navigate(['/home']);
-        return;
-      }
-
-      this.currentStep = 2;
-
-    } catch (error: any) {
-      if (error?.status === 404) {
-        const newClient = await this.auth.pb.collection('usuariosClient').create({
-          userId: authUser.id,
-          email: authUser.email || '',
-          name: authUser.name || authUser.username || '',
-          status: 'pending',
-          profileComplete: false,
-          photos: [],
-          plan: 'free'
-        });
-
-        this.clientForm.patchValue({
-          email: authUser.email || '',
-          name: newClient['name'] || authUser.name || authUser.username || '',
-        });
-
-        this.currentStep = 2;
-        return;
-      }
-
-      throw error;
-    }
-  }
-  async ensurePartnerProfile(authUser: any) {
-    try {
-      const existing = await this.auth.pb
-        .collection('usuariosPartner')
-        .getFirstListItem(`userId="${authUser.id}"`);
-
-      const isComplete =
-        !!existing['venueName'] &&
-        !!existing['address'] &&
-        !!existing['phone'];
-
-      if (isComplete) {
-        await this.global.loadProfile();
-        await this.global.initClientesRealtime();
-        await this.global.initPartnersRealtime();
-        await this.router.navigate(['/home-local']);
-        return;
-      }
-
-      this.partnerForm.patchValue({
-        email: authUser.email || existing['email'] || '',
-        venueName: existing['venueName'] || '',
-        address: existing['address'] || '',
-        phone: existing['phone'] || '',
-        description: existing['description'] || '',
-        capacity: existing['capacity'] || '',
-        openingHours: existing['openingHours'] || ''
-      });
-
-      this.currentStep = 2;
-    } catch (error: any) {
-      if (error?.status === 404) {
-        await this.auth.pb.collection('usuariosPartner').create({
-          userId: authUser.id,
-          email: authUser.email || '',
-          status: 'pending',
-          approved: false
-        });
-
-        this.partnerForm.patchValue({
-          email: authUser.email || ''
-        });
-
-        this.currentStep = 2;
-        return;
-      }
-
-      throw error;
-    }
-  }
   private clearPendingGoogleSession(): void {
-  sessionStorage.removeItem('pendingGoogleUser');
-  sessionStorage.removeItem('pendingGoogleToken');
-
-  localStorage.removeItem('pendingGoogleUser');
-  localStorage.removeItem('pendingGoogleToken');
+  this.auth.clearPendingGoogleSession();
 }
 
 private clearNormalRegistrationSession(): void {

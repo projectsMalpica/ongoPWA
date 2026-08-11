@@ -181,7 +181,7 @@ export class HomeLocal implements AfterViewInit, OnDestroy {
 
     // 1) firma exactamente con los mismos valores que mandarás al widget
     const { signature } = await lastValueFrom(
-      this.http.post<{ signature: string }>('/api/pago/sign', {
+      this.http.post<{ signature: string }>(`${environment.pbUrl}/api/pago/sign`, {
         amountInCents: Math.round(plan.priceCOP * 100),
         currency: 'COP',
         reference,
@@ -211,13 +211,13 @@ export class HomeLocal implements AfterViewInit, OnDestroy {
       result?.transaction?.id ?? result?.transactionId ?? result?.id;
 
     if (txId) {
-      this.http.get(`/api/pago/tx/${encodeURIComponent(txId)}`).subscribe({
+      this.http.get(`${environment.pbUrl}/api/pago/tx/${encodeURIComponent(txId)}`).subscribe({
         next: (data: any) => { this.tx = data?.data; this.loadingTx = false; },
         error: (e) => { this.txError = e?.error?.error || 'Error consultando'; this.loadingTx = false; }
       });
     } else {
       // Fallback por referencia si el widget no entregó id
-      this.http.get(`/api/pago/tx/by-reference/${encodeURIComponent(reference)}`).subscribe({
+      this.http.get(`${environment.pbUrl}/api/pago/tx/by-reference/${encodeURIComponent(reference)}`).subscribe({
         next: (data: any) => {
           const last = data?.data?.[0];
           if (!last) { this.txError = 'No se encontró transacción'; this.loadingTx = false; return; }
@@ -406,4 +406,3 @@ export class HomeLocal implements AfterViewInit, OnDestroy {
     }
   }
 }
-

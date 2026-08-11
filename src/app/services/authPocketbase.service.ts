@@ -7,6 +7,8 @@ import { UserInterface } from '../interface/user-interface ';
 import { RecordModel } from 'pocketbase';
 import { globalUser } from '../state/global-user.signal';
 import { Router } from '@angular/router';
+import { environment } from '../environments/environment';
+import { pocketBase } from './pocketbase-client';
 /* import { RealtimeOrdersService } from './realtime-orders.service';  
 */
 
@@ -24,6 +26,17 @@ interface PocketbaseAuthResponse {
   }
 }
 
+export interface GoogleAuthResult {
+  needsRegister: boolean;
+  reason?: 'missing_type' | 'incomplete_profile';
+  user: any;
+  profile?: any | null;
+  type: UserType | null;
+  selectedType?: 'client' | 'partner';
+}
+
+export const PENDING_GOOGLE_REGISTRATION_TYPE = 'ongo_pending_registration_type';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -32,7 +45,7 @@ export class AuthPocketbaseService {
   public currentUser: any; // Usuario actual
   public profile: any = null; // Perfil actual (usuariosClient)
   complete: boolean = false;
-  private readonly PB_URL = 'https://db.ongomatch.com:8090';
+  private readonly PB_URL = environment.pbUrl;
   private readonly AUTH_ENDPOINT = `${this.PB_URL}/api/collections/users/auth-with-password`;
   private currentUserSubject = new BehaviorSubject<any>(null);
   currentUser$ = this.currentUserSubject.asObservable();
@@ -41,7 +54,7 @@ export class AuthPocketbaseService {
     public global: GlobalService,
     public router: Router
   ) {
-    this.pb = new PocketBase('https://db.ongomatch.com:8090');
+    this.pb = pocketBase;
 
     const token = localStorage.getItem('accessToken');
     const userString = localStorage.getItem('user');
@@ -61,6 +74,32 @@ export class AuthPocketbaseService {
         console.warn('No se pudo restaurar sesión local:', error);
         this.clearLocalSession();
       }
+    }
+
+    if (this.pb.authStore.isValid && this.pb.authStore.record?.id) {
+      void this.repairProfileAfterReload();
+    }
+  }
+
+  private async repairProfileAfterReload(): Promise<void> {
+    const authUser = this.pb.authStore.record;
+    const type = this.normalizeUserType(authUser?.['type']);
+    if (!authUser?.id || (type !== 'client' && type !== 'partner')) return;
+
+    try {
+      const profile = await this.findGoogleProfile(authUser.id, type);
+      if (!this.isProfileComplete(profile)) return;
+      this.persistGoogleSession(this.pb.authStore.token, authUser, type, profile);
+      console.log('[OAuth] Sesión restaurada y perfil verificado:', {
+        type,
+        userId: this.anonymizeId(authUser.id)
+      });
+    } catch (error: any) {
+      console.error('[OAuth] No se pudo reparar el perfil al recargar:', {
+        status: error?.status || 0,
+        message: error?.message || 'Error desconocido',
+        sessionValid: this.pb.authStore.isValid
+      });
     }
   }
   private readonly STORAGE = {
@@ -102,51 +141,176 @@ export class AuthPocketbaseService {
 
     return data;
   }
-  private googleOAuthInProgress = false;
-  async completeGoogleRegister(type: 'client' | 'partner', data: any) {
-    const token =
-      sessionStorage.getItem('pendingGoogleToken') ||
-      localStorage.getItem('pendingGoogleToken');
-
-    const rawUser =
-      sessionStorage.getItem('pendingGoogleUser') ||
-      localStorage.getItem('pendingGoogleUser');
-
-    if (!token || !rawUser) {
-      throw new Error('No hay sesión temporal de Google.');
+  async startGoogleOAuth(
+    source: 'login' | 'register',
+    selectedType?: 'client' | 'partner'
+  ): Promise<GoogleAuthResult> {
+    if (source === 'register' && !selectedType) {
+      throw new Error('Selecciona si deseas registrarte como cliente o partner.');
     }
 
-    const googleUser = JSON.parse(rawUser);
+    this.clearPendingGoogleSession();
+    if (source === 'register' && selectedType) {
+      sessionStorage.setItem(PENDING_GOOGLE_REGISTRATION_TYPE, selectedType);
+    }
+    console.log('[OAuth] Inicio:', {
+      pocketBaseUrl: this.pb.baseURL,
+      provider: 'google',
+      redirectUri: `${this.pb.baseURL}/api/oauth2-redirect`
+    });
+
+    try {
+      const authData = await this.pb.collection('users').authWithOAuth2({
+        provider: 'google',
+        ...(source === 'register' && selectedType
+          ? { createData: { type: selectedType } }
+          : {})
+      });
+      console.log('[OAuth] authWithOAuth2 resuelto:', {
+        userId: this.anonymizeId(authData.record?.id),
+        sessionValid: this.pb.authStore.isValid
+      });
+      console.log('[OAuth] Iniciando procesamiento posterior');
+      try {
+        const result = await this.processGoogleAuthResult(authData, source, selectedType);
+        if (!result.needsRegister) {
+          sessionStorage.removeItem(PENDING_GOOGLE_REGISTRATION_TYPE);
+          await this.navigateAfterGoogleAuth(result);
+        } else if (source === 'login') {
+          await this.router.navigateByUrl('/register');
+        }
+        return result;
+      } catch (profileError: any) {
+        if (this.pb.authStore.isValid) {
+          console.error('[OAuth] Google autenticó, pero falló el perfil:', {
+            message: profileError?.message || 'Error desconocido',
+            sessionValid: true
+          });
+          throw new Error(
+            'Google inició sesión correctamente, pero no pudimos preparar tu perfil. Tu sesión se conservó; vuelve a intentarlo.'
+          );
+        }
+        throw profileError;
+      }
+    } catch (error: any) {
+      if (source === 'register' && !this.pb.authStore.isValid) {
+        sessionStorage.removeItem(PENDING_GOOGLE_REGISTRATION_TYPE);
+      }
+      console.error('[OAuth] Fallo:', {
+        message: error?.message || 'Error desconocido',
+        status: error?.status || 0,
+        sessionValid: this.pb.authStore.isValid
+      });
+      throw error;
+    } finally {
+      console.log('[OAuth] Finalizado:', { sessionValid: this.pb.authStore.isValid });
+    }
+  }
+
+  private anonymizeId(id?: string): string {
+    if (!id) return 'sin-id';
+    return id.length <= 6 ? `${id.slice(0, 2)}…` : `${id.slice(0, 3)}…${id.slice(-3)}`;
+  }
+
+  private async navigateAfterGoogleAuth(result: GoogleAuthResult): Promise<void> {
+    if (result.type === 'admin') {
+      await this.router.navigateByUrl('/admin');
+      console.log('[OAuth] Navegación final:', { destination: 'admin' });
+      return;
+    }
+
+    await this.global.loadProfile();
+    if (result.type === 'partner') {
+      await this.global.initPartnersRealtime();
+      await this.router.navigateByUrl('/home-local');
+      console.log('[OAuth] Navegación final:', { destination: 'home-local' });
+      return;
+    }
+
+    await this.global.initClientesRealtime();
+    await this.router.navigateByUrl('/maps');
+    console.log('[OAuth] Navegación final:', { destination: 'maps' });
+  }
+
+  clearPendingGoogleSession(): void {
+    sessionStorage.removeItem('pendingGoogleToken');
+    sessionStorage.removeItem('pendingGoogleUser');
+    localStorage.removeItem('pendingGoogleToken');
+    localStorage.removeItem('pendingGoogleUser');
+  }
+
+  clearPendingGoogleRegistrationType(): void {
+    sessionStorage.removeItem(PENDING_GOOGLE_REGISTRATION_TYPE);
+  }
+
+  private persistGoogleSession(token: string, record: any, type: UserType, profile: any | null): any {
+    const finalUser = { ...record, type };
+    this.pb.authStore.save(token, record);
+    this.global.pb.authStore.save(token, record);
+    this.currentUser = finalUser;
+    this.profile = profile;
+    this.currentUserSubject.next(finalUser);
+
+    localStorage.setItem('accessToken', token);
+    localStorage.setItem('userId', record.id);
+    localStorage.setItem('user', JSON.stringify(finalUser));
+    localStorage.setItem('record', JSON.stringify(record));
+    localStorage.setItem('type', type);
+    localStorage.setItem('isLoggedin', 'true');
+
+    if (type === 'partner' && profile) {
+      localStorage.setItem('profilePartner', JSON.stringify(profile));
+      localStorage.removeItem('profile');
+    } else if (type === 'client' && profile) {
+      localStorage.setItem('profile', JSON.stringify(profile));
+      localStorage.removeItem('profilePartner');
+    }
+
+    return finalUser;
+  }
+
+  async completeGoogleRegister(type: 'client' | 'partner', data: any) {
+    const token = this.pb.authStore.token;
+    const googleUser = this.pb.authStore.record;
+
+    if (!this.pb.authStore.isValid || !token || !googleUser?.id) {
+      throw new Error('La sesión de Google ya no es válida. Inicia sesión nuevamente.');
+    }
+
+    const existingType = this.normalizeUserType(googleUser?.['type']);
+    if (existingType && existingType !== type) {
+      throw new Error(
+        existingType === 'client'
+          ? 'Esta cuenta ya está vinculada como cliente.'
+          : 'Esta cuenta ya está vinculada como partner.'
+      );
+    }
 
     this.pb.authStore.save(token, googleUser);
 
     const name =
       data.name ||
       data.venueName ||
-      googleUser.name ||
-      googleUser.email?.split('@')[0] ||
+      googleUser['name'] ||
+      googleUser['email']?.split('@')[0] ||
       'Usuario';
 
-    const email = googleUser.email;
+    const email = googleUser['email'];
 
     if (!email) {
       throw new Error('Google no devolvió un correo válido.');
     }
 
-    const updatedUser = await this.pb.collection('users').update(googleUser.id, {
-      email,
-      type,
-      name,
-      username: name
-    });
+    const userUpdate: any = { type, name };
+    if (!googleUser['username']) userUpdate.username = this.makeSafeUsername(name);
+
+    const updatedUser = await this.pb.collection('users').update(googleUser.id, userUpdate);
 
     const profileData = {
       ...data,
       userId: googleUser.id,
       email,
-      name,
-      profileComplete: true,
-      status: 'pending',
+      profileComplete: true
     };
 
     const collection = type === 'partner'
@@ -156,45 +320,26 @@ export class AuthPocketbaseService {
     let profile: any;
 
     try {
+      console.log('[OAuth] Buscando perfil para completar registro:', { type });
       const existing = await this.pb
         .collection(collection)
         .getFirstListItem(`userId="${googleUser.id}"`);
 
+      console.log('[OAuth] Actualizando perfil existente:', { type });
       profile = await this.pb.collection(collection).update(existing.id, profileData);
 
     } catch (error: any) {
       if (error?.status === 404) {
+        console.log('[OAuth] Creando perfil faltante:', { type });
         profile = await this.pb.collection(collection).create(profileData);
       } else {
         throw error;
       }
     }
 
-    const finalUser = {
-      ...updatedUser,
-      email,
-      name,
-      type
-    };
-
-    this.currentUser = finalUser;
-
-    localStorage.setItem('accessToken', token);
-    localStorage.setItem('userId', googleUser.id);
-    localStorage.setItem('user', JSON.stringify(finalUser));
-    localStorage.setItem('record', JSON.stringify(updatedUser));
-    localStorage.setItem('type', JSON.stringify(type));
-    localStorage.setItem('isLoggedin', 'true');
-    localStorage.setItem(
-      type === 'partner' ? 'profilePartner' : 'profile',
-      JSON.stringify(profile)
-    );
-
-    sessionStorage.removeItem('pendingGoogleToken');
-    sessionStorage.removeItem('pendingGoogleUser');
-    localStorage.removeItem('pendingGoogleToken');
-    localStorage.removeItem('pendingGoogleUser');
-    return profile;
+    const finalUser = this.persistGoogleSession(token, updatedUser, type, profile);
+    this.clearPendingGoogleRegistrationType();
+    return { profile, user: finalUser, record: updatedUser, type, token };
   }
   /** Obtiene el perfil extendido según el type del user */
   async fetchProfileByType(userId: string, type: UserType, token?: string): Promise<any | null> {
@@ -768,154 +913,48 @@ export class AuthPocketbaseService {
       throw error;
     }
   }
- /*  async loginWithGoogle(): Promise<any> {
-    const authData = await this.pb.collection('users').authWithOAuth2({
-      provider: 'google',
-    });
-
+  async processGoogleAuthResult(
+    authData: any,
+    source: 'login' | 'register',
+    selectedType?: 'client' | 'partner'
+  ): Promise<GoogleAuthResult> {
+    console.log('[OAuth] Procesando resultado de Google');
     const record = authData.record;
     const token = authData.token;
     const meta: any = authData.meta || {};
 
-    if (!record?.id || !token) {
-      throw new Error('Google autenticó, pero no devolvió usuario válido.');
+    if (!token || !record?.id || !record?.email) {
+      throw new Error('Google no devolvió una cuenta válida con correo electrónico.');
     }
 
-    const rawType = record['type'];
-    const type = Array.isArray(rawType) ? rawType[0] : rawType;
-
-    const googleEmail =
-      meta?.email ||
-      meta?.rawUser?.email ||
-      record['email'] ||
-      '';
-
-    const googleName =
-      meta?.name ||
-      meta?.rawUser?.name ||
-      record['name'] ||
-      record['username'] ||
-      googleEmail?.split('@')[0] ||
-      'Usuario';
-
-    const cleanUser = {
-      id: record.id,
-      email: googleEmail,
-      name: googleName,
-      username: record['username'],
-      avatarUrl: meta?.avatarUrl || record['avatarUrl'] || '',
-      type: type || null,
-    };
-
-    localStorage.setItem('pendingGoogleToken', token);
-    localStorage.setItem('pendingGoogleUser', JSON.stringify(cleanUser));
+    let type = this.normalizeUserType(record['type']);
+    if (type && type !== 'admin' && type !== 'partner' && type !== 'client') {
+      throw new Error('La cuenta de Google tiene un tipo de usuario no válido.');
+    }
 
     if (!type) {
-      this.pb.authStore.clear();
-
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('userId');
-      localStorage.removeItem('user');
-      localStorage.removeItem('record');
-      localStorage.removeItem('type');
-      localStorage.removeItem('isLoggedin');
-
-      return {
-        needsRegister: true,
-        reason: 'missing_type',
-        user: cleanUser
-      };
-    }
-
-    const profileStatus = await this.getRegistrationStatus({
-      ...record,
-      type
-    });
-
-    if (!profileStatus.profile) {
-      this.pb.authStore.clear();
-
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('userId');
-      localStorage.removeItem('user');
-      localStorage.removeItem('record');
-      localStorage.removeItem('type');
-      localStorage.removeItem('isLoggedin');
-
-      return {
-        needsRegister: true,
-        reason: 'missing_profile',
-        user: cleanUser
-      };
-    }
-
-    const finalUser = {
-      ...record,
-      email: googleEmail,
-      name: googleName,
-      type
-    };
-
-    this.pb.authStore.save(token, record);
-    this.currentUser = finalUser;
-
-    localStorage.setItem('accessToken', token);
-    localStorage.setItem('userId', record.id);
-    localStorage.setItem('user', JSON.stringify(finalUser));
-    localStorage.setItem('record', JSON.stringify(record));
-    localStorage.setItem('type', JSON.stringify(type));
-    localStorage.setItem('isLoggedin', 'true');
-
-    return {
-      needsRegister: false,
-      user: finalUser,
-      profile: profileStatus.profile,
-      type
-    };
-  } */
-  async loginWithGoogle(): Promise<any> {
-  if (this.googleOAuthInProgress) {
-    throw new Error(
-      'Ya hay una autenticación con Google en curso.'
-    );
-  }
-
-  this.googleOAuthInProgress = true;
-
-  try {
-    /*
-     * Cliente independiente para evitar que las suscripciones
-     * realtime de chats, notificaciones o perfiles interfieran
-     * con la conexión temporal utilizada por OAuth.
-     */
-    const oauthPb = new PocketBase(this.PB_URL);
-
-    oauthPb.autoCancellation(false);
-
-    const authData = await oauthPb
-      .collection('users')
-      .authWithOAuth2({
-        provider: 'google'
-      });
-
-    const record = authData.record;
-    const token = authData.token;
-    const meta: any = authData.meta || {};
-
-    if (!record?.id || !token) {
+      if (!selectedType) {
+        throw new Error('Esta cuenta todavía no tiene tipo de perfil. Inicia el registro como cliente o partner.');
+      }
+      type = selectedType;
+      console.log('[OAuth] Asignando tipo autorizado:', { type });
+      const updatedRecord = await this.pb.collection('users').update(record.id, { type });
+      authData.record = updatedRecord;
+      this.pb.authStore.save(token, updatedRecord);
+    } else if (selectedType && type !== selectedType) {
       throw new Error(
-        'Google autenticó, pero PocketBase no devolvió una sesión válida.'
+        type === 'client'
+          ? 'Esta cuenta ya está registrada como cliente.'
+          : type === 'partner'
+            ? 'Esta cuenta ya está registrada como partner.'
+            : 'La cuenta administrativa no puede cambiar de tipo desde el registro.'
       );
     }
 
-    const type =
-      this.normalizeUserType(record['type']);
-
     const googleEmail =
       meta?.email ||
       meta?.rawUser?.email ||
-      record['email'] ||
-      '';
+      record['email'];
 
     const googleName =
       meta?.name ||
@@ -925,9 +964,14 @@ export class AuthPocketbaseService {
       googleEmail.split('@')[0] ||
       'Usuario';
 
+    const authUser = this.pb.authStore.record;
+    if (!this.pb.authStore.isValid || !authUser?.id) {
+      throw new Error('PocketBase no conservó una sesión válida después de Google.');
+    }
+
     const cleanUser = {
-      ...record,
-      id: record.id,
+      ...authUser,
+      id: authUser.id,
       email: googleEmail,
       name: googleName,
       username: record['username'] || '',
@@ -938,151 +982,74 @@ export class AuthPocketbaseService {
       type
     };
 
-    /*
-     * Copiar la sesión obtenida por el cliente temporal
-     * hacia los clientes principales de la aplicación.
-     */
-    this.pb.authStore.save(token, record);
-    this.global.pb.authStore.save(token, record);
+    this.global.pb.authStore.save(token, authUser);
 
-    localStorage.setItem(
-      'pendingGoogleToken',
-      token
-    );
+    const profile = type === 'admin'
+      ? null
+      : await this.findGoogleProfile(authUser.id, type);
 
-    localStorage.setItem(
-      'pendingGoogleUser',
-      JSON.stringify(cleanUser)
-    );
-
-    /*
-     * Usuario nuevo: todavía no tiene tipo.
-     */
-    if (!type) {
-      return {
-        needsRegister: true,
-        reason: 'missing_type',
-        user: cleanUser,
-        type: null
-      };
-    }
-
-    const registrationStatus =
-      await this.getRegistrationStatus({
-        ...record,
-        type
-      });
-
-    /*
-     * Tiene tipo, pero no terminó su perfil.
-     */
-    if (
-      !registrationStatus.profile ||
-      !registrationStatus.completed
-    ) {
-      return {
-        needsRegister: true,
-        reason: 'incomplete_profile',
-        user: cleanUser,
-        profile: registrationStatus.profile,
-        type
-      };
-    }
-
-    /*
-     * Cuenta completamente registrada.
-     */
     const finalUser = {
-      ...record,
+      ...authUser,
       email: googleEmail,
       name: googleName,
       type
     };
 
-    this.currentUser = finalUser;
+    this.persistGoogleSession(token, authUser, type, profile);
 
-    localStorage.setItem(
-      'accessToken',
-      token
-    );
-
-    localStorage.setItem(
-      'userId',
-      record.id
-    );
-
-    localStorage.setItem(
-      'user',
-      JSON.stringify(finalUser)
-    );
-
-    localStorage.setItem(
-      'record',
-      JSON.stringify(record)
-    );
-
-    localStorage.setItem(
-      'type',
-      type
-    );
-
-    localStorage.setItem(
-      'isLoggedin',
-      'true'
-    );
-
-    if (type === 'partner') {
-      localStorage.setItem(
-        'profilePartner',
-        JSON.stringify(
-          registrationStatus.profile
-        )
-      );
-
-      localStorage.removeItem('profile');
+    const needsRegister = type !== 'admin' && !this.isProfileComplete(profile);
+    if (needsRegister) {
+      sessionStorage.setItem(PENDING_GOOGLE_REGISTRATION_TYPE, type);
     }
-
-    if (type === 'client') {
-      localStorage.setItem(
-        'profile',
-        JSON.stringify(
-          registrationStatus.profile
-        )
-      );
-
-      localStorage.removeItem(
-        'profilePartner'
-      );
-    }
-
-    localStorage.removeItem(
-      'pendingGoogleToken'
-    );
-
-    localStorage.removeItem(
-      'pendingGoogleUser'
-    );
-
-    sessionStorage.removeItem(
-      'pendingGoogleToken'
-    );
-
-    sessionStorage.removeItem(
-      'pendingGoogleUser'
-    );
-
-    this.currentUserSubject.next(finalUser);
 
     return {
-      needsRegister: false,
-      user: finalUser,
-      profile: registrationStatus.profile,
-      type
+      needsRegister,
+      user: cleanUser,
+      profile,
+      type,
+      selectedType: type === 'client' || type === 'partner' ? type : undefined
     };
-  } finally {
-    this.googleOAuthInProgress = false;
   }
-}
+
+  async findGoogleProfile(userId: string, type: 'client' | 'partner'): Promise<any | null> {
+    const collection = type === 'partner' ? 'usuariosPartner' : 'usuariosClient';
+    const filter = this.pb.filter('userId = {:userId}', { userId });
+
+    try {
+      console.log('[OAuth] Buscando perfil relacionado:', {
+        collection,
+        userId: this.anonymizeId(userId)
+      });
+      const existingProfile = await this.pb.collection(collection).getFirstListItem(filter);
+      console.log('[OAuth] Perfil existente recuperado:', { collection });
+      return existingProfile;
+    } catch (error: any) {
+      if (error?.status === 404) return null;
+      this.logProfileError('buscar', collection, error, ['userId']);
+      throw error;
+    }
+  }
+
+  isProfileComplete(profile: any): boolean {
+    return Boolean(profile?.id && profile?.profileComplete === true);
+  }
+
+  private logProfileError(
+    operation: string,
+    collection: string,
+    error: any,
+    fields: string[]
+  ): void {
+    console.error('[OAuth] Error de perfil:', {
+      operation,
+      collection,
+      status: error?.status || 0,
+      message: error?.response?.message || error?.message || 'Error desconocido',
+      data: error?.response?.data || {},
+      fields
+    });
+  }
+
   async getRegistrationStatus(user: any): Promise<{
     completed: boolean;
     type: 'client' | 'partner' | 'admin' | null;
@@ -1103,6 +1070,10 @@ export class AuthPocketbaseService {
       : 'usuariosClient';
 
     try {
+      console.log('[OAuth] Buscando perfil:', {
+        type,
+        userId: this.anonymizeId(user?.id)
+      });
       const profile = await this.pb
         .collection(collection)
         .getFirstListItem(`userId="${user.id}"`);
@@ -1131,7 +1102,11 @@ export class AuthPocketbaseService {
         profile
       };
 
-    } catch {
+    } catch (error: any) {
+      if (error?.status !== 404) {
+        console.error('No se pudo consultar el estado del perfil Google:', error);
+        throw error;
+      }
       return {
         completed: false,
         type,

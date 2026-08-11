@@ -5,13 +5,14 @@ import { AuthPocketbaseService } from '../../services/authPocketbase.service';
 import { RealtimeClientesService } from '../../services/realtime-clientes.service';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AfterViewInit, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import PocketBase from 'pocketbase';
 import * as bootstrap from 'bootstrap';
 import 'swiper/css';
 import Swal from 'sweetalert2';
 import { Subscription } from 'rxjs';
 import Swiper from 'swiper';
 import { Pagination } from 'swiper/modules';
+import { environment } from '../../environments/environment';
+import { pocketBase } from '../../services/pocketbase-client';
 import 'swiper/css/pagination';
 import { RouterModule } from '@angular/router';
 import { WompiService } from '../../services/wompi.service';
@@ -104,7 +105,7 @@ export class Profile implements OnInit, AfterViewInit, OnDestroy {
   selectedPaymentCountry: 'CO' | 'VE' = 'CO';
   selectedPlan: any = null;
   paymentProofFile: File | null = null;
-  private pb = new PocketBase('https://db.ongomatch.com:8090');
+  private pb = pocketBase;
   isEditProfile: boolean = false;
   newAvatar: File | null = null;
   avatar: File | null = null;
@@ -197,7 +198,7 @@ export class Profile implements OnInit, AfterViewInit, OnDestroy {
       }
 
       const intent = await firstValueFrom(
-        this.http.post<any>('https://db.ongomatch.com:5055/client/subscription-intent', {
+        this.http.post<any>(`${environment.pbUrl}/api/client/subscription-intent`, {
           userId: user.id,
           clientId: clientRecord.id,
           planId: plan.id,
@@ -220,7 +221,7 @@ export class Profile implements OnInit, AfterViewInit, OnDestroy {
       const transaction = result?.transaction;
 
       await firstValueFrom(
-        this.http.post<any>('https://db.ongomatch.com:5055/client/confirm-subscription', {
+        this.http.post<any>(`${environment.pbUrl}/api/client/confirm-subscription`, {
           reference: intent.reference,
           status: transaction?.status || 'UNKNOWN',
           transactionId: transaction?.id || '',
@@ -301,7 +302,7 @@ export class Profile implements OnInit, AfterViewInit, OnDestroy {
       formData.append('planId', this.selectedPlan.id);
       formData.append('planName', this.selectedPlan.name || '');
       formData.append('field', 'comprobante_pago_venezuela');
-      formData.append('amountUSD', String(Number(this.selectedPlan.PriceUSD || 0)));
+      formData.append('amountUSD', String(Number(this.selectedPlan.priceUSD ?? this.selectedPlan.legacyPriceUSD ?? this.selectedPlan.PriceUSD ?? 0)));
       formData.append('amountBs', '0');
       formData.append('bcvRate', '0');
       formData.append('country', 'VE');

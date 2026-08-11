@@ -2,6 +2,7 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import PocketBase from 'pocketbase';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { pocketBase } from './pocketbase-client';
 
 export interface PlanningPartner {
   id?: string;
@@ -11,7 +12,8 @@ export interface PlanningPartner {
   description?: string;
   items?: string[];
   priceCOP?: number;
-  PriceUSD?: number;
+  priceUSD?: number;
+  legacyPriceUSD?: number;
 }
 
 
@@ -28,17 +30,12 @@ export class RealtimePlanningPartnerService implements OnDestroy {
     this.planningPartnerSubject.asObservable();
 
   constructor() {
-    this.pb = new PocketBase('https://db.ongomatch.com:8090');
+    this.pb = pocketBase;
     this.subscribeToPromos();
   }
 
   private async subscribeToPromos() {
     try {
-      // (Optional) Authentication
-      await this.pb
-        .collection('users')
-        .authWithPassword('admin@ongomatch.com', 'adminOngo');
-
       // Subscribe to changes in any record of the 'professionals' collection
       this.pb.collection('planningPartners').subscribe('*', (e : any) => {
         this.handleRealtimeEvent(e);
@@ -87,7 +84,7 @@ export class RealtimePlanningPartnerService implements OnDestroy {
   })(),
 
   priceCOP: Number(record.priceCOP || 0),
-  PriceUSD: Number(record.PriceUSD || 0),
+  priceUSD: Number(record.priceUSD ?? record.legacyPriceUSD ?? record.PriceUSD ?? 0),
 })) as PlanningPartner[];
 
       this.planningPartnerSubject.next(planningPartner);

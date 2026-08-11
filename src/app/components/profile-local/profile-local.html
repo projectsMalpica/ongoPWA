@@ -1203,7 +1203,7 @@
 
         <p>
           Valor:
-          <strong>{{ selectedPlan?.PriceUSD | currency:'USD':'symbol':'1.0-0' }}</strong>
+          <strong>{{ (selectedPlan?.priceUSD ?? selectedPlan?.legacyPriceUSD ?? selectedPlan?.PriceUSD ?? 0) | currency:'USD':'symbol':'1.0-0' }}</strong>
         </p>
 
         <div class="manual-payment-box">

@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import PocketBase from 'pocketbase';
 import Swal from 'sweetalert2';
+import { pocketBase } from '../../services/pocketbase-client';
 
 @Component({
   selector: 'app-admin',
@@ -12,7 +12,7 @@ import Swal from 'sweetalert2';
   styleUrl: './admin.scss',
 })
 export class Admin implements OnInit {
-  private pb = new PocketBase('https://db.ongomatch.com:8090');
+  private pb = pocketBase;
 
   hotZones: any[] = [];
   loadingHotZones = false;

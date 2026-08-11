@@ -54,7 +54,7 @@ export class Detailpromo implements OnInit {
 
     try {
       this.promo = await this.pb.collection('promos').getOne(id, {
-        expand: 'partner,userId',
+        expand: 'partnerId,userId',
         requestKey: null,
       });
 

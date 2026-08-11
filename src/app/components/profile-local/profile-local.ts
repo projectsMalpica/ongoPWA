@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import PocketBase from 'pocketbase';
 import * as bootstrap from 'bootstrap';
 import * as mapboxgl from 'mapbox-gl';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
@@ -10,6 +9,7 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, Subscription } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { pocketBase } from '../../services/pocketbase-client';
 import { GlobalService } from '../../services/global.service';
 import { AuthPocketbaseService } from '../../services/authPocketbase.service';
 import { ModalService } from '../../services/modal.service';
@@ -120,7 +120,7 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
   filteredServices: { value: string; label: string }[] = [...this.servicesPartner];
   promoImageFile: File | null = null;
   successPromoToast = false
-  private pb = new PocketBase('https://db.ongomatch.com:8090');
+  private pb = pocketBase;
   promosByPartner: any[] = [];
   seleccionMarker!: mapboxgl.Marker;
   selectedMarker!: mapboxgl.Marker;
@@ -223,7 +223,7 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
       formData.append('planId', this.selectedPlan.id);
       formData.append('planName', this.selectedPlan.name || '');
       formData.append('field', 'comprobante_pago_venezuela');
-      formData.append('amountUSD', String(Number(this.selectedPlan.PriceUSD || 0)));
+      formData.append('amountUSD', String(Number(this.selectedPlan.priceUSD ?? this.selectedPlan.legacyPriceUSD ?? this.selectedPlan.PriceUSD ?? 0)));
       formData.append('amountBs', '0');
       formData.append('bcvRate', '0');
       formData.append('country', 'VE');
@@ -1936,7 +1936,7 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
       }
 
       const intent = await firstValueFrom(
-        this.http.post<any>('https://db.ongomatch.com:5055/partner/subscription-intent', {
+        this.http.post<any>(`${environment.pbUrl}/api/partner/subscription-intent`, {
           userId: user.id,
           partnerId: partnerRecord.id,
           planId: plan.id,
@@ -1959,7 +1959,7 @@ export class ProfileLocal implements OnInit, AfterViewInit, OnDestroy {
       const transaction = result?.transaction;
 
       await firstValueFrom(
-        this.http.post<any>('https://db.ongomatch.com:5055/partner/confirm-subscription', {
+        this.http.post<any>(`${environment.pbUrl}/api/partner/confirm-subscription`, {
           reference: intent.reference,
           status: transaction?.status || 'UNKNOWN',
           transactionId: transaction?.id || '',

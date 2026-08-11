@@ -182,7 +182,8 @@ async loadPromo(id: string): Promise<void> {
       console.log('PROMO ORDER DATA:', {
         promoId: this.promo.id,
         partnerId,
-        buyerUserId: buyerClientId,
+        buyerUserId: user.id,
+        buyerClientId,
         authUserId: user.id,
         buyerName: user?.name || user?.username || '',
         buyerEmail: user?.email || '',
@@ -195,7 +196,8 @@ async loadPromo(id: string): Promise<void> {
       const order = await this.pb.collection('promo_orders').create({
         promoId: this.promo.id,
         partnerId,
-        buyerUserId: buyerClientId,
+        buyerUserId: user.id,
+        buyerClientId,
         buyerName: user?.name || user?.username || '',
         buyerEmail: user?.email || '',
         amount,

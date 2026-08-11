@@ -1,10 +1,11 @@
 import { Component, OnDestroy, AfterViewInit, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import * as mapboxgl from 'mapbox-gl';
-import PocketBase, { RecordModel } from 'pocketbase';
+import { RecordModel } from 'pocketbase';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import { CommonModule } from '@angular/common';
 import { GlobalService } from '../../services/global.service';
 import { environment } from '../../environments/environment';
+import { pocketBase } from '../../services/pocketbase-client';
 import { Router } from '@angular/router';
 @Component({
   selector: 'app-maps',
@@ -20,7 +21,7 @@ export class Maps implements AfterViewInit, OnDestroy {
 
   private map!: mapboxgl.Map;
 
-  private pb = new PocketBase('https://db.ongomatch.com:8090');
+  private pb = pocketBase;
 
   private markers: Map<string, mapboxgl.Marker> = new Map();
 

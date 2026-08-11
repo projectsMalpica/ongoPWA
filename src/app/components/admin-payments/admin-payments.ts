@@ -1,7 +1,7 @@
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
-import PocketBase from 'pocketbase';
 import Swal from 'sweetalert2';
+import { pocketBase } from '../../services/pocketbase-client';
 
 type PaymentTarget = 'client' | 'partner' | 'wallet';
 type PaymentStatus = 'pending' | 'approved' | 'rejected';
@@ -14,7 +14,7 @@ type PaymentStatus = 'pending' | 'approved' | 'rejected';
   styleUrl: './admin-payments.scss',
 })
 export class AdminPayments implements OnInit {
-  private pb = new PocketBase('https://db.ongomatch.com:8090');
+  private pb = pocketBase;
 
   proofs: any[] = [];
   loading = false;
@@ -189,40 +189,17 @@ export class AdminPayments implements OnInit {
   }
 
   private async approveWalletProof(proof: any): Promise<void> {
-    const wallet = await this.pb.collection('wallet').getOne(proof.walletId, {
-      requestKey: null
-    });
-
-    const amount = Number(proof.amountPaid || proof.price || 0);
+    const amount = Number(proof.amount || 0);
 
     if (amount <= 0) {
       throw new Error('El comprobante no tiene un monto válido.');
     }
 
-    const currentBalance = Number(wallet['balance'] || 0);
-    const newBalance = currentBalance + amount;
-
-    await this.pb.collection('wallet').update(proof.walletId, {
-      balance: newBalance
-    }, { requestKey: null });
-
-    await this.pb.collection('wallet_transactions').create({
-      walletId: proof.walletId,
-      userId: proof.userId,
-      type: 'topup',
-      description: `Recarga manual Binance - ${proof.packageName || 'Wallet'}`,
-      amount,
-      direction: 'credit',
-      status: 'completed',
-      currency: proof.currency || 'USD',
-      paymentMethod: 'binance',
-      reference: proof.id
-    }, { requestKey: null });
-
-    await this.pb.collection('wallet_recharge_proofs').update(proof.id, {
-      status: 'approved',
-      validatedAt: new Date().toISOString()
-    }, { requestKey: null });
+    await this.pb.send('/api/ongo/approve-wallet-recharge', {
+      method: 'POST',
+      body: { proofId: proof.id },
+      requestKey: null
+    });
 
     await this.loadProofs();
 

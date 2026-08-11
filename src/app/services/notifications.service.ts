@@ -30,7 +30,7 @@ export class PushService {
       return;
     }
 
-    const app = initializeApp(environment.firebase);
+    const app = initializeApp(environment.firebaseConfig);
     this.messaging = getMessaging(app);
 
     const permission = await Notification.requestPermission();
@@ -45,7 +45,7 @@ export class PushService {
     );
 
     const token = await getToken(this.messaging, {
-      vapidKey: environment.firebase.vapidKey,
+      vapidKey: environment.firebaseVapidKey,
       serviceWorkerRegistration: registration
     });
 

@@ -334,8 +334,8 @@ async loadManualProductPayments(authUserId: string): Promise<OrderItem[]> {
       id: item.id,
       type: 'ticket',
       title: item.partnerName || 'Entrada / ticket',
-      description: item.tiketDate
-        ? `Entrada para el ${this.formatDate(item.tiketDate)}`
+      description: (item.ticketDate ?? item.tiketDate)
+        ? `Entrada para el ${this.formatDate(item.ticketDate ?? item.tiketDate)}`
         : 'Entrada comprada.',
       amount: Number(item.amount || 0),
       status: item.status,

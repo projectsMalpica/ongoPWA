@@ -2,6 +2,7 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import PocketBase from 'pocketbase';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { pocketBase } from './pocketbase-client';
 
 export interface Service {
   name: string;
@@ -31,17 +32,12 @@ export class RealtimePromosService implements OnDestroy {
     this.promosSubject.asObservable();
 
   constructor() {
-    this.pb = new PocketBase('https://db.ongomatch.com:8090');
+    this.pb = pocketBase;
     this.subscribeToPromos();
   }
 
   private async subscribeToPromos() {
     try {
-      // (Optional) Authentication
-      await this.pb
-        .collection('users')
-        .authWithPassword('admin@ongomatch.com', 'adminOngo');
-
       // Subscribe to changes in any record of the 'professionals' collection
       this.pb.collection('promos').subscribe('*', (e : any) => {
         this.handleRealtimeEvent(e);

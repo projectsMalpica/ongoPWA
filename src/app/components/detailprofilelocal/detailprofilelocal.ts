@@ -1,7 +1,6 @@
 import { Component, ChangeDetectorRef } from '@angular/core';
 import { GlobalService } from '../../services/global.service';
 import { CommonModule } from '@angular/common';
-import PocketBase from 'pocketbase';
 import { AuthPocketbaseService } from '../../services/authPocketbase.service';
 import { WompiService } from '../../services/wompi.service';
 import { FormsModule } from '@angular/forms';
@@ -9,6 +8,7 @@ import { ToastService } from '../../services/ToastService.service';
 import { Router } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { environment } from '../../environments/environment';
+import { pocketBase } from '../../services/pocketbase-client';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -19,7 +19,7 @@ import Swal from 'sweetalert2';
   styleUrl: './detailprofilelocal.scss',
 })
 export class Detailprofilelocal {
-  private pb = new PocketBase('https://db.ongomatch.com:8090');
+  private pb = pocketBase;
   isReservingTable = false;
   avatarUrl: string = '';
   partner: any = null;
@@ -887,85 +887,28 @@ isManualPaymentTicket(): boolean {
 
       const buyerUserId = this.auth.currentUser?.id;
       const product = this.selectedGiftProduct;
-      const amount = Number(product.price || 0);
       const receiverUserId = this.selectedReceiverUserId || buyerUserId;
-      const isGift = receiverUserId !== buyerUserId;
-      const partnerId = product.partnerId || this.partner.id;
-      const redeemCode = this.generateRedeemCode('GIFT');
-      const redeemQr = `${window.location.origin}/redeem/${redeemCode}`;
       if (!buyerUserId) {
         alert('Debes iniciar sesión.');
         return;
       }
 
-      if (!this.currentWallet) {
-        await this.loadWallet();
-      }
+      const purchase = await this.pb.send('/api/ongo/purchase-product', {
+        method: 'POST',
+        body: {
+          productId: product.id,
+          receiverUserId,
+          message: this.giftMessage || '',
+          idempotencyKey: `wallet_product_${buyerUserId}_${product.id}_${Date.now()}`
+        },
+        requestKey: null
+      });
 
-      const balanceBefore = Number(this.currentWallet.balance || 0);
-
-      if (balanceBefore < amount) {
-        const result = await Swal.fire({
-          icon: 'warning',
-          title: 'Saldo insuficiente',
-          text: 'Recarga tu wallet para poder completar esta compra.',
-          confirmButtonText: 'Recargar wallet',
-          showCancelButton: true,
-          cancelButtonText: 'Cancelar'
-        });
-
-        if (result.isConfirmed) {
-          this.closeGiftModal();
-          this.router.navigate(['/wallet']);
-        }
-
-        return;
-      }
-
-      const balanceAfter = balanceBefore - amount;
-
-      await this.pb.collection('wallet').update(this.currentWallet.id, {
-        balance: balanceAfter
-      }, { requestKey: null });
-
-
-      const order = await this.pb.collection('product_orders').create({
-        buyerUserId,
-        receiverUserId,
-        partnerId,
-        productId: product.id,
-        productName: product.name,
-        productImage: product.image || '',
-        amount,
-        paymentMethod: 'wallet',
-        status: 'paid',
-        orderStatus: 'pending_redeem',
-        orderType: isGift ? 'gift' : 'self_purchase',
-        redeemCode,
-        redeemQr,
-        referenceId: `wallet_gift_${product.id}_${Date.now()}`,
-        message: this.giftMessage || ''
-      }, { requestKey: null });
-
-      await this.pb.collection('wallet_transactions').create({
-        walletId: this.currentWallet.id,
-        userId: buyerUserId,
-        type: 'purchase',
-        amount,
-        direction: 'debit',
-        balanceBefore,
-        balanceAfter,
-        referenceType: 'product_order',
-        referenceId: order.id,
-        status: 'completed',
-        description: `Regalo enviado: ${product.name}`
-      }, { requestKey: null });
-
-      this.walletBalance = balanceAfter;
-      this.currentWallet.balance = balanceAfter;
-
-      this.lastRedeemCode = redeemCode;
-      this.lastRedeemQr = redeemQr;
+      await this.loadWallet();
+      this.lastRedeemCode = purchase.redeemCode || '';
+      this.lastRedeemQr = this.lastRedeemCode
+        ? `${window.location.origin}/redeem/${this.lastRedeemCode}`
+        : '';
       this.giftSentSuccess = true;
 
       this.toastService.show('Regalo enviado correctamente 🎁', 'success');

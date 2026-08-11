@@ -128,10 +128,10 @@ if(
 		var logoSrc = $(".app-logo").attr("src");
         if(jQuery('body').hasClass('theme-dark')){
            setCookie('themeVersion_value', 'theme-dark'); 
-		   $(".app-logo").attr("src", logoSrc.replace('light','dark'))
+           if (logoSrc) $(".app-logo").attr("src", logoSrc.replace('light','dark'))
         }else{
            setCookie('themeVersion_value', '');  
-		   $(".app-logo").attr("src", logoSrc.replace('dark','light'))
+           if (logoSrc) $(".app-logo").attr("src", logoSrc.replace('dark','light'))
         }
         
     });
@@ -264,9 +264,9 @@ function setThemePanel(){
                 jQuery('.theme-btn').addClass('active');
 				var logoSrc = $(".app-logo").attr("src");
 				if(themeOptionItemValue === "theme-dark"){
-					$(".app-logo").attr("src", logoSrc.replace('light','dark'))
+					if (logoSrc) $(".app-logo").attr("src", logoSrc.replace('light','dark'))
 				}else{
-					$(".app-logo").attr("src", logoSrc.replace('dark','light'))
+					if (logoSrc) $(".app-logo").attr("src", logoSrc.replace('dark','light'))
 				}
 				
 			}else if(themeOptionItem == 'themeDirection'){
@@ -274,9 +274,9 @@ function setThemePanel(){
                 jQuery('.theme-btn').addClass('active');
 				var logoSrc = $(".app-logo").attr("src");
 				if(themeOptionItemValue === "theme-dark"){
-					$(".app-logo").attr("src", logoSrc.replace('light','dark'))
+					if (logoSrc) $(".app-logo").attr("src", logoSrc.replace('light','dark'))
 				}else{
-					$(".app-logo").attr("src", logoSrc.replace('dark','light'))
+					if (logoSrc) $(".app-logo").attr("src", logoSrc.replace('dark','light'))
 				} */
 				
 				//console.log(themeOptionItemValue);
