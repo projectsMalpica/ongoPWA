@@ -173,10 +173,8 @@ export class AuthPocketbaseService {
       console.log('[OAuth] Iniciando procesamiento posterior');
       try {
         const result = await this.processGoogleAuthResult(authData, source, selectedType);
-        if (!result.needsRegister) {
-          sessionStorage.removeItem(PENDING_GOOGLE_REGISTRATION_TYPE);
-          await this.navigateAfterGoogleAuth(result);
-        } else if (source === 'login') {
+        const navigated = await this.resolveAuthenticatedUserDestination(result);
+        if (!navigated && source === 'login') {
           await this.router.navigateByUrl('/register');
         }
         return result;
@@ -212,24 +210,29 @@ export class AuthPocketbaseService {
     return id.length <= 6 ? `${id.slice(0, 2)}…` : `${id.slice(0, 3)}…${id.slice(-3)}`;
   }
 
-  private async navigateAfterGoogleAuth(result: GoogleAuthResult): Promise<void> {
+  async resolveAuthenticatedUserDestination(result: GoogleAuthResult): Promise<boolean> {
+    if (result.needsRegister) return false;
+    sessionStorage.removeItem(PENDING_GOOGLE_REGISTRATION_TYPE);
+
+    let destination: '/admin' | '/home-local' | '/maps';
     if (result.type === 'admin') {
-      await this.router.navigateByUrl('/admin');
-      console.log('[OAuth] Navegación final:', { destination: 'admin' });
-      return;
-    }
-
-    await this.global.loadProfile();
-    if (result.type === 'partner') {
+      destination = '/admin';
+    } else if (result.type === 'partner') {
+      await this.global.loadProfile();
       await this.global.initPartnersRealtime();
-      await this.router.navigateByUrl('/home-local');
-      console.log('[OAuth] Navegación final:', { destination: 'home-local' });
-      return;
+      destination = '/home-local';
+    } else {
+      await this.global.loadProfile();
+      await this.global.initClientesRealtime();
+      destination = '/maps';
     }
 
-    await this.global.initClientesRealtime();
-    await this.router.navigateByUrl('/maps');
-    console.log('[OAuth] Navegación final:', { destination: 'maps' });
+    const navigated = await this.router.navigate([destination]);
+    console.info('[OAuth] Navegación final', { destination, navigated });
+    if (!navigated) {
+      throw new Error(`No se pudo navegar a ${destination} después de autenticar con Google.`);
+    }
+    return true;
   }
 
   clearPendingGoogleSession(): void {
@@ -942,13 +945,7 @@ export class AuthPocketbaseService {
       authData.record = updatedRecord;
       this.pb.authStore.save(token, updatedRecord);
     } else if (selectedType && type !== selectedType) {
-      throw new Error(
-        type === 'client'
-          ? 'Esta cuenta ya está registrada como cliente.'
-          : type === 'partner'
-            ? 'Esta cuenta ya está registrada como partner.'
-            : 'La cuenta administrativa no puede cambiar de tipo desde el registro.'
-      );
+      console.info('[OAuth] Se conserva el tipo existente de la cuenta:', { type });
     }
 
     const googleEmail =
@@ -1031,7 +1028,7 @@ export class AuthPocketbaseService {
   }
 
   isProfileComplete(profile: any): boolean {
-    return Boolean(profile?.id && profile?.profileComplete === true);
+    return Boolean(profile?.id) && profile?.profileComplete !== false;
   }
 
   private logProfileError(
@@ -1078,26 +1075,8 @@ export class AuthPocketbaseService {
         .collection(collection)
         .getFirstListItem(`userId="${user.id}"`);
 
-      let completed = false;
-
-      if (type === 'client') {
-        completed =
-          !!profile?.['name'] &&
-          !!profile?.['birthday'] &&
-          !!profile?.['gender'] &&
-          !!profile?.['interestedIn'] &&
-          !!profile?.['lookingFor'];
-      }
-
-      if (type === 'partner') {
-        completed =
-          !!profile?.['venueName'] &&
-          !!profile?.['address'] &&
-          !!profile?.['phone'];
-      }
-
       return {
-        completed,
+        completed: this.isProfileComplete(profile),
         type,
         profile
       };

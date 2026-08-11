@@ -8,8 +8,8 @@ import { filter } from 'rxjs/operators';
 import { ToastService } from './services/ToastService.service';
 import { NotificationsService } from './services/NotificationsService.service';
 import { GlobalService } from './services/global.service';
-import { SwUpdate } from '@angular/service-worker';
 import { AuthPocketbaseService } from './services/authPocketbase.service';
+import { AppUpdateService } from './services/app-update.service';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -47,8 +47,8 @@ export class App {
     private toastService: ToastService,
     public notificationsService: NotificationsService,
     public global: GlobalService,
-      private swUpdate: SwUpdate,
-      private auth: AuthPocketbaseService
+      private auth: AuthPocketbaseService,
+      public appUpdate: AppUpdateService
   ) 
   {
      this.router.events
@@ -58,8 +58,6 @@ export class App {
     });
 
   this.showLayout = !this.hiddenLayoutRoutes.includes(this.router.url);
-
-  this.checkForAppUpdates();
 
   if (typeof window !== 'undefined') {
     this.isIos =
@@ -105,20 +103,6 @@ export class App {
   await this.notificationsService.initRealtimeNotifications(user.id);
 
   console.log('Sesión restaurada:', user.id);
-}
-  checkForAppUpdates() {
-  if (location.hostname === 'localhost') {
-    return;
-  }
-
-  if (this.swUpdate.isEnabled) {
-    this.swUpdate.versionUpdates.subscribe(event => {
-      if (event.type === 'VERSION_READY') {
-        console.log('Nueva versión disponible. Recargando app...');
-        window.location.reload();
-      }
-    });
-  }
 }
 async logoutHard() {
   this.global.pb.authStore.clear();
@@ -184,34 +168,4 @@ this.auth.clearLocalSession();
     this.showPwaPrompt = false;
     localStorage.setItem('ongo-pwa-dismissed', '1');
   }
-  async cleanApp() {
-  const ok = confirm(
-    'Esto limpiará la sesión, caché y datos temporales de OnGo. ¿Deseas continuar?'
-  );
-
-  if (!ok) return;
-
-  try {
-    localStorage.clear();
-    sessionStorage.clear();
-
-    // Limpiar cachés PWA
-    if ('caches' in window) {
-      const cacheNames = await caches.keys();
-      await Promise.all(cacheNames.map(name => caches.delete(name)));
-    }
-
-    // Desregistrar service workers
-    if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(registrations.map(reg => reg.unregister()));
-    }
-
-    // Recarga limpia
-    window.location.href = '/login';
-  } catch (error) {
-    console.error('Error limpiando app:', error);
-    window.location.reload();
-  }
-}
 }

@@ -87,4 +87,29 @@ describe('RegisterComponent', () => {
     expect(component.clientForm.getRawValue().name).toBe('Saved name');
     expect(oauth).not.toHaveBeenCalled();
   });
+
+  it('reload navigates a legacy profile without profileComplete', async () => {
+    sessionStorage.setItem('ongo_pending_registration_type', 'client');
+    const authUser = {
+      id: 'user123', email: 'hidden@example.invalid', type: 'client'
+    };
+    (component.auth as any).pb = {
+      authStore: { isValid: true, record: authUser }
+    };
+    vi.spyOn(component.auth, 'findGoogleProfile').mockResolvedValue({
+      id: 'legacy-profile', userId: authUser.id
+    });
+    const destination = vi.spyOn(component.auth, 'resolveAuthenticatedUserDestination')
+      .mockResolvedValue(true);
+
+    await (component as any).restoreGoogleProfileCompletion();
+
+    expect(destination).toHaveBeenCalledWith(expect.objectContaining({
+      needsRegister: false,
+      type: 'client'
+    }));
+    expect(component.completingGoogleProfile).toBe(false);
+    expect(component.loadingGoogle).toBe(false);
+    expect(component.registering).toBe(false);
+  });
 });

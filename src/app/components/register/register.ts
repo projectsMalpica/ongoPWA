@@ -138,7 +138,19 @@ export class RegisterComponent {
 
     try {
       const profile = await this.auth.findGoogleProfile(authUser.id, type);
-      if (this.auth.isProfileComplete(profile)) return;
+      if (this.auth.isProfileComplete(profile)) {
+        this.completingGoogleProfile = false;
+        this.loadingGoogle = false;
+        this.registering = false;
+        const navigated = await this.auth.resolveAuthenticatedUserDestination({
+          needsRegister: false,
+          user: authUser,
+          profile,
+          type
+        });
+        if (!navigated) throw new Error('No se pudo recuperar la navegación de la sesión Google.');
+        return;
+      }
       this.activateGoogleProfileCompletion(authUser, type, profile);
     } catch (error: any) {
       console.error('[Google registro] Error al recuperar perfil:', {
@@ -1299,7 +1311,10 @@ export class RegisterComponent {
   try {
     const result = await this.auth.startGoogleOAuth('register', selectedType);
     if (result.needsRegister) {
-      this.activateGoogleProfileCompletion(result.user, selectedType, result.profile || null);
+      if (result.type !== 'client' && result.type !== 'partner') {
+        throw new Error('No se pudo determinar el tipo de perfil que debe completarse.');
+      }
+      this.activateGoogleProfileCompletion(result.user, result.type, result.profile || null);
     }
   } catch (error: any) {
     console.error('Error en registro con Google:', error);

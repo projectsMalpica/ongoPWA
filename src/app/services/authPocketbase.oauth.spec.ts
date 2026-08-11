@@ -28,12 +28,50 @@ describe('Google OAuth registration state', () => {
     await expect(service.findGoogleProfile('user123', 'client')).resolves.toBe(profile);
   });
 
-  it('only considers an explicitly completed profile complete', () => {
+  it('treats legacy profiles as complete unless explicitly marked false', () => {
     const service = Object.create(AuthPocketbaseService.prototype) as AuthPocketbaseService;
 
     expect(service.isProfileComplete(null)).toBe(false);
     expect(service.isProfileComplete({ id: 'profile1', profileComplete: false })).toBe(false);
     expect(service.isProfileComplete({ id: 'profile1', profileComplete: true })).toBe(true);
+    expect(service.isProfileComplete({ id: 'legacy-profile' })).toBe(true);
+    expect(service.isProfileComplete({ id: 'legacy-profile', profileComplete: null })).toBe(true);
+  });
+
+  it.each([
+    ['client', '/maps'],
+    ['partner', '/home-local'],
+    ['admin', '/admin']
+  ] as const)('navigates an authenticated %s to %s', async (type, destination) => {
+    const service = Object.create(AuthPocketbaseService.prototype) as any;
+    service.global = {
+      loadProfile: vi.fn().mockResolvedValue(undefined),
+      initClientesRealtime: vi.fn().mockResolvedValue(undefined),
+      initPartnersRealtime: vi.fn().mockResolvedValue(undefined)
+    };
+    service.router = { navigate: vi.fn().mockResolvedValue(true) };
+
+    await expect(service.resolveAuthenticatedUserDestination({
+      needsRegister: false,
+      user: { id: 'user123' },
+      profile: type === 'admin' ? null : { id: 'profile1' },
+      type
+    })).resolves.toBe(true);
+
+    expect(service.router.navigate).toHaveBeenCalledWith([destination]);
+  });
+
+  it('does not navigate an explicitly incomplete profile', async () => {
+    const service = Object.create(AuthPocketbaseService.prototype) as any;
+    service.router = { navigate: vi.fn() };
+
+    await expect(service.resolveAuthenticatedUserDestination({
+      needsRegister: true,
+      user: { id: 'user123' },
+      profile: { id: 'profile1', profileComplete: false },
+      type: 'client'
+    })).resolves.toBe(false);
+    expect(service.router.navigate).not.toHaveBeenCalled();
   });
 
   it('preserves lookup errors other than 404', async () => {

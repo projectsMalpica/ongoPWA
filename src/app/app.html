@@ -51,15 +51,50 @@
   *ngIf="showPwaPrompt"
   (click)="closePwaPrompt()"
 ></div>
-<button
-  type="button"
-  class="clean-app-btn"
-  (click)="cleanApp()"
-  title="Limpiar datos de la app"
+<aside
+  *ngIf="appUpdate.notice()"
+  class="app-update-notice"
+  aria-live="polite"
+  aria-atomic="true"
+  role="status"
 >
-  <i class="feather icon-refresh-cw"></i>
-  <span>Limpiar app</span>
-</button>
+  <div class="app-update-icon" aria-hidden="true">
+    <i class="feather icon-download-cloud"></i>
+  </div>
+  <div class="app-update-copy">
+    <strong>
+      {{ appUpdate.unrecoverable()
+        ? 'La aplicación necesita recargarse'
+        : 'Nueva versión disponible' }}
+    </strong>
+    <span>
+      {{ appUpdate.unrecoverable()
+        ? 'Recarga para continuar correctamente.'
+        : 'Actualiza para disfrutar las últimas mejoras.' }}
+    </span>
+  </div>
+  <div class="app-update-actions">
+    <button
+      type="button"
+      class="app-update-primary"
+      [disabled]="appUpdate.isUpdating()"
+      (click)="appUpdate.reloadNow()"
+    >
+      {{ appUpdate.isUpdating()
+        ? 'Actualizando…'
+        : appUpdate.unrecoverable() ? 'Recargar' : 'Actualizar ahora' }}
+    </button>
+    <button
+      *ngIf="appUpdate.updateAvailable()"
+      type="button"
+      class="app-update-later"
+      [disabled]="appUpdate.isUpdating()"
+      (click)="appUpdate.dismissUpdate()"
+    >
+      Después
+    </button>
+  </div>
+</aside>
 <div class="app-toast-container">
   <div
     *ngFor="let toast of toasts"
