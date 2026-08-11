@@ -1,0 +1,72 @@
+.push-settings {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid rgba(67, 13, 127, 0.12);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(67, 13, 127, 0.08);
+}
+
+.push-settings-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 80, 162, 0.12);
+  color: #a31c64;
+}
+
+.push-settings-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.push-status {
+  color: #430d7f;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.push-settings-copy small {
+  color: #6b6470;
+  line-height: 1.35;
+}
+
+.push-settings button {
+  border-radius: 10px;
+  padding: 8px 11px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.push-primary {
+  border: 0;
+  background: #430d7f;
+  color: #fff;
+}
+
+.push-secondary {
+  border: 1px solid #430d7f;
+  background: transparent;
+  color: #430d7f;
+}
+
+@media (max-width: 576px) {
+  .push-settings {
+    grid-template-columns: auto 1fr;
+  }
+
+  .push-settings button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}
+.push-sound { display: flex; align-items: center; gap: 8px; font-size: .85rem; }
+.push-feedback { width: 100%; margin: 6px 0 0; font-size: .82rem; color: #4f3b5c; }

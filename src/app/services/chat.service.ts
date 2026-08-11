@@ -2,6 +2,7 @@ import { Injectable } from "@angular/core";
 import { RecordModel } from "pocketbase";
 import { BehaviorSubject } from "rxjs";
 import { pocketBase } from './pocketbase-client';
+import { PushService } from './push.service';
 
 @Injectable({
   providedIn: 'root'
@@ -18,7 +19,7 @@ export class ChatPocketbaseService {
   private userId = '';
   chatReceiverId: string = '';
 
-  constructor() {
+  constructor(private readonly pushService: PushService) {
     this.restoreSession();
   }
 
@@ -199,13 +200,8 @@ async sendMessage(receiverId: string, text: string) {
       receiver: realReceiverId
     });
 
-    await this.pb.collection('notifications').create({
-      user: realReceiverId,
-      fromUser: currentUserId,
-      type: 'message',
-      title: 'Nuevo mensaje',
-      message: text.trim(),
-      read: false
+    await this.pushService.notifyMessage(record.id).catch(error => {
+      console.warn('[ChatPocketbaseService] El mensaje se envió, pero su aviso push falló.', error);
     });
 
     const current = this.messagesSubject.getValue();

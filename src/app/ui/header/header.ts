@@ -47,4 +47,8 @@ unreadCount$;
   toggleSidebar() {
     this.sidebarService.toggle();
   }
+
+  openNotifications(): void {
+    void this.router.navigate(['/notifications']);
+  }
 }

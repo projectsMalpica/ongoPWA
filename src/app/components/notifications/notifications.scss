@@ -1,0 +1,15 @@
+.notifications-page { max-width: 760px; margin: 0 auto; padding: 92px 18px 110px; }
+header { display: flex; gap: 16px; align-items: start; justify-content: space-between; margin-bottom: 20px; }
+h1 { margin: 0 0 4px; font-size: 1.6rem; }
+p { margin: 0; color: #6d6875; }
+header button { border: 0; background: transparent; color: #7b2cbf; font-weight: 700; padding: 8px; }
+.notification-item { width: 100%; display: grid; grid-template-columns: 10px 1fr; gap: 12px; text-align: left; border: 1px solid #ece8ef; border-radius: 14px; background: #fff; padding: 15px; margin-bottom: 10px; }
+.notification-item.unread { background: #fbf7ff; border-color: #d9b8f4; }
+.dot { width: 8px; height: 8px; margin-top: 7px; border-radius: 50%; background: transparent; }
+.unread .dot { background: #8b2fc9; }
+.notification-item span:last-child { display: grid; gap: 4px; }
+small { color: #514b56; }
+time { color: #918a95; font-size: .75rem; }
+.state, .error { padding: 24px; text-align: center; }
+.error { color: #a21b34; }
+@media (max-width: 520px) { header { align-items: stretch; flex-direction: column; } header button { text-align: left; padding-left: 0; } }

@@ -18,10 +18,11 @@ import { RouterModule } from '@angular/router';
 import { WompiService } from '../../services/wompi.service';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { PushSettings } from '../../ui/push-settings/push-settings';
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, CommonModule, RouterModule],
+  imports: [FormsModule, ReactiveFormsModule, CommonModule, RouterModule, PushSettings],
   templateUrl: './profile.html',
   styleUrl: './profile.scss',
 })

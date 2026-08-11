@@ -199,6 +199,12 @@ export const routes: Routes = [
     title: 'Wallet'
   },
   {
+    path: 'notifications',
+    loadComponent: () =>
+      import('./components/notifications/notifications').then(c => c.NotificationsComponent),
+    title: 'Notificaciones'
+  },
+  {
     path: '**',
     redirectTo: 'register'
   }

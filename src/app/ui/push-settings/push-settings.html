@@ -1,0 +1,42 @@
+<section class="push-settings" aria-labelledby="push-settings-title">
+  <div class="push-settings-icon" aria-hidden="true">
+    <i class="fa-solid fa-bell"></i>
+  </div>
+  <div class="push-settings-copy">
+    <strong id="push-settings-title">Notificaciones push</strong>
+    <span class="push-status">{{ label(push.status()) }}</span>
+    <small>{{ description(push.status()) }}</small>
+  </div>
+  <button
+    *ngIf="push.status() === 'default' || push.status() === 'error'"
+    type="button"
+    class="push-primary"
+    [disabled]="push.busy()"
+    (click)="push.enableNotifications()"
+  >
+    {{ push.busy() ? 'Activando…' : 'Activar notificaciones' }}
+  </button>
+  <label *ngIf="push.status() === 'enabled'" class="push-sound">
+    <input type="checkbox" [checked]="notifications.soundEnabled" (change)="setSound($event)">
+    Sonido en primer plano
+  </label>
+  <button
+    *ngIf="push.status() === 'enabled'"
+    type="button"
+    class="push-secondary"
+    [disabled]="push.busy()"
+    (click)="push.disableNotifications()"
+  >
+    {{ push.busy() ? 'Desactivando…' : 'Desactivar notificaciones' }}
+  </button>
+  <button
+    *ngIf="push.status() === 'enabled' && push.canSendTest()"
+    type="button"
+    class="push-primary"
+    [disabled]="push.busy()"
+    (click)="push.sendTestNotification()"
+  >
+    {{ push.busy() ? 'Enviando…' : 'Enviar notificación de prueba' }}
+  </button>
+  <p *ngIf="push.testResult()" class="push-feedback" role="status">{{ push.testResult() }}</p>
+</section>

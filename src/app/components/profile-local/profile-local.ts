@@ -21,10 +21,11 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import { RealtimePlanningPartnerService } from '../../services/realtime-planningPartner.service';
 import { RouterLink } from '@angular/router';
+import { PushSettings } from '../../ui/push-settings/push-settings';
 @Component({
   selector: 'app-profile-local',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, PushSettings],
   templateUrl: './profile-local.html',
   styleUrl: './profile-local.scss',
 })

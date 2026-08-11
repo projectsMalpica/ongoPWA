@@ -19,9 +19,11 @@ messaging.onBackgroundMessage((payload) => {
 
   self.registration.showNotification(title, {
     body,
-    icon: '/assets/icons/icon-192x192.png',
-    badge: '/assets/icons/icon-192x192.png',
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/icon-96x96.png',
     vibrate: [300, 120, 300],
+    tag: payload.data?.notificationId || undefined,
+    silent: false,
     requireInteraction: true,
     data: payload.data || {}
   });
@@ -31,7 +33,43 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
   const data = event.notification.data || {};
-  const url = data.url || '/maps';
+  const candidate = typeof data.route === 'string'
+    ? data.route
+    : typeof data.url === 'string' ? data.url : '';
+  const allowedRoutes = [
+    /^\/maps$/,
+    /^\/matches$/,
+    /^\/chat$/,
+    /^\/chat-detail\/[A-Za-z0-9_-]+$/,
+    /^\/my-orders$/,
+    /^\/partner-pending-orders$/,
+    /^\/wallet-history$/,
+    /^\/wallet-partner$/,
+    /^\/profile(?:-local)?$/,
+    /^\/home-local$/,
+    /^\/notifications$/
+  ];
+  const typeRoutes = {
+    test_notification: '/notifications',
+    new_match: '/matches',
+    match: '/matches',
+    wallet_recharge_approved: '/wallet-history',
+    wallet_recharge_rejected: '/wallet-history',
+    reservation_confirmed: '/my-orders',
+    reservation_cancelled: '/my-orders',
+    order_accepted: '/my-orders',
+    order_ready: '/my-orders',
+    order_cancelled: '/my-orders'
+  };
+  let url = typeRoutes[data.type] || '/notifications';
+
+  try {
+    if (!candidate) throw new Error('No explicit route');
+    const parsed = new URL(candidate, self.location.origin);
+    if (parsed.origin === self.location.origin && allowedRoutes.some(pattern => pattern.test(parsed.pathname))) {
+      url = parsed.pathname;
+    }
+  } catch {}
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {

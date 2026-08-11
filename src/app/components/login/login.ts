@@ -11,7 +11,7 @@ import { AuthPocketbaseService } from '../../services/authPocketbase.service';
 import { GlobalService } from '../../services/global.service';
 import { ChatPocketbaseService } from '../../services/chat.service';
 import { Router } from '@angular/router';
-import { PushService } from '../../services/notifications.service';
+import { PushService } from '../../services/push.service';
 type UserType = 'admin' | 'partner' | 'client';
 
 @Component({
@@ -80,7 +80,7 @@ export class LoginComponent {
           const userId = res?.record?.id || authRecord?.id;
 
           if (userId) {
-            this.pushService.initPush(userId).catch(error => {
+            this.pushService.syncGrantedPermission().catch(error => {
               console.error('Error iniciando push:', error);
             });
           }

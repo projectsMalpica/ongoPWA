@@ -9,6 +9,7 @@ import { globalUser } from '../state/global-user.signal';
 import { Router } from '@angular/router';
 import { environment } from '../environments/environment';
 import { pocketBase } from './pocketbase-client';
+import { PushService } from './push.service';
 /* import { RealtimeOrdersService } from './realtime-orders.service';  
 */
 
@@ -52,7 +53,8 @@ export class AuthPocketbaseService {
   user: any;
   constructor(
     public global: GlobalService,
-    public router: Router
+    public router: Router,
+    private pushService: PushService
   ) {
     this.pb = pocketBase;
 
@@ -729,6 +731,7 @@ export class AuthPocketbaseService {
 
 
   async logoutUser(): Promise<any> {
+    await this.pushService.deactivateCurrentDeviceBeforeLogout();
     await this.pb.realtime.unsubscribe();
     this.pb.authStore.clear();
     /* localStorage.clear(); */

@@ -12,14 +12,15 @@
             </div>
             <div class="right-content dz-meta">
 
-                <a class="filter-icon position-relative">
+                <button type="button" class="filter-icon position-relative notification-button"
+                        aria-label="Abrir notificaciones" (click)="openNotifications()">
 <i class="fa-solid fa-bell"></i>
                     <span *ngIf="unreadCount$ | async as count" class="notification-badge">
                         <span *ngIf="count > 0">
                             {{ count }}
                         </span>
                     </span>
-                </a>
+                </button>
 
             </div>
         </div>

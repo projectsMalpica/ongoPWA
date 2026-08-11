@@ -1,0 +1,32 @@
+<main class="notifications-page">
+  <header>
+    <div>
+      <h1>Notificaciones</h1>
+      <p>Mantente al día con tu actividad en OnGo.</p>
+    </div>
+    <button type="button" (click)="markAll()" [disabled]="(unreadCount$ | async) === 0">
+      Marcar todas como leídas
+    </button>
+  </header>
+
+  <p *ngIf="error" class="error" role="alert">{{ error }}</p>
+  <p *ngIf="loading" class="state">Cargando…</p>
+
+  <ng-container *ngIf="notifications$ | async as items">
+    <p *ngIf="!loading && items.length === 0" class="state">Todavía no tienes notificaciones.</p>
+    <button
+      *ngFor="let item of items"
+      type="button"
+      class="notification-item"
+      [class.unread]="!item.read"
+      (click)="open(item)"
+    >
+      <span class="dot" aria-hidden="true"></span>
+      <span>
+        <strong>{{ item.title }}</strong>
+        <small>{{ item.message }}</small>
+        <time>{{ item.created | date:'medium' }}</time>
+      </span>
+    </button>
+  </ng-container>
+</main>

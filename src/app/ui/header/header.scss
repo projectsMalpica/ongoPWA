@@ -10,6 +10,14 @@
   font-size: 22px;
 }
 
+.notification-button {
+  border: 0;
+  background: transparent;
+  padding: 8px;
+  color: inherit;
+  cursor: pointer;
+}
+
 .notification-badge {
   position: absolute;
   top: -6px;

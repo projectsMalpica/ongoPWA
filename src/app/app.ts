@@ -10,6 +10,7 @@ import { NotificationsService } from './services/NotificationsService.service';
 import { GlobalService } from './services/global.service';
 import { AuthPocketbaseService } from './services/authPocketbase.service';
 import { AppUpdateService } from './services/app-update.service';
+import { PushService } from './services/push.service';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -48,7 +49,8 @@ export class App {
     public notificationsService: NotificationsService,
     public global: GlobalService,
       private auth: AuthPocketbaseService,
-      public appUpdate: AppUpdateService
+      public appUpdate: AppUpdateService,
+      private pushService: PushService
   ) 
   {
      this.router.events
@@ -101,6 +103,7 @@ export class App {
   );
 
   await this.notificationsService.initRealtimeNotifications(user.id);
+  await this.pushService.syncGrantedPermission();
 
   console.log('Sesión restaurada:', user.id);
 }
